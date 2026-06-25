@@ -1,0 +1,18 @@
+# OS / editor junk
+.DS_Store
+**/.DS_Store
+.vscode/
+
+# Claude Code local config & session data
+.claude/
+
+# local backups
+*.bak
+gym bkup/
+
+# temp
+scratchpad/
+node_modules/
+
+# unused vendored icons (app uses Lucide CDN); 95MB, not referenced
+assets/icons/
