@@ -96,11 +96,16 @@ All state is in-memory; nothing persists across reloads.
 | `reorder`    | Program tab is in drag-to-reorder mode            |
 | `onCat`, `onAbility`, `onDays`, `onTime`, `onCoach`, `onMsg` | Shared draft state for the staged add flows |
 | `attachTo`   | Client ID when adding exercises from library, else `null` |
+| `attachMode` / `attachReturn` / `attachProgIdx` | Library attach context — `attachMode` (`'newProgram'` or `null`), `attachReturn` (`'session'` / `'program'` / `null`, where the picker came from), `attachProgIdx` (target session-program index). Together they drive `libraryParent()` (see *Back navigation*) |
 | `picks`      | Library exercise indices selected for attachment  |
+| `newProg` / `newEx` | Draft state for the **start-new-program** dialog and the **add-new-exercise** sheet (`renderNewProgramModal` / `renderAddExerciseModal`) |
 | `effFrom`    | When attached exercises take effect (`now`, `next`, or a date string) |
 | `libQ`       | Exercise-library search query (name + category substring match) |
 | `libGroup`   | Selected muscle-group filter chip (`All` or one of the `LIB_GROUPS`) |
 | `measure`    | Selected measurement key in progress charts       |
+| `programDetailId` / `pdFrom` | Program-detail route — which program is shown (`'current'` or a history id) and where it was opened from (`'history'` vs the client Program tab), used by `parentOf()` for back |
+| `sessionFrom` / `reportFrom` | Origin breadcrumbs for the two screens with two real entry points — a session (opened from a client vs the schedule) and a report (from a client vs the Reports tab); used by `parentOf()` so Back goes up to the right place |
+| `assessSrc`  | Whether the assessment preview (`assessDoc`) is a `'draft'` (mid-onboarding) or saved on a `'client'` — also drives its back target |
 
 ### Module-level data stores
 
@@ -109,7 +114,7 @@ All state is in-memory; nothing persists across reloads.
 | `clients`     | `[{id, name, exercises, ...}]`     | All client records (mock data)         |
 | `coaches`     | `[{name, role, clients, photo?, phone, email, yearsExp, specializations[], certifications[], tagline}]` | Coach roster. Bio fields (`phone`/`email`/`yearsExp`/`specializations`/`certifications`/`tagline`) feed the welcome-letter coach card; Madhan has a `photo`, juniors fall back to an initials avatar |
 | `announcements` | `[{type, title, msg, ...}]`     | Sent announcements                     |
-| `library`     | `[{n, g, c, t}]`                 | Exercise library catalog — ~90 exercises grouped by **primary muscle group** (`g`). `n` = name, `g` = muscle group (Quads, Hamstrings, Glutes, Calves, Chest, Back, Shoulders, Biceps, Triceps, Core, Cardio, Mobility, Rehab), `c` = category description string (filtering also matches on this), `t` = default target. `LIB_GROUPS` is the fixed chip order (`All` + the 13 groups); `MUSCLE_COLORS` maps each group → `{c, b}` palette tokens for the small colored tag (`muscleColor(g)` falls back to neutral grey for unknown groups). |
+| `library`     | `[{n, g, c, t}]`                 | Exercise library catalog — ~90 exercises grouped by **primary muscle group** (`g`). `n` = name, `g` = muscle group (Quads, Hamstrings, Glutes, Calves, Chest, Back, Shoulders, Biceps, Triceps, Core, Cardio, Mobility, Rehab), `c` = category description string (filtering also matches on this), `t` = default target. `LIB_GROUPS` is the chip order (`All` first, then the 13 groups alphabetically); `MUSCLE_COLORS` maps each group → `{c, b}` palette tokens for the small colored tag (`muscleColor(g)` falls back to neutral grey for unknown groups). |
 | `reports`     | `[{clientId, week, sent, when}]`  | Report send status                     |
 | `reviewState` | `{clientId: {due, ago}}`          | Weekly review tracking per client      |
 | `sessDone`    | `{clientId: true \| 'closed'}`    | Session completion status for today (still drives Home's *Completed* badge) |
@@ -120,7 +125,7 @@ All state is in-memory; nothing persists across reloads.
 | `sessionLog`  | `{clientId: [{date, when, early, roundsCompleted, totalRounds, programs}]}` | Permanent archive of **completed** sessions (newest first). Invalidation never erases it — see *Today's session view* below |
 | `attStatus`   | `{clientId: 'present' \| 'absent' \| 'cancelled'}` | Client attendance status |
 | `attTime`     | `{clientId: string}`              | Timestamp when attendance was marked   |
-| `coachAttendance` | `{'YYYY-MM-DD::coachName': {inTime, outTime, status, sessions}}` | Coach attendance, keyed by date + coach. `status` is `'present'` or `'absent'`; `inTime`/`outTime` are the first check-in / last check-out (for display); `sessions` is `[{in, out}]` supporting **multiple check-in/out cycles per day** (`out: null` while a session is open). Seeded with mock data for the last 7 days (legacy single-pair records without `sessions` still compute via a fallback) |
+| `activityLog` | `[{type, msg, when, meta}]`       | In-memory activity feed (newest first) — `'PAYMENT'`/`'SESSION'`/`'PROGRAM'` events surfaced on Home (`logActivity`) |
 
 ### Seed data (demo scenarios)
 
@@ -128,7 +133,7 @@ All seeds are in `js/app.js` and chosen so every UI state has something to show:
 
 - **6 clients** (`clients`, `nextId` starts at 7): **Arjun Mehta** (Sports specific, mid-program, paid), **Meera Nair** (Rehab, balance 0 → *due soon*), **Kavya Singh** (General wellness, balance 0 + 10 days → *overdue*), **Dev Krishnan** (Special children, paid), **Sara Pinto** (General wellness, **Paused**), and **Nisha Reddy** (id 6 — a brand-new lead added via Flow A only: `assessmentDone/scheduleDone/scheduleSet` all false, `coach:null`, no payments/program). The five pre-existing clients are back-filled to fully-active (`clients.forEach` defaults the lifecycle flags they predate).
 - **3 coaches** (`coaches`): **Madhan** (Main trainer, has a photo, clients 1/3/4), **Suchitha** (Junior, clients 2/5), and **Arun** (Junior, **no clients** — an unassigned coach). Juniors fall back to an initials avatar.
-- **Seed IIFEs:** `seedPayments()` (legacy program-cycle fields), `seedPackages()` (package balances / payment history / `lastSessionDate`), `seedProgramHistory()` (1–2 archived programs per existing client + names/dates the active program), `seedCoachAttendance()` (last-7-days clock records with multi-block days, a couple of absent days, and today left open for the main trainer so the gate is live), and `seedSessions()` (today's circuit state: Arjun on the split screen, Meera mid-Program-A, Kavya fully complete — plus a few real `sessionLog` history records for Arjun & Kavya).
+- **Seed IIFEs:** `seedPayments()` (legacy program-cycle fields), `seedPackages()` (package balances / payment history / `lastSessionDate`), `seedProgramHistory()` (1–2 archived programs per existing client + names/dates the active program), and `seedSessions()` (today's circuit state: Arjun unstarted with a ready A/B circuit auto-built from his standing program, Meera mid-Program-A, Kavya fully complete — plus a few real `sessionLog` history records for Arjun & Kavya). Coach activity is **derived** from `sessionLog`, so there is no coach-attendance seed.
 - The home-header **profile switcher** (`PROFILES`) toggles `S.role` between *Coach Madhan* (main), *Coach Suchitha* (junior — sees only Meera & Sara), and *Arjun Mehta* (client view).
 
 ## Adding a client — staged flow
@@ -171,7 +176,7 @@ Clients buy **packages of N sessions** upfront. Each completed session consumes 
 
 Surfaced for action in four places:
 
-- **Home banner** — counts active clients with `DueSoon`/`Overdue`; text varies (*"1 client overdue, 2 due soon"* / *"2 clients due soon"* / *"1 client payment overdue"*) and deep-links to the Clients tab with `cFilter='Payment due'`.
+- **Home dashboard** — *Critical Alerts* surfaces *Payment Overdue* / *Membership Expiring* rows, and the *Quick Stats* / *Client Insights* cards show *Pending Payments* etc. Each is clickable and deep-links to the matching filtered Clients list via `goStat('Payment due' | 'Payment overdue' | 'Membership expiring')` (see *Home dashboard — every stat is a deep link*).
 - **Clients list** — the *Payment due* filter shows `DueSoon`/`Overdue` clients; each row shows a status tag (amber *"💳 Payment due soon"* / red *"💳 Overdue · X days"*) plus a subtle *"X sessions left"* subtitle.
 - **Client Overview** — a unified **Program & Payment** card (`programPaymentCard(c)`): headline *"X of Y sessions remaining"*, package size + cadence, last-paid date, projected renewal (when balance > 0), a status pill, and a *+ Record payment* button. New leads (no payments) instead show *"No package purchased yet"* + *+ Add first payment* (defaulting the dialog to an assessment fee).
 - **Notifications** — `programEndedClients()` (now: active clients with `DueSoon`/`Overdue`) adds renewal rows that open the client's Payment tab; these also feed the top-bar bell badge.
@@ -206,38 +211,23 @@ The active `c.program` now also carries a `name` and `startDate` (added by the s
 
 **Views** (read-only): `vProgramHistory(clientId)` lists the **Current program** card (red-tinted, *"Current program"* label) above the archived programs newest-first — each card showing name + *Program #N*, date range, a `weeks · /week · X of Y sessions completed` stat row, a truncated horizontal exercise list, and a *View details* button. `vProgramDetail(clientId, programId)` shows one program's full exercise list with targets (read-only; `programId='current'` resolves to the live program). Empty states cover *no history yet but a current program runs* vs *no programs at all*. The reusable body is `programHistoryBody(c)`. The real entry point is the **History** tab of the client-detail Program drill-in (`vClientProgram`'s Current/History toggle renders `programHistoryBody`); the standalone `programHistory` / `programDetail` routes are reached from temporary **Test:** rows in **More** (Arjun's / Meera's / Nisha's-empty histories + *start new program for Arjun*).
 
-## Coach attendance & the action gate
+## Coach activity (derived — no clock-in gate)
 
-Coaches clock in/out from the **Coach attendance** screen (`vCoachAtt()`, reached from *More*). Until a coach has started their day, almost every action in the app is blocked.
+The separate **Coach attendance** clock-in/out screen and the action gate that used to block work until a coach clocked in have both been **removed**. There is no `coachAttendance` store, no `requireClockedIn`/`isClockedIn` gate, and no `coachAtt` view — **every screen is actionable without any clock-in step**.
 
-Because a day can hold several check-in/out blocks, the screen is built around a reusable **session-blocks** renderer (`sessionRows()` — one `in → out · duration` line per block, with the open block pulsing) and a shared status (`coachStatus()` → *Working / Checked out / Absent / Not in*):
+Coach activity is now **derived from `sessionLog`** (the permanent record of completed sessions):
 
-- **My week** — seven compact day pills; each shows the day letter, the day's total hours, and one dot per session block (hollow dot = open block). Tapping a pill selects that day.
-- **Team breakdown** (main trainer) — one `team-card` per trainer (`teamCardForDay(co, dateKey)`) with a status badge + total hours in the header and every session block listed below. With no day selected it shows **Team today**; selecting a *previous* day in My week swaps it to **Team · <date>** — the same per-coach breakdown for that day — and hides Team today. *Mark absent* only appears for a not-checked-in junior **today**; tapping a card drills into that coach's week. (A junior sees only their own card, and only when they pick a day.)
-- **Per-coach week** (drill-down) — a header with the week total and a vertical `week-day` list breaking every day into its session blocks.
+- `coachSessionsThisMonth(name)` / `coachActiveDaysThisMonth(name)` count this month's completed sessions and the distinct days a coach ran one.
+- These feed the Home header's summary line — *"This month · N sessions · M days active"* (`eh-derived`).
+- `currentCoach()` still resolves the logged-in coach's name from the role (`junior` → first junior trainer, otherwise the main trainer / `TRAINER`).
 
-**Helpers** (all global, in-memory):
-
-- `todayKey()` → today as `YYYY-MM-DD`; `attKey(coach, date)` → the composite store key; `dateKey(d)` formats any `Date`.
-- `getCoachToday(coach)` → today's record or `null`; `getCoachWeek(coach)` → the last 7 days' records (oldest first, `null` for missing days).
-- `currentCoach()` → the logged-in coach's name. Wired to the role: `junior` resolves to the first junior trainer, otherwise the main trainer (Madhan / `TRAINER`).
-- `nowTime()` → current time as `'h:mm AM/PM'` for stamping in/out; `hoursToday()` / `hoursWorked()` compute the live and final durations.
-- `coachClockIn()` / `coachClockOut()` write the today record; `markCoachAbsent(name)` flags a junior absent with a 3-second undo toast (`toastUndo`).
-
-**The gate:**
-
-- `isClockedIn()` — non-side-effect check. Returns `true` if the current coach has clocked in today and not yet clocked out (and always `true` for the `client` role, so clients are never gated).
-- `requireClockedIn()` — guard called via `if(!requireClockedIn())return;`. If not clocked in it shows a *"Start your attendance first"* toast and returns `false`.
-
-The gate applies to **starting a client's session only**: `openSession` (opening the session screen) and the slide-to-mark-present completion in `wireSlide()` (checked at completion time so the slider still drags but bounces back if not clocked in). Every other screen — payments, reports, library, onboarding docs, announcements, pause/resume — is reachable and actionable without clocking in. (`lk()` remains available as a visual-lock class helper but is no longer applied anywhere.)
-
-**Visual lock state:** the `.locked` CSS class (dim to 0.5 + a small 🔒 overlay) and its `lk()` class-suffix helper both still exist, but `lk()` is **no longer called anywhere** — no element is visually locked. The session screen handles the gate inline instead (`openSession` toasts before opening; `wireSlide` lets the slider drag but bounces back and toasts if not clocked in).
+The `.locked` CSS class and `lk()` helper survive but are unused; nothing is visually locked.
 
 ## Today's session view — circuit (Programs A/B)
 
 `vSession()` (the `session` VIEW, opened via `openSession(id)`) runs a **two-circuit (Program A / Program B) round-based workout**. Every state shares one header (`sessHeader(c, chip)`, `.sx-head2`): avatar left, the client name with *date · time · coach* stacked beside it, and the attendance pill + change-attendance **⋯** pinned to the top-right (`sessAttChip` builds the pill; the *before-present* state passes an empty chip). The attendance states are unchanged; the *present* state is what's new:
 
-- **Before present** — exercises are locked (🔒) under a **slide-to-mark-present** control (`wireSlide`); *"Not present? More options"* links to `vAttMore` (Present / Absent / Cancelled). The clock-in gate is still checked at slide-completion time and runs **before** the circuit.
+- **Before present** — a **slide-to-mark-present** control (`wireSlide`); *"Not present? More options"* links to `vAttMore` (Present / Absent / Cancelled). Marking present is **ungated** — completing the slide calls `setAttendance(id,'present')` and the circuit auto-starts (no clock-in step).
 - **Closed** (absent / cancelled) — a closed-state panel with an **Undo**.
 - **Present, <2 real exercises** — a *"Need at least 2 exercises in the Program tab first"* panel linking to the Program drill-in.
 - **Present** — **marking present starts the session immediately** (no organise/split gate): `autoStartSession(id)` applies the default A/B split and drops straight into the running circuit. The organise/split screen is reached only on demand via **⋯ → Edit programs & rounds**.
@@ -250,13 +240,22 @@ Per-client, per-day progress lives in a module-level store **separate** from the
 let sessionProgress = {};   // keyed 'clientId::YYYY-MM-DD'  (sessKey(id))
 ```
 
-Shape: `{ clientId, date, splitDone:false, started:false, currentProgramIdx:0, programs:[ {label:'Program A', exercises:[name], sets:3, progress:{}}, {label:'Program B', exercises:[name], sets:3, progress:{}} ] }`. **`programs` is a variable-length list** — there are always at least 1 and up to 6 circuits (Program A–F). Each program is its own circuit: its `exercises` run in order, repeated for **its own** `sets` (round count), and only when a program is fully complete does the workout advance to the next. `progress` is keyed `'round:exerciseName'` → `true` (1-based rounds). `started` flips true the first time the session runs and never flips back — so reopening the organise screen via ⋯ → Edit never re-triggers the auto-start. `getSession(id)` reads it; `ensureSession(c)` lazily builds a fresh state via `buildSessionState(c)` (default split: first half of the real exercises → A, second half → B, 3 sets each). `sessionExercises(c)` is the real, today-relevant list (drops `future` adds + the *Tap to add exercise* placeholder, adds today's session-only extras, minus today's removals).
+Shape: `{ clientId, date, splitDone:false, started:false, currentProgramIdx:0, programs:[ {label:'Program A', exercises:[name], sets:3, progress:{}, weights:{name:kg}, reps:{name:n}}, {label:'Program B', …} ] }`. Each program also carries a **`weights`** map (per-exercise working load, kg) and a **`reps`** map (per-exercise rep count) — both keyed by exercise name and edited from the builder card (see below); absent entries fall back to `0` (weight) / the exercise's target reps. **`programs` is a variable-length list** — there are always at least 1 and up to 6 circuits (Program A–F). Each program is its own circuit: its `exercises` run in order, repeated for **its own** `sets` (round count), and only when a program is fully complete does the workout advance to the next. `progress` is keyed `'round:exerciseName'` → `true` (1-based rounds). `started` flips true the first time the session runs and never flips back — so reopening the organise screen via ⋯ → Edit never re-triggers the auto-start. `getSession(id)` reads it; `ensureSession(c)` lazily builds a fresh state via `buildSessionState(c)` (default split: first half of the real exercises → A, second half → B, 3 sets each). `sessionExercises(c)` is the real, today-relevant list (drops `future` adds + the *Tap to add exercise* placeholder, adds today's session-only extras, minus today's removals).
 
 Program slots are labelled and coloured by index via `progLabel(i)` (A, B, C…), `progLetter(i)`, and `progColor(i)` (`PROG_COLORS` = `['a'..'f']` → blue/amber/purple/green/red/pink header classes). `relabelPrograms(st)` keeps labels in A,B,C order after any add/remove.
 
 **Helpers** (all global): `roundComplete(prog, round)`, `programComplete(prog)`, `nextExerciseInRound(prog, round)` (the *Next* highlight), `currentRound(prog)` (lowest incomplete round), `advanceProgram(st)` (hop to the next non-empty, incomplete program), `sessionComplete(st)`. Empty programs count as complete so they never block (lets a one-program seed finish cleanly).
 
 **All programs are always on screen** in every phase — split, workout, and complete each render every program as a **section** (a shared header helper `cwSecHead(p, colorCls, status, dots, active, done)` + per-program round dots via `cwDots`). The active program's header is a solid colour banner (per `progColor`); the others are grey headers labelled *Up next* / *Complete ✓*. So the coach can always read every circuit's exercise list.
+
+### Program-builder card (`builderSection`)
+
+Both the pre-start builder (`preStartBuilder`) and the ⋯ → Edit split screen render each program as a **`.pb-card`** — an orange program title with a **No. of Sets** stepper (`bumpSets`, the round count), then one row per exercise, then a footer of **＋ Add exercises** (`addExercisesToProgram`, scoped to this program) and **Remove**. Each exercise row (matching the Figma) shows the **name + muscle-group subtitle** and two pill steppers — **REPS** and **WEIGHTS** — plus an **✕** to drop it:
+
+- **REPS** — `exRepCount(p, name, meta)` reads `p.reps[name]`, falling back to `repTarget(meta)` (parsed from the exercise's target, e.g. `3×10` → 10). `bumpReps(id, idx, name, ±1)` edits it (min 1).
+- **WEIGHTS** — `exWeight(p, name)` reads `p.weights[name]` (default 0); `bumpWeight(id, idx, name, ±1)` steps it by 2.5 kg (min 0).
+
+Both are **builder-level planning values** stored on the live session program; they are not yet surfaced in the running circuit or session history.
 
 ### PART 1 — Organise / split screen (`splitDone:false`, `splitScreen(c, st)`)
 
@@ -300,16 +299,50 @@ A fully set-up client (`c.scheduleSet`) renders as **one long scrollable page** 
 
 **Drill-ins.** *View more* calls `openClientSection(section)` which stores the scroll position in `S.clientScroll`, sets `S.subView`, and re-renders. When `S.subView` is set, `vClient` returns the matching drill-in **in place of** the long page (these are not routed VIEWS — they render through the `client` view): `vClientProgram` (a *Current* / *History* toggle — Current is `tabProgram()` with every interaction intact; History is `programHistoryBody(c)` from the program-archive work), `vClientSessions` (`tabSessions()` + a synthesized `sessionHistoryBlock`), `vClientProgress` (`tabProgress()`), `vClientPayment` (`paymentTabContent(c)`), `vClientMedia` (`tabMedia()`). Each has a back button → `goBackToClient()`, which clears `S.subView`, re-renders the long page, and `scrollIntoView`s back to the originating section. The inner tab renderers (`tabProgram`/`tabSessions`/`tabProgress`/`tabMedia`/`paymentTabContent`) are reused verbatim — not rewritten.
 
-Smooth-scroll is applied **only** to anchor taps (the explicit `behavior:'smooth'`), not globally via CSS, so per-render `scrollTop=0` resets and back-restores stay instant (no mobile jank). `openClient` resets `S.subView=null` so switching clients always lands on the long page; `navSnapshot`/`goBack` also carry `subView`/`progSub` so a deeper push (e.g. a history card's *View details* → `programDetail`) returns to the right drill-in.
+Smooth-scroll is applied **only** to anchor taps (the explicit `behavior:'smooth'`), not globally via CSS, so per-render `scrollTop=0` resets and back-restores stay instant (no mobile jank). `openClient` resets `S.subView=null` so switching clients always lands on the long page; a deeper push (e.g. a history card's *View details* → `programDetail`) returns to the right drill-in because `parentOf()` resolves `programDetail` → the client's Program tab `{view:'client', subView:'program', progSub:…}` (see *Back navigation*).
+
+## Progress section — athletic strength tracking
+
+The Progress section is rebuilt for coaches assessing how athletic/sports clients are advancing. **Every number and chart is *derived* from data the app already has — per-exercise `logs` (`{week: {w, r}}`, weight in kg × reps) and `c.measures` (body measurements). No new captured metrics exist** (no power/sprint/jump data); strength is inferred from weight + reps via estimated 1RM.
+
+### Derived-metric helpers (global)
+
+| Helper | Returns |
+|--------|---------|
+| `estimated1RM(w, r)` | Epley estimate `w·(1 + r/30)`, rounded to 1 dp (0 when `w≤0`, so bodyweight reps don't fabricate a 1RM) |
+| `exerciseProgression(c, exName)` | `[{week, weight, reps, e1rm}]` for every logged week of one current-program exercise, ascending |
+| `exerciseGainPct(c, exName)` | % change in e1RM first→latest logged week; `null` with <2 points or a zero baseline |
+| `muscleGroupProgress(c)` | `[{group, gainPct, sparkline:[e1rm…]}]`, one per muscle group the client trains, **sorted by `gainPct` desc** (nulls last); `gainPct` is the average per-exercise e1RM gain (`null` / "—" when a group has only one data point) |
+| `detectPRs(c)` | `[{exName, g, week, weight, date}]`, **newest first** — each week whose weight beats all previous weeks for that exercise (the first logged week is the baseline, not a PR). `date` is `programStartDate + (week−1)·7d` via `prDate`, else `null` → "Week N" |
+| `totalVolumeByWeek(c)` | `[{week, volume}]` — Σ(weight×reps) across all exercises logged that week (training load over time) |
+| `strengthToBodyweight(c, exName)` | `[{week, ratio}]` (lift ÷ that week's `measures.Weight`) for the main compounds only (name matches squat/bench/deadlift/press/row); `null` when no bodyweight data |
+
+Support helpers: `progressSummary(c)` (avg e1RM gain %, weekly-volume change %, PR count, session count), `hasProgressData(c)`, `progSummaryTiles`/`progMuscleGrid`/`progStrengthRows` (shared render fragments), and the inline-SVG chart builders `miniSparkline` (group/ratio sparklines), `progressionChart` (the exercise drill-down), plus the existing `lineChart` (measurements). All charts are dark-themed (accent-red primary line, `--text-dim` dashed secondary, `rgba(255,255,255,0.06)` grid), responsive via `viewBox`, tabular-nums, and **survive sparse data** — 2 points draw fine and a single point renders as a number, not a broken chart.
+
+### Section layout (top → bottom)
+
+`tabProgress(c)` (the `vClientProgress` drill-in) renders, in order:
+
+1. **Summary stat tiles** — Est. 1RM gain · Total volume Δ · New PRs · Sessions (small secondary-stat treatment, accent when positive).
+2. **Muscle-group progress** — a 2-col grid of mini-cards, one per trained group: `muscleColor(g)` tag + gain % + an e1RM sparkline, sorted by gain so lagging groups stand out (header hidden when the client has no `g`-tagged exercises).
+3. **Exercise progression** — a muscle-group-sorted chip selector (defaults to the first compound lift) over a line chart: solid accent **estimated-1RM** line + dashed dim **actual-weight** line, W1…Wn axis, start/latest e1RM end-labels.
+4. **PR timeline** — trophy rows (newest ~8) with exercise name, group tag, weight, and date/"Week N"; empty state *"No PRs logged yet — they'll appear as weights climb."*
+5. **Body measurements** — the existing measurement selector + `lineChart`, now at the bottom, plus a **Strength-to-bodyweight** block (e.g. *Squat: 0.8× → 0.9× bodyweight*) shown only when `measures.Weight` exists.
+
+**Entry point.** The live client detail is the single-scroll **`cprofile`** redesign (`vClient`). Its **Strength progress** block — rendered only when `hasProgressData(c)` — embeds the summary tiles + muscle-group mini-grid inline (via `progSummaryTiles` + `progMuscleGrid`), just above the static *Trends* cards, with a **View all** link → `openClientSection('progress')` → the full `vClientProgress` drill-in. New leads with no logged data (e.g. Nisha) simply omit the block. `S.progEx` holds the selected exercise (set by `setProgEx`). *(The older section-based layout's `progressSection(c)` preview helper still exists but is no longer the live path — the cprofile redesign superseded the `ds-section`/anchor-tabs layout.)*
+
+> **Seed note:** **Arjun** now carries a real 6-week standing program (Back squat / Bench press / Deadlift / Overhead press / Bent-over row / Cable crunch) with progressive `{w, r}` logs, a `programStartDate`, and 6 bodyweight points in `measures.Weight` — so his charts show clear upward e1RM trends, ranked muscle-group movers, a believable PR count, and strength-to-bodyweight ratios. Opening his session now auto-builds an A/B circuit from those lifts (previously he was the blank "build from scratch" demo). **Meera** keeps her gentler weighted-rehab progression.
 
 ## Exercise library
 
 The `library` (~90 exercises) is rendered by `vLibrary` in two modes — **browse** (More → Exercise library, `S.attachTo==null`) and **attach** (the picker opened by `openLibraryForClient` / `buildSessionProgram` / the new-program flow, `S.attachTo!=null`). Both share the same search + filter UI:
 
 - **Search** — `<input>` with `oninput="searchLibrary(this.value)"` writes `S.libQ` and rebuilds only the `#libList` container + `#libCount` in place (so the field keeps focus while typing). Matches `n` **or** `c` as a case-insensitive substring.
-- **Muscle-group filter chips** — a horizontal scrollable `.filters` row built from `LIB_GROUPS` (fixed order: `All` + the 13 groups). Tapping a chip calls `setLibGroup(g)` (full `render()`); `All` clears the group filter. Search and group filter **combine** (AND).
-- **Filtering** is centralised in `libFiltered()` → `[{e, i}]` preserving each entry's **original library index** `i` (so `togglePick(i)` / `removeFromProgram(i)` stay correct under filtering). `libListHTML()` renders the rows or the empty state (*"No exercises match your filter — try a different muscle group or clear search."*); `libCountText()` shows `"N exercises"` or `"N of M exercises"` when filtered.
+- **Muscle-group filter chips** — a horizontal scrollable `.filters` row built from `LIB_GROUPS` (`All` first, then the 13 groups in **alphabetical order**). Tapping a chip calls `setLibGroup(g)` (full `render()`); `All` clears the group filter. Search and group filter **combine** (AND).
+- **Filtering** is centralised in `libFiltered()` → `[{e, i}]`, preserving each entry's **original library index** `i` (so `togglePick(i)` / `removeFromProgram(i)` stay correct under filtering) and **sorted alphabetically by exercise name** for display. `libListHTML()` renders the rows or the empty state; `libCountText()` shows `"N exercises"` or `"N of M exercises"` when filtered.
 - **Rows** (`libRowHTML(e, i)`) show the name (bold) + a small colored **muscle-group tag** (`.lib-mg`, colored via `muscleColor(e.g)`), the category description as subtitle, and the target — as a right-aligned `.lib-target` chip in browse mode, or appended to the subtitle next to the +Add/✓ toggle in attach mode.
+
+**Adding a new exercise to the library** — `openAddExercise(name?)` opens a bottom-sheet (`renderAddExerciseModal`) with a name input, a **muscle-group dropdown** (`<select>`, alphabetical from `LIB_GROUPS`), and optional description + target. `addExercise({name, group, category, target})` validates (non-blank, no case-insensitive duplicate), defaults the group to the active filter chip and the target to `3×10`, and pushes a `{n, g, c, t}` entry. Two entry points: the browse-mode **+ Add new exercise** button, and — when a search yields nothing — an **+ Add "<query>" to library** action in the empty state that also works **inside the attach/session picker**, prefilled with the search text. Adding from an attach flow **auto-selects** the new exercise (pushes its index into `S.picks`) so it flows straight into the picker. (The `library` is in-memory, so added exercises last for the session only.)
 
 When an exercise is attached to a client (`attachPicked`) or used to seed a new program (`saveNewProgramExercises`), the `g` field is **copied** onto the program entry alongside `name`/`target`/`logs`, so muscle group is preserved for future grouping/report features. `openLibraryForClient`, `buildSessionProgram`, the new-program opener, and the More-menu entry all reset `S.libQ=''` / `S.libGroup='All'` on entry.
 
@@ -318,23 +351,31 @@ When an exercise is attached to a client (`attachPicked`) or used to seed a new 
 Two route maps drive rendering:
 
 - **TABS** — bottom-nav tabs: `home`, `clients`, `schedule`, `reports`, `more`
-- **VIEWS** — pushed screens: `client`, `session`, `attMore`, `addClient` / `addAssessment` / `addSchedule` / `addWelcome` (the staged add-client flow screens), `report` (report compose), `reportDoc` (A4 PDF preview), `assessDoc` / `welcomeDoc` (A4 assessment / welcome previews), `announce`, `annNew`, `coachAtt`, `library`, `notifications`, `programHistory` / `programDetail` (the archived-program history list + single-program read-only detail) — (the payment add/edit and start-new-program popups are `.modal-overlay` sheets, not routed views)
+- **VIEWS** — pushed screens: `client`, `session`, `attMore`, `addClient` / `addAssessment` / `addSchedule` / `addWelcome` (the staged add-client flow screens), `report` (report compose), `reportDoc` (A4 PDF preview), `assessDoc` / `welcomeDoc` (A4 assessment / welcome previews), `announce`, `annNew`, `library`, `notifications`, `programHistory` / `programDetail` (the archived-program history list + single-program read-only detail) — (the payment add/edit, start-new-program, and add-exercise popups are `.modal-overlay` sheets, not routed views)
 
-`render()` checks `authed` first (login screen wins), then `S.view` (pushed screen wins), then falls back to `S.tab`. The bottom tab bar and FAB are hidden when a view is active or when logged out.
+`render()` checks `authed` first (login screen wins), then `S.view` (pushed screen wins), then falls back to `S.tab`. The bottom tab bar and FAB are hidden when a view is active or when logged out. The layering is **tab → view → sub-view**: `S.tab` is the bottom-nav tab, `S.view` is an overlay screen on top of it, and `S.subView` is a client-detail drill-in on top of that.
 
-### Back navigation
+### Back navigation — hierarchical, not history
 
-A `navStack` history records where you were before each forward navigation, so every back (`‹`) button returns to the **actual previous page** rather than a hardcoded parent. `navTo()`, `openClient()`, and `openSession()` call `pushHistory()` (snapshotting `tab`/`view`/`clientId`/`ctab`/`subView`/`progSub`/`coachView`); back buttons call `goBack()`, which pops and restores that snapshot (falling back to Home on an empty stack). The stack is cleared on login/logout. The same screen reached from different places therefore returns to wherever you came from — e.g. Coach Attendance opened from the Home widget returns to Home, while the same screen opened from *More* returns to *More*. (Intra-screen steps — onboarding wizard steps, the client-detail section drill-ins (`goBackToClient`, not `goBack`), the per-coach week drill-down — still navigate within the screen.)
+Back is **hierarchical**: every screen has a fixed logical parent (tab → view → sub-view) and the `‹` button goes **up** to that parent — *not* to whatever screen happened to precede it. (The old browser-style `navStack`/`pushHistory` history model was removed.)
 
-There is **no longer a persistent lock banner** — `render()` injects nothing across screens (the `.lock-banner` CSS rule survives but is unused). The only standing clock-in prompt is the Home **Attendance** widget (below); coaches reach the attendance screen from it or from *More* via `goCoachAtt()`, which navigates to `coachAtt` and resets the team-member drill-down state.
+- `parentOf()` resolves the parent of the current `S.view` via a `switch` and returns a `{tab?, view?, subView?, progSub?}` target; `applyNav()` applies it; `goBack()` is just `applyNav(parentOf())`.
+- Most views go up to their owning tab (e.g. `client` → Clients, `announce` → More) or owning view (e.g. `session` → the client, `annNew` → `announce`).
+- The few screens with **two genuine entry points** record their origin so "up" lands correctly: `session` (`S.sessionFrom`, set by `openSession` — client vs the launching tab), `report` (`S.reportFrom`, set by `openReport`), `programDetail` (`S.pdFrom`, set by `openProgramDetail`), and `assessDoc` (reuses `S.assessSrc`).
+- The library has its own `libraryBack()` / `libraryParent()` that reads the attach-flags (`attachMode`/`attachReturn`/`attachTo`) **before** clearing them, so the picker returns to wherever it was launched (session, client Program tab, or More).
+- The client-detail **section drill-ins** use a separate `goBackToClient()` (clears `S.subView`, restores the long-page scroll), not `goBack()`.
 
-`vHome()` renders `homeCoachBlock()` → `attWidget()` at the top of the Home tab — a single **Attendance** card that lets the coach run their whole day without leaving Home, adapting to the clock state:
+`tab('clients')` resets the dashboard filter (`cFilter='All'`) so opening the tab directly always shows the full list, while `goStat()` (see below) sets the filter and renders the list directly.
 
-- **Not checked in** → grey ring, *"Not checked in"* badge, the line *"Start your day to track your working hours"*, and a primary **Check In** button (`coachClockIn()`).
-- **Checked in** → green ring, *"Checked In"* badge, the check-in time, a live *Working for* counter, and a **secondary** **Check Out** button (`coachClockOut()`).
-- **Checked out** → *"Checked Out"* badge, last check-out + *Total today* (with a session count once there's more than one), and a **Check In** button to start another session. A coach can check in and out **multiple times a day**; `coachClockIn()`/`coachClockOut()` push/close entries in the day's `sessions` array, `hoursToday`/`hoursWorked` sum every session (counting an open one up to now), and the gate (`isClockedIn()`) is open only while a session is in progress.
+The `.lock-banner` CSS rule survives but is unused — `render()` injects no cross-screen banner. The Home header instead shows the derived *"This month · N sessions · M days active"* line (see *Coach activity*).
 
-Every state also shows a *View attendance history* link (→ `coachAtt`). The live counter is driven by `wireCoachClock()`, which updates every `.live-hours` element on screen each minute (the widget and the `coachAtt` clock card share this class). This widget is the app's only clock-in prompt — there is no separate lock banner on other screens.
+### Home dashboard — every stat is a deep link
+
+Every card on the Home tab (Critical Alerts rows, Quick Stats tiles, Client Insights cards, and the top stat row) is **clickable and drills into a screen showing the same number**. The guarantee comes from **one predicate per metric**, shared by both the displayed count and the destination filter:
+
+- `CLIENT_FILTERS` maps a key → `{label, pred}`. `clientsMatching(key)` = `visibleClients().filter(pred)`, and `homeMetrics()` builds **every** count from `clientsMatching(...)` — so the dashboard number can never diverge from the list it links to.
+- `goStat(key)` opens the Clients list filtered to exactly that set (resetting the coach/payment/state dropdowns + search so the visible count matches), and the list shows a **filter banner** — *"Memberships expiring · 1 client"* with a **Clear** button (`clearClientFilter()`). The same `cFilter` + `CLIENT_FILTERS[cFilter].pred` drives `applyChipFilter()`.
+- Filter keys: `Active`, `Leads`, `Payment due`, `Membership expiring`, `Payment overdue`, `Missed`, `Assessment due`, `Paused`, `Review due` (+ category names reuse `cFilter` too). The two attendance cards (a percentage, not a list) link to the **Schedule** tab instead.
 
 ## Authentication
 
@@ -348,9 +389,11 @@ Demo credentials (the `TRAINER` constant, name *Coach Madhan*): `madhan@elevatef
 All view functions are named `vSomething()` and return an HTML string. Click handlers are inline `onclick` attributes calling global functions — nothing is wrapped in a module or IIFE.
 
 Key navigation functions:
-- `tab(t)` — switch bottom tab
+- `tab(t)` — switch bottom tab (resets `cFilter` for `clients`)
 - `navTo(view, id?)` — push a view
-- `openClient(id)` / `openSession(id)` — shortcuts into detail/session views
+- `openClient(id)` / `openSession(id)` / `openReport(id)` / `openProgramDetail(...)` — shortcuts into detail/session/report/program-detail views (the latter three also record back-origin breadcrumbs)
+- `goBack()` — go **up** to the current screen's logical parent (`parentOf()` + `applyNav()`); `goBackToClient()` for client-detail drill-ins; `libraryBack()` for the library picker
+- `goStat(key)` — open the Clients list filtered to a Home stat's exact clients
 
 ## Running locally
 
