@@ -25,7 +25,7 @@ let clients=[
    {name:'Overhead press',g:'Shoulders',target:'3×8',logs:{1:{w:32.5,r:8},2:{w:32.5,r:8},3:{w:37.5,r:8},4:{w:37.5,r:8},5:{w:42.5,r:8},6:{w:42.5,r:8}}},
    {name:'Bent-over row',g:'Back',target:'4×8',logs:{1:{w:50,r:8},2:{w:50,r:8},3:{w:55,r:8},4:{w:55,r:8},5:{w:60,r:8},6:{w:60,r:8}}},
    {name:'Cable crunch',g:'Core',target:'3×15',logs:{1:{w:20,r:15},2:{w:20,r:15},3:{w:25,r:15},4:{w:25,r:15},5:{w:30,r:15},6:{w:30,r:15}}}]},
- {id:2,name:'Meera Nair',age:45,phone:'98201 11223',cat:'Rehab',ability:'Abled',status:'Active',coach:'Suchitha',joined:'Feb 2024',start:'12 Mar 2025',sessions:18,days:'Tue, Thu',time:'8:30 AM',
+ {id:2,name:'Meera Nair',age:45,phone:'98201 11223',cat:'Rehab',ability:'Abled',status:'Active',coach:'Kiran',joined:'Feb 2024',start:'12 Mar 2025',sessions:18,days:'Tue, Thu',time:'8:30 AM',programStartDate:'2026-06-09',
   goals:'Recover knee strength and mobility post-surgery.',medical:'ACL reconstruction Jan 2025. Cleared for loaded rehab.',activity:'Low — building back up',injuries:'Right knee (recovering)',
   weights:[68,67.8,67.5,67.2,67],measures:{Weight:[68,67.8,67.5,67.2,67],Waist:[80,79.5,79,78.5,78]},
   photos:[{t:'Knee ROM',d:'Week 1',c:'before'},{t:'Knee ROM',d:'Week 4',c:'progress'}],
@@ -38,21 +38,21 @@ let clients=[
    {name:'Heel slide',target:'3×12',logs:{1:{w:0,r:10},2:{w:0,r:12},3:{w:0,r:12},4:{w:0,r:15}}},
    {name:'Seated cable row',target:'3×15',logs:{1:{w:5,r:15},2:{w:7.5,r:15},3:{w:10,r:15},4:{w:10,r:15}}},
    {name:'Band row',target:'3×15',logs:{1:{w:5,r:15},2:{w:7.5,r:15},3:{w:7.5,r:15},4:{w:10,r:15}}}]},
- {id:3,name:'Kavya Singh',age:34,phone:'99000 88776',cat:'General wellness',ability:'Abled',status:'Active',coach:'Madhan',joined:'Apr 2025',start:'2 May 2025',sessions:9,days:'Mon, Thu',time:'10:00 AM',
+ {id:3,name:'Kavya Singh',age:34,phone:'99000 88776',cat:'General wellness',ability:'Abled',status:'Active',coach:'Madhan',joined:'Apr 2025',start:'2 May 2025',sessions:9,days:'Mon, Thu',time:'10:00 AM',programStartDate:'2026-06-15',
   goals:'General fitness, lose 4kg, build a sustainable routine.',medical:'None reported.',activity:'Moderate — new to training',injuries:'None',
   weights:[72,71.5,71,70.8,70.5],measures:{Weight:[72,71.5,71,70.8,70.5],Waist:[88,87,86.5,86,85]},
   photos:[{t:'Front',d:'Week 1',c:'before'}],
   exercises:[
    {name:'Goblet squat',target:'3×12',logs:{1:{w:8,r:12},2:{w:10,r:12},3:{w:12,r:12},4:{w:12,r:12}}},
    {name:'Treadmill walk (incline)',target:'20 min',logs:{1:{w:3,r:1},2:{w:4,r:1},3:{w:5,r:1},4:{w:5,r:1}}}]},
- {id:4,name:'Dev Krishnan',age:11,phone:'97411 22334',cat:'Special children',ability:'Disabled',status:'Active',coach:'Madhan',joined:'Oct 2023',start:'18 Apr 2025',sessions:14,days:'Wed, Sat',time:'4:00 PM',
+ {id:4,name:'Dev Krishnan',age:11,phone:'97411 22334',cat:'Special children',ability:'Disabled',status:'Active',coach:'Shakthi',joined:'Oct 2023',start:'18 Apr 2025',sessions:14,days:'Wed, Sat',time:'4:00 PM',programStartDate:'2026-06-22',
   goals:'Improve balance, coordination and confidence through play-based training.',medical:'Mild cerebral palsy. Parent present each session.',activity:'Light, supervised',injuries:'None',
   weights:[],measures:{Balance:[10,12,15,18,20]},
   photos:[{t:'Balance test',d:'Week 1',c:'before'},{t:'Balance test',d:'Week 4',c:'progress'}],
   exercises:[
    {name:'Single-leg balance',target:'3×20s',logs:{1:{w:10,r:1},2:{w:12,r:1},3:{w:15,r:1},4:{w:18,r:1}}},
    {name:'Step-ups',target:'2×10',logs:{1:{w:0,r:10},2:{w:0,r:12},3:{w:0,r:14},4:{w:0,r:15}}}]},
- {id:5,name:'Sara Pinto',age:52,phone:'90011 55667',cat:'General wellness',ability:'Abled',status:'Paused',coach:'Suchitha',joined:'Jun 2021',start:'10 Jan 2025',sessions:22,days:'—',time:'—',
+ {id:5,name:'Sara Pinto',age:52,phone:'90011 55667',cat:'General wellness',ability:'Abled',status:'Paused',coach:'Kiran',joined:'Jun 2021',start:'10 Jan 2025',sessions:22,days:'—',time:'—',
   goals:'Maintain fitness; paused for travel.',medical:'Mild hypertension, managed.',activity:'Paused',injuries:'None',
   weights:[70,69.5,69],measures:{Weight:[70,69.5,69]},photos:[],
   exercises:[{name:'Burpee',target:'3×10',logs:{1:{w:0,r:1},2:{w:0,r:1}}}]},
@@ -158,7 +158,7 @@ function paymentDue(c){const s=paymentStatus(c);return s==='DueSoon'||s==='Overd
 // seed varied payment states across the demo clients so the billing UI has something to show
 (function seedPayments(){
  const seed={
-  1:{assessPaid:true, prog:{no:3,weeks:4,perWeek:3,done:9,paid:true}},    // mid-program, paid
+  1:{assessPaid:true, prog:{no:3,weeks:6,perWeek:3,done:9,paid:true}},    // mid-program, paid (6-week block, Mon/Wed/Fri)
   2:{assessPaid:true, prog:{no:2,weeks:4,perWeek:3,done:12,paid:true}},   // program finished → renewal due
   3:{assessPaid:true, prog:{no:1,weeks:4,perWeek:3,done:12,paid:true}},   // program finished → renewal due
   4:{assessPaid:true, prog:{no:2,weeks:4,perWeek:3,done:11,paid:true}},   // almost done, paid
@@ -198,32 +198,33 @@ function paymentDue(c){const s=paymentStatus(c);return s==='DueSoon'||s==='Overd
 (function seedProgramHistory(){
  const ex=(name,target)=>({name:name,target:target});
  const seed={
-  // Arjun — two finished blocks before the active 'Power phase · Block 2' (program #3)
-  1:{current:{name:'Power phase · Block 2',startDate:'2025-04-18'},history:[
-    {name:'Strength foundation · Block 1',no:1,startDate:'2025-01-06',endDate:'2025-02-03',weeks:4,perWeek:3,sessionsCompleted:12,
+  // Arjun — two finished blocks before the active program (program #3). No program names: a program is
+  // identified by its number + length/cadence (names only exist if a coach types one in the new-program flow).
+  1:{current:{startDate:'2025-04-18'},history:[
+    {no:1,startDate:'2025-01-06',endDate:'2025-02-03',weeks:4,perWeek:3,sessionsCompleted:12,
      exercises:[ex('Back squat','3×8'),ex('Bench press','4×6'),ex('Deadlift','3×5'),ex('Bent-over row','3×10'),ex('Plank','3×40s')],
      notes:'Solid base built. Cleared to load heavier next block.'},
-    {name:'Power phase · Block 1',no:2,startDate:'2025-02-10',endDate:'2025-04-15',weeks:6,perWeek:3,sessionsCompleted:18,
+    {no:2,startDate:'2025-02-10',endDate:'2025-04-15',weeks:6,perWeek:3,sessionsCompleted:18,
      exercises:[ex('Back squat','5×5'),ex('Power clean','5×3'),ex('Bench press','5×5'),ex('Romanian deadlift','3×8'),ex('Box jump','4×5')],
      notes:'Big jump in sprint power. Carry the cleans into block 2.'}]},
   // Meera — one finished rehab phase before the active program (program #2)
-  2:{current:{name:'Knee rehab · Phase 2',startDate:'2025-04-15'},history:[
-    {name:'Knee rehab · Phase 1',no:1,startDate:'2025-03-12',endDate:'2025-04-10',weeks:4,perWeek:2,sessionsCompleted:8,
+  2:{current:{startDate:'2025-04-15'},history:[
+    {no:1,startDate:'2025-03-12',endDate:'2025-04-10',weeks:4,perWeek:2,sessionsCompleted:8,
      exercises:[ex('Glute bridge','3×12'),ex('Wall sit','3×30s'),ex('Straight-leg raise','3×15'),ex('Heel slide','3×12')],
      notes:'Pain-free ROM restored. Progressed to light loading.'}]},
   // Kavya — one finished beginner block; bump the active program to #2 to match
-  3:{currentNo:2,current:{name:'Foundation · Block 2',startDate:'2025-05-30'},history:[
-    {name:'Beginner foundation',no:1,startDate:'2025-05-02',endDate:'2025-05-30',weeks:4,perWeek:2,sessionsCompleted:8,
+  3:{currentNo:2,current:{startDate:'2025-05-30'},history:[
+    {no:1,startDate:'2025-05-02',endDate:'2025-05-30',weeks:4,perWeek:2,sessionsCompleted:8,
      exercises:[ex('Goblet squat','3×12'),ex('Incline walk','20 min'),ex('Band row','3×15'),ex('Glute bridge','3×12')],
      notes:'Great consistency. Ready to add a third session.'}]},
   // Dev — one finished balance block (program #2)
-  4:{current:{name:'Balance & coordination · Block 2',startDate:'2025-05-16'},history:[
-    {name:'Balance basics',no:1,startDate:'2025-04-18',endDate:'2025-05-16',weeks:4,perWeek:2,sessionsCompleted:8,
+  4:{current:{startDate:'2025-05-16'},history:[
+    {no:1,startDate:'2025-04-18',endDate:'2025-05-16',weeks:4,perWeek:2,sessionsCompleted:8,
      exercises:[ex('Balance hold','3×20s'),ex('Step-ups','2×10'),ex('Cone weaving','3 rounds'),ex('Seated catch','3×10')],
      notes:'Confidence up noticeably. Parent very pleased.'}]},
   // Sara — one finished foundation block; paused mid maintenance (bump active to #2)
-  5:{currentNo:2,current:{name:'Maintenance circuit',startDate:'2025-03-05'},history:[
-    {name:'Full-body foundation',no:1,startDate:'2025-01-10',endDate:'2025-03-01',weeks:6,perWeek:2,sessionsCompleted:10,
+  5:{currentNo:2,current:{startDate:'2025-03-05'},history:[
+    {no:1,startDate:'2025-01-10',endDate:'2025-03-01',weeks:6,perWeek:2,sessionsCompleted:10,
      exercises:[ex('Full body circuit','3 rounds'),ex('Goblet squat','3×12'),ex('Incline walk','15 min')],
      notes:'Steady progress before the travel pause.'}]}
   // Nisha (id 6) — brand new: no program history, no active program yet
@@ -232,24 +233,24 @@ function paymentDue(c){const s=paymentStatus(c);return s==='DueSoon'||s==='Overd
   c.programHistory=[];
   const s=seed[c.id];if(!s)return;
   if(c.program){
-   if(s.current){if(s.current.name)c.program.name=s.current.name;if(s.current.startDate)c.program.startDate=s.current.startDate;}
+   if(s.current&&s.current.startDate)c.program.startDate=s.current.startDate;   // no name — derived as "Program #N"
    if(s.currentNo)c.program.no=s.currentNo;
   }
-  c.programHistory=(s.history||[]).map((h,i)=>({id:i+1,name:h.name,no:h.no,startDate:h.startDate,endDate:h.endDate,
+  c.programHistory=(s.history||[]).map((h,i)=>({id:i+1,name:'Program #'+h.no,no:h.no,startDate:h.startDate,endDate:h.endDate,
    weeks:h.weeks,perWeek:h.perWeek,sessionsCompleted:h.sessionsCompleted,exercises:h.exercises,notes:h.notes||''}));
  });
 })();
 const coaches=[
- {name:'Madhan',role:'Main trainer',clients:[1,3,4],photo:'assets/images/madhan.jpg',
+ {name:'Madhan',role:'Main trainer',clients:[1,3],photo:'assets/images/madhan.jpg',
   phone:'+91 91234 56789',email:'madhan@elevatefitness.com',yearsExp:6,
   specializations:['Strength & Conditioning Specialist'],certifications:['Certified Personal Trainer'],
   tagline:"I'll guide you. You focus."},
- {name:'Suchitha',role:'Junior trainer',clients:[2,5],
-  phone:'+91 90000 11223',email:'suchitha@elevatefitness.com',yearsExp:3,
+ {name:'Kiran',role:'Junior trainer',clients:[2,5],
+  phone:'+91 90000 11223',email:'kiran@elevatefitness.com',yearsExp:3,
   specializations:['Rehab & Mobility'],certifications:['Certified Personal Trainer'],
   tagline:"Small steps, steady wins."},
- {name:'Arun',role:'Junior trainer',clients:[],
-  phone:'+91 90000 44556',email:'arun@elevatefitness.com',yearsExp:3,
+ {name:'Shakthi',role:'Junior trainer',clients:[4],
+  phone:'+91 90000 44556',email:'shakthi@elevatefitness.com',yearsExp:3,
   specializations:['General Fitness'],certifications:['Certified Personal Trainer'],
   tagline:"Show up. The rest follows."}
 ];
@@ -446,16 +447,10 @@ function logActivity(type,msg,meta){activityLog.unshift({type:type,msg:msg,meta:
  const realNames=c=>(c.exercises||[]).filter(e=>!e.future&&e.name!=='Tap to add exercise').map(e=>e.name);
  // Arjun (1) — left UNmarked with a READY standing program (6 progressive lifts): opening his session
  // shows slide-to-mark-present → auto-built A/B circuit. His logged history also powers the Progress section.
- // Meera (2) — left UNSTARTED on purpose: no attendance marked, no progress. This is the "start a
- // session from scratch" demo — opening her session shows the slide-to-mark-present → build-circuit flow.
+ // Meera (2) — left UNSTARTED on purpose: no attendance marked, no progress, NO pre-built session. This is
+ // the "start a session from scratch" demo — opening her session derives today's Program A/B straight from
+ // her standing plan (buildSessionState) and shows the slide-to-mark-present → build-circuit flow.
  // (She becomes Home's UP NEXT, since she's the first session that's neither done nor missed.)
- // Meera (2) — has a READY standing circuit: 2 programs × 3 exercises, NOT yet marked present.
- // Opening her session shows the Today's Session preview → slide to mark present & start.
- const meera=clients.find(c=>c.id===2);
- if(meera){const names=realNames(meera);
-  sessionProgress[k(2)]={clientId:2,date:todayISO(),splitDone:false,started:false,currentProgramIdx:0,
-   programs:[{label:'Program A',exercises:names.slice(0,3),sets:3,progress:{},weights:{'Glute bridge':2.5}},
-             {label:'Program B',exercises:names.slice(3,6),sets:3,progress:{},weights:{'Seated cable row':7.5,'Band row':5}}]};}
  // Kavya (3) — session IN PROGRESS: marked present, split started, partway through round 1 (not finished)
  const kavya=clients.find(c=>c.id===3);
  if(kavya){present(3);const names=realNames(kavya);const half=Math.ceil(names.length/2);
@@ -479,7 +474,7 @@ function logActivity(type,msg,meta){activityLog.unshift({type:type,msg:msg,meta:
 
 let S={tab:'home',view:null,clientId:null,ctab:'overview',week:4,role:'main',
   onCat:'General wellness',onAbility:'Abled',att:null,measure:null,histRange:'month',histMeasure:null,gridMode:'cards',reorder:false,
-  onDays:['Mon','Wed','Fri'],onTime:'5:30 PM',onCoach:'Madhan',onMsg:0,attachTo:null,attachReturn:null,attachProgIdx:null,picks:[],effFrom:'next',
+  onDays:['Mon','Wed','Fri'],onTime:'5:30 PM',onCoach:'Madhan',onMsg:0,attachTo:null,attachReturn:null,attachProgIdx:null,attachDay:null,attachProg:null,progDay:null,picks:[],effFrom:'next',
   libQ:'',libGroup:'All',
   // client detail is one long scrollable page; subView (null | 'program'|'sessions'|'progress'|'payment'|'media') stacks a drill-in over it
   subView:null,progSub:'current',clientScroll:0};
@@ -509,9 +504,9 @@ const ASSESS_PROFILE={
 };
 // switchable profiles shown in the home-header dropdown
 const PROFILES={
- main:{name:'Coach Madhan',head:'Coach Madhan',role:'Main trainer',ic:'🛡️',photo:'assets/images/madhan.jpg',greet:'Good morning,',emoji:'👋'},
- junior:{name:'Coach Suchitha',head:'Coach Suchitha',role:'Junior trainer',ic:'👥',greet:'Good morning,',emoji:'👋'},
- client:{name:'Arjun Mehta',head:'Arjun',role:'Client',ic:'👤',greet:'Welcome back,',emoji:'💪'}
+ main:{name:'Coach Madhan',head:'Coach Madhan',role:'Main trainer',ic:'🛡️',photo:'assets/images/madhan.jpg',phone:'+91 91234 56789',email:'madhan@elevatefitness.com',greet:'Good morning,',emoji:'👋'},
+ junior:{name:'Coach Kiran',head:'Coach Kiran',role:'Junior trainer',ic:'👥',phone:'+91 90000 11223',email:'kiran@elevatefitness.com',greet:'Good morning,',emoji:'👋'}
+ // no 'client' profile — this is a coach-only app (no client login)
 };
 
 /* ============ HELPERS ============ */
@@ -536,6 +531,41 @@ function stageTagHTML(c){
 function trend(ex,wk){const cw=ex.logs[wk],pw=ex.logs[wk-1];if(!cw||!pw)return'flat';return cw.w>pw.w?'up':cw.w<pw.w?'down':'flat'}
 function getLog(ex,wk){if(!ex.logs[wk]){const p=ex.logs[wk-1]||{w:0,r:8};ex.logs[wk]={w:p.w,r:p.r}}return ex.logs[wk]}
 function isRepBased(ex){return /s$|min/i.test((ex.target||'').trim())||/step|balance|walk|wall|circuit|plank/i.test(ex.name||'')}
+/* ---- schedule-shaped program plan: ONE dataset (c.exercises) tagged by scheduled DAY + Program A/B,
+   with logs[week] holding the per-week weight/reps. The Program tab edits this plan; today's session is
+   a derived VIEW of it (today's day → that day's Program A & B at this week's load). No second dataset. ---- */
+function parseDays(c){return (c.days||'').split(',').map(s=>s.trim()).filter(d=>DAY_ORDER.includes(d));}
+// real (non-placeholder, non-future) exercises in one (day, Program A/B) slot, in canonical order
+function exForDayProg(c,day,prog){return (c.exercises||[]).filter(e=>!e.future&&e.name!=='Tap to add exercise'&&e.day===day&&e.prog===prog);}
+function programStartISO(c){return c.programStartDate||todayISO();}
+// the program week that's live right now — derived from the start date, clamped to 1..weeks
+function currentWeekFor(c){const weeks=(c.program&&c.program.weeks)||6;
+ const start=new Date(programStartISO(c)+'T00:00:00');if(isNaN(start))return Math.min(S.week||1,weeks);
+ const days=Math.floor((new Date(todayISO()+'T00:00:00')-start)/86400000);
+ return Math.max(1,Math.min(weeks,Math.floor(days/7)+1));}
+// today's weekday as a Mon-first label ('Mon'..'Sun')
+function todayWeekday(){return DAY_ORDER[(new Date().getDay()+6)%7];}
+// which scheduled day today's session runs: today if it's a training day, else the next scheduled day
+function sessionDayFor(c){const days=parseDays(c);if(!days.length)return null;
+ const today=todayWeekday();if(days.includes(today))return today;
+ const ti=DAY_ORDER.indexOf(today);for(let i=1;i<=7;i++){const d=DAY_ORDER[(ti+i)%7];if(days.includes(d))return d;}
+ return days[0];}
+// "5:30 PM" → minutes from midnight (for chronological sorting); unparseable → 9999 (sorts last)
+function timeToMinutes(t){const m=String(t||'').match(/(\d+):(\d+)\s*(AM|PM)/i);if(!m)return 9999;let h=+m[1]%12;if(/pm/i.test(m[3]))h+=12;return h*60+(+m[2]);}
+// every scheduled session for a given weekday, derived from real client schedules (c.days + c.time),
+// chronological. `list` defaults to the visible clients (coach/junior scoping applied by the caller).
+function sessionsOnDay(day,list){return (list||visibleClients())
+  .filter(c=>c.scheduleSet&&parseDays(c).includes(day))
+  .map(c=>({t:c.time||'—',id:c.id,c:c}))
+  .sort((a,b)=>timeToMinutes(a.t)-timeToMinutes(b.t));}
+// the prescribed weight / reps for an exercise THIS week — the single source the Program tab + session share
+function exWeightFor(c,name){const ex=sessExMeta(c,name);const l=ex&&ex.logs&&ex.logs[currentWeekFor(c)];return l?(+l.w||0):0;}
+function exRepsFor(c,name){const ex=sessExMeta(c,name);const l=ex&&ex.logs&&ex.logs[currentWeekFor(c)];return l&&l.r!=null?l.r:repTarget(ex);}
+// tag every active client's real exercises into (day, Program A/B) slots when the seed didn't — deterministic
+// round-robin: 1st→day0·A, 2nd→day0·B, 3rd→day1·A, … so each scheduled day gets a Program A and B block.
+(function tagProgramPlan(){clients.forEach(c=>{const days=parseDays(c);if(!days.length)return;let k=0;
+ (c.exercises||[]).forEach(e=>{if(e.future||e.name==='Tap to add exercise')return;
+  if(!e.day||!e.prog){e.day=days[Math.floor(k/2)%days.length];e.prog=(k%2)?'B':'A';}k++;});});})();
 function rev(id){return reviewState[id]||{due:false,ago:'—'}}
 function dueClients(){return visibleClients().filter(c=>c.status==='Active'&&rev(c.id).due)}
 function markReviewed(id){reviewState[id]={due:false,ago:'just now'};}
@@ -551,6 +581,19 @@ function effLabel(){if(S.effFrom==='now')return 'this week';if(S.effFrom==='next
  const d=new Date(S.effFrom);return isNaN(d)?S.effFrom:d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
 function attachPicked(){if(!S.picks.length){toast('Tap + to pick exercises first');return}const c=clients.find(x=>x.id===S.attachTo);
  const cid=c.id,toSession=S.attachReturn==='session';
+ // PLAN SLOT mode — picks land in one (day, Program A/B) slot of the standing plan (c.exercises tagged
+ // with day+prog). This is the single dataset today's session also reads.
+ if(S.attachReturn==='planSlot'){
+  const day=S.attachDay,prog=S.attachProg;let added=0;
+  S.picks.forEach(i=>{const lib=library[i];
+   if(c.exercises.some(e=>e.name===lib.n&&e.day===day&&e.prog===prog))return;   // already in this slot
+   c.exercises.push({name:lib.n,g:lib.g,target:lib.t,logs:{},day:day,prog:prog});added++;});
+  invalidateSession(cid);markReviewed(cid);
+  S.progDay=day;S.attachTo=null;S.picks=[];S.attachReturn=null;S.attachDay=null;S.attachProg=null;
+  openClient(cid);openClientSection('program');
+  toast(added?added+' exercise'+(added!==1?'s':'')+' added to '+day+' · Program '+prog:'Already in Program '+prog);
+  return;
+ }
  // PROGRAM mode — picks land in one specific program (Program A / B / C …) of today's session
  if(S.attachReturn==='program'){
   const progIdx=S.attachProgIdx;
@@ -647,9 +690,11 @@ function openReport(id){S.reportFrom=(S.view==='client')?'client':'reports';navT
 // the logical parent of the current screen → {tab?, view?, subView?, progSub?} (missing keys reset to root/null)
 function parentOf(){
  switch(S.view){
-  case 'client':         return {tab:S.role==='client'?'home':'clients',view:null};
+  case 'client':         return {tab:'clients',view:null};
   case 'addClient':      return {tab:'clients',view:null};
+  case 'editClient':     return {view:'client'};
   case 'announce':       return {tab:'more',view:null};
+  case 'editProfile':    return {tab:'more',view:null};
   case 'programHistory': return {tab:'more',view:null};
   case 'notifications':  return {view:null};                          // overlay → fall back onto the current tab
   case 'report':         return S.reportFrom==='client'?{view:'client'}:{tab:'reports',view:null};
@@ -660,7 +705,7 @@ function parentOf(){
   case 'addWelcome':     return {view:'client'};
   case 'welcomeDoc':     return {view:'client'};
   case 'annNew':         return {view:'announce'};
-  case 'reportDoc':      return S.role==='client'?{tab:'home',view:null}:{view:'report'};
+  case 'reportDoc':      return {view:'report'};
   case 'assessDoc':      return S.assessSrc==='draft'?{view:'addAssessment'}:{view:'client'};
   case 'programDetail':  return S.pdFrom==='history'?{view:'programHistory'}
                               :{view:'client',subView:'program',progSub:S.programDetailId==='current'?'current':'history'};
@@ -685,7 +730,7 @@ function applyNav(t){t=t||{};
 }
 function goBack(){profileMenu=false;applyNav(parentOf());render();sc()}
 // library back: resolve the parent from the attach-flags, THEN clear them, then navigate up
-function libraryBack(){const t=libraryParent();S.attachTo=null;S.attachMode=null;S.attachReturn=null;S.attachProgIdx=null;S.picks=[];S.newProg=null;profileMenu=false;applyNav(t);render();sc()}
+function libraryBack(){const t=libraryParent();S.attachTo=null;S.attachMode=null;S.attachReturn=null;S.attachProgIdx=null;S.attachDay=null;S.attachProg=null;S.picks=[];S.newProg=null;profileMenu=false;applyNav(t);render();sc()}
 function setAttendance(id,status){attStatus[id]=status;const c=clients.find(x=>x.id===id);
  const now=new Date();attTime[id]=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
  if(status==='present'){toast(c.name.split(' ')[0]+' marked present');}
@@ -697,19 +742,15 @@ function sc(){document.getElementById('screen').scrollTop=0}
 
 /* ============ DASHBOARD ============ */
 let profileMenu=false;   // home-header profile dropdown open?
-function toggleProfileMenu(){profileMenu=!profileMenu;render()}
+function toggleProfileMenu(){profileMenu=!profileMenu;coachMenu=false;render()}
 function closeProfileMenu(){profileMenu=false;render()}
-function switchProfile(r){profileMenu=false;S.role=r;tab('home');toast('Now viewing as '+PROFILES[r].name)}
-function profileHeader(){
- const p=PROFILES[S.role];
- return `<div class="hello">
-   <div class="sm">${p.greet}</div>
-   <button class="profile-trigger" onclick="toggleProfileMenu()">
-    <h1>${p.head} ${p.emoji}</h1>
-    <span class="profile-caret${profileMenu?' open':''}">▾</span>
-   </button>
-  </div>`;
-}
+// ---- home-header coach switcher: scope the dashboard to one coach's clients ('All' = every coach) ----
+let homeCoach='Madhan';   // default to Madhan — show only Madhan's clients on first load
+let coachMenu=false;     // home-header coach dropdown open?
+function toggleCoachMenu(){coachMenu=!coachMenu;profileMenu=false;render()}
+function closeCoachMenu(){coachMenu=false;render()}
+function setHomeCoach(name){homeCoach=name;coachMenu=false;coachFilter=name;render();
+ toast(name==='All'?'Viewing all coaches':"Viewing "+name+"'s clients");}
 /* inline icon set — keeps the home page crisp at any size */
 const ICO={
  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.4a6 6 0 1 0-12 0c0 6.5-2.6 8.6-2.6 8.6h17.2S18 14.9 18 8.4"/><path d="M13.7 20.5a2 2 0 0 1-3.4 0"/></svg>',
@@ -731,71 +772,36 @@ const ICO={
 };
 /* shared topbar — logo, notifications, profile — appears on every tab */
 function vTopbar(){
- const p=PROFILES[S.role];
  const due=dueClients().length+programEndedClients().length;
- const opts=Object.keys(PROFILES).map(k=>{const pr=PROFILES[k];return `<button class="pm-opt${S.role===k?' on':''}" onclick="switchProfile('${k}')">
-   <div class="pm-ava">${pr.photo?`<img src="${pr.photo}" alt="${pr.name}">`:pr.ic}</div>
-   <div class="pm-tx"><div class="pm-n">${pr.name}</div><div class="pm-r">${pr.role}</div></div>
-   ${S.role===k?'<span class="pm-ck">✓</span>':''}</button>`}).join('');
  return `<div class="topbar">
    <img class="topbar-logo" src="assets/images/logo.jpg" alt="Elevate Fitness">
    <div class="topbar-act">
     <button class="topbar-icbtn" onclick="navTo('notifications')" aria-label="Notifications">${ICO.bell}${due?`<span class="topbar-badge">${due}</span>`:''}</button>
-    <button class="topbar-ava${profileMenu?' open':''}${p.photo?' has-photo':''}" onclick="toggleProfileMenu()" aria-label="Profile menu">${p.photo?`<img src="${p.photo}" alt="${p.name}">`:initials(p.name)}</button>
    </div>
-   ${profileMenu?`<div class="profile-menu"><div class="pm-title">Switch profile</div>${opts}</div>`:''}
-  </div>
-  ${profileMenu?`<div class="pm-overlay" onclick="closeProfileMenu()"></div>`:''}`;
+  </div>`;
 }
 /* ---- derived home metrics (all from live state — no hardcoded mock numbers) ---- */
 // coach attendance is now DERIVED from the sessions they actually ran (sessionLog), not a clock-in.
+// name===null / 'All' → count across every coach (used by the home "All clients" scope)
 function coachSessionsThisMonth(name){
  const mon=todayKey().slice(0,7);let n=0;
  Object.keys(sessionLog).forEach(cid=>{const c=clients.find(cl=>String(cl.id)===String(cid));
-  if(!c||c.coach!==name)return;
+  if(!c||(name&&name!=='All'&&c.coach!==name))return;
   (sessionLog[cid]||[]).forEach(r=>{if((r.date||'').slice(0,7)===mon)n++;});});
  return n;
 }
 function coachActiveDaysThisMonth(name){
  const mon=todayKey().slice(0,7);const days=new Set();
  Object.keys(sessionLog).forEach(cid=>{const c=clients.find(cl=>String(cl.id)===String(cid));
-  if(!c||c.coach!==name)return;
+  if(!c||(name&&name!=='All'&&c.coach!==name))return;
   (sessionLog[cid]||[]).forEach(r=>{if((r.date||'').slice(0,7)===mon)days.add(r.date);});});
  return days.size;
 }
-// today's session list — a realistic morning: a finished 7:00 slot (done / absent / cancelled),
-// an 8:30 session in progress, the 9:30 up-next (not started), and a 10:30 still upcoming.
-// the per-client seed states (see seedSessions) drive each row's status tag.
+// today's session list — DERIVED from real client schedules: every visible client (scoped to the selected
+// coach) who trains on today's weekday, at their own c.time, chronological. No hardcoded slots. Each row's
+// status (done / absent / in-progress / upcoming) is derived live from attendance + circuit progress in sState().
 function todaysSessions(){
- // 5 time slots × 3 sessions — a realistic morning. Each row carries an explicit status (st) so the
- // home timeline reads true to life: two early slots already wrapped up, the 9:00 slot live right now,
- // and two slots still ahead. Past slots fall off the home timeline; current + upcoming stay.
- const base=[
-  // 7:00 — earliest slot, all finished (past → hidden on home)
-  {t:'7:00 AM', id:1,f:'Lower body strength',    st:'done'},
-  {t:'7:00 AM', id:3,f:'Cardio + mobility',      st:'done'},
-  {t:'7:00 AM', id:4,f:'Balance & coordination', st:'absent'},
-  // 8:00 — also done, with one cancellation (past → hidden)
-  {t:'8:00 AM', id:2,f:'Knee rehab',             st:'done'},
-  {t:'8:00 AM', id:1,f:'Upper body strength',    st:'done'},
-  {t:'8:00 AM', id:5,f:'Mobility & core',        st:'cancelled'},
-  // 9:00 — current active slot: one session underway, two still to start. The "yet to start" rows map
-  // to clients whose tap leads somewhere coherent: Arjun (blank → build program) and Meera (ready → start).
-  {t:'9:00 AM', id:3,f:'Cardio + mobility',      st:'inprogress'},   // Kavya — genuinely in progress (resume)
-  {t:'9:00 AM', id:1,f:'Sprint & power',         st:'upcoming'},     // Arjun — blank program → add program & start
-  {t:'9:00 AM', id:2,f:'Knee rehab',             st:'upcoming'},     // Meera — ready → slide to start
-  // 10:00 — up next, plus a session cancelled ahead of time (still shown, since the slot is in the future)
-  {t:'10:00 AM',id:1,f:'Sprint & power',         st:'upcoming'},
-  {t:'10:00 AM',id:2,f:'Mobility & strength',    st:'upcoming'},
-  {t:'10:00 AM',id:5,f:'General wellness',       st:'cancelled'},
-  // 11:00 — later in the morning
-  {t:'11:00 AM',id:3,f:'Strength & core',        st:'upcoming'},
-  {t:'11:00 AM',id:4,f:'Play-based training',    st:'upcoming'},
-  {t:'11:00 AM',id:1,f:'Conditioning',           st:'upcoming'}
- ];
- return base.filter(x=>S.role!=='junior'||[2,5].includes(x.id))
-  .map(x=>({...x,c:clients.find(cl=>cl.id===x.id)}))
-  .filter(x=>x.c&&x.c.scheduleSet);
+ return sessionsOnDay(todayWeekday(),homeScoped(visibleClients()));
 }
 // client attendance rate — share of marked attendances where the client showed up
 function clientAttendanceRate(){
@@ -821,10 +827,12 @@ const CLIENT_FILTERS={
  'Review due':         {label:'Reviews due',          pred:c=>c.status==='Active'&&rev(c.id).due}
 };
 // the visible clients matching a named filter — the single source of truth for every dashboard count
-function clientsMatching(key){const f=CLIENT_FILTERS[key];return visibleClients().filter(f?f.pred:()=>true);}
+// home dashboard is scoped to the selected coach (homeCoach); 'All' = every visible client
+function homeScoped(list){return homeCoach==='All'?list:list.filter(c=>(c.coach||'Not assigned')===homeCoach);}
+function clientsMatching(key){const f=CLIENT_FILTERS[key];return homeScoped(visibleClients()).filter(f?f.pred:()=>true);}
 function homeMetrics(){
  const sess=todaysSessions();
- const completed=sess.filter(x=>x.st==='done'||sessDone[x.id]===true);
+ const completed=sess.filter(x=>sessDone[x.id]===true);
  return {
   sess,completed,
   active:clientsMatching('Active'),
@@ -844,17 +852,21 @@ function homeRing(pct){
    <circle cx="20" cy="20" r="${r}" fill="none" stroke="var(--green)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${cc.toFixed(1)}" transform="rotate(-90 20 20)"/></svg>`;
 }
 function vHome(){
- if(S.role==='client')return vClientHome();
  const p=PROFILES[S.role];
  const m=homeMetrics();
- const coachName=p.head.replace('Coach ','').split(' ')[0];
  const h=new Date().getHours();
  const greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
- const csm=coachSessionsThisMonth(currentCoach()),cad=coachActiveDaysThisMonth(currentCoach());
+ // top-left coach switcher options — All + every coach on the roster
+ const coachOpts=['All',...coaches.map(c=>c.name)].map(name=>{
+  const co=name==='All'?null:coaches.find(c=>c.name===name);
+  return `<button class="pm-opt${homeCoach===name?' on':''}" onclick="setHomeCoach('${name}')">
+    <div class="pm-ava">${name==='All'?'👥':(co&&co.photo?`<img src="${co.photo}" alt="${name}">`:initials(name))}</div>
+    <div class="pm-tx"><div class="pm-n">${name==='All'?'All coaches':esc(name)}</div><div class="pm-r">${name==='All'?'Every coach':esc(co?co.role:'')}</div></div>
+    ${homeCoach===name?'<span class="pm-ck">✓</span>':''}</button>`;}).join('');
  const remaining=m.sess.length-m.completed.length;
  // ---- today's schedule ----
- // derive each session's state from the per-client seed (attendance + live circuit progress)
- const sState=x=>{if(x.st)return x.st;   // explicit per-session status from the schedule seed
+ // derive each session's state live from attendance + circuit progress (no hardcoded per-row status)
+ const sState=x=>{
   const a=attStatus[x.id];
   if(a==='absent')return 'absent';
   if(a==='cancelled')return 'cancelled';
@@ -863,8 +875,7 @@ function vHome(){
   if(a==='present'&&st&&st.splitDone)return 'inprogress';
   return 'upcoming';};   // present without a started circuit, or not yet checked in → not started
  // --- show only the live part of the day: current + upcoming, past slots fall off ---
- // parse a "7:00 AM" label to minutes-from-midnight so a past slot can be told from a future one
- const toMin=t=>{const mm=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!mm)return 0;let h=+mm[1]%12;if(/pm/i.test(mm[3]))h+=12;return h*60+ +mm[2];};
+ const toMin=timeToMinutes;   // shared "5:30 PM" → minutes parser
  // "now" boundary = the earliest still-live slot (in-progress, else the up-next)
  const liveTimes=m.sess.filter(x=>{const s=sState(x);return s==='inprogress'||s==='upcoming';}).map(x=>toMin(x.t));
  const nowMin=liveTimes.length?Math.min(...liveTimes):Infinity;
@@ -898,7 +909,7 @@ function vHome(){
       return `<div class="es-row${cls?' '+cls:''}" onclick="${rowGo(x)}">
         <span class="es-node"><span class="es-dot"></span></span>
         <div class="es-ava" style="background:${cat.b};color:${cat.c}">${initials(x.c.name)}</div>
-        <div class="es-main"><div class="es-name">${x.c.name}</div><div class="es-prog">${x.f}</div></div>${stTag(x)}</div>`;}).join('')+`</div>`).join('')+`</div>`;
+        <div class="es-main"><div class="es-name">${x.c.name}</div><div class="es-prog">${esc(x.c.cat||'')}${homeCoach==='All'?` · <span class="es-coach">${esc(x.c.coach||'Unassigned')}</span>`:''}</div></div>${stTag(x)}</div>`;}).join('')+`</div>`).join('')+`</div>`;
   if(hidden>0)html+=`<button class="es-more" onclick="tab('schedule')">+${hidden} more session${hidden!==1?'s':''}<i>›</i></button>`;
   return html;
  })();
@@ -914,24 +925,21 @@ function vHome(){
     <div class="ea-ic" style="color:${a.color||'var(--red)'}">${a.svg||`<i data-lucide="${a.ic}"></i>`}</div>
     <div class="ea-main"><div class="ea-t">${a.t}</div><div class="ea-s">${a.s}</div></div>
     <div class="ea-chev">›</div></div>`).join(''):`<div class="ea-empty">All clear — no critical alerts.</div>`;
- // ---- profile switcher popup (reuses the existing role-switch handlers) ----
- const opts=Object.keys(PROFILES).map(k=>{const pr=PROFILES[k];return `<button class="pm-opt${S.role===k?' on':''}" onclick="switchProfile('${k}')">
-    <div class="pm-ava">${pr.photo?`<img src="${pr.photo}" alt="${pr.name}">`:pr.ic}</div>
-    <div class="pm-tx"><div class="pm-n">${pr.name}</div><div class="pm-r">${pr.role}</div></div>
-    ${S.role===k?'<span class="pm-ck">✓</span>':''}</button>`;}).join('');
  const ehDue=dueClients().length+programEndedClients().length;
  return `<div class="fadein eh">
-  <div class="eh-top" style="position:sticky;top:0">
-   <div class="eh-brand"><img src="assets/images/logo.jpg" alt="Elevate"></div>
+  <div class="eh-top" style="position:sticky;top:0;z-index:30">
+   <button class="eh-brand eh-coachsw${coachMenu?' open':''}" onclick="toggleCoachMenu()" aria-label="Switch coach">
+    <img src="assets/images/logo.jpg" alt="Elevate">
+    <span class="eh-csw-lbl">${homeCoach==='All'?'All coaches':esc(homeCoach)}</span>
+    <i data-lucide="chevron-down" class="eh-csw-chev"></i>
+   </button>
    <div class="eh-top-act">
     <button class="eh-calbtn eh-notifbtn" onclick="navTo('notifications')" aria-label="Notifications"><i data-lucide="bell"></i>${ehDue?`<span class="eh-nbadge">${ehDue}</span>`:''}</button>
-    <button class="eh-ava${profileMenu?' open':''}" onclick="toggleProfileMenu()" aria-label="Profile">${p.photo?`<img src="${p.photo}" alt="${p.head}">`:initials(p.head)}</button>
    </div>
-   ${profileMenu?`<div class="profile-menu"><div class="pm-title">Switch profile</div>${opts}</div>`:''}
+   ${coachMenu?`<div class="profile-menu coach-menu"><div class="pm-title">View clients by coach</div>${coachOpts}</div>`:''}
   </div>
-  ${profileMenu?`<div class="pm-overlay" onclick="closeProfileMenu()"></div>`:''}
-  <div class="eh-greet">${greet}, ${coachName} 👋</div>
-  <div class="eh-derived">This month · ${csm} session${csm!==1?'s':''} · ${cad} day${cad!==1?'s':''} active</div>
+  ${coachMenu?`<div class="pm-overlay" onclick="closeCoachMenu()"></div>`:''}
+  <div class="eh-greet">${homeCoach==='All'?'View all coaches':`${greet}, ${esc(homeCoach)} 👋`}</div>
   <div class="eh-stats">
    <div class="eh-stat" onclick="tab('schedule')"><div class="eh-stat-ic ic-red"><i data-lucide="calendar"></i></div>
     <div class="eh-stat-tx"><div class="eh-stat-v">${m.sess.length}</div><div class="eh-stat-l">Sessions Today</div><div class="eh-stat-s">${remaining} remaining</div></div></div>
@@ -989,23 +997,6 @@ function activityRowsHTML(){
  return activityLog.slice(0,5).map(a=>{const m=ic[a.type]||['ai-blue',ICO.plus];
   return `<div class="act-row"><div class="act-ic ${m[0]}">${m[1]}</div>
    <div class="act-body"><div class="act-tx">${esc(a.msg)}</div><div class="act-tm">${esc(a.when)}</div></div></div>`;}).join('');
-}
-function vClientHome(){
- const c=clients[0];
- return `<div class="fadein">
-  ${vTopbar()}
-  ${profileHeader()}
-  <div class="rolebanner" style="background:var(--blue-bg);color:var(--blue)">👤 You're viewing as a client</div>
-  <div class="block"><div class="block-t">Your welcome note</div>
-   <div class="welcome-note"><b>Hi ${c.name.split(' ')[0]}, welcome to Elevate Fitness!</b>
-   Training days: ${c.days}<br>Time: ${c.time}<br>Your coach: ${c.coach}</div></div>
-  <div class="block"><div class="block-t">Next session</div>
-   <div class="kv"><span class="k">When</span><span class="v">Wed, 21 May · ${c.time}</span></div>
-   <div class="kv"><span class="k">With</span><span class="v">${c.coach}</span></div>
-   <div class="kv"><span class="k">Focus</span><span class="v">Lower body strength</span></div></div>
-  <div class="action-card" onclick="openClient(1);openClientSection('program')"><div class="ac-ic" style="background:var(--accent-soft)"><i data-lucide="dumbbell"></i></div><div class="ac-main"><div class="ac-title">My program</div><div class="ac-sub">View this week's plan</div></div><div class="cr-chev">›</div></div>
-  <div class="action-card" onclick="navTo('reportDoc',1)"><div class="ac-ic abg"><i data-lucide="chart-column"></i></div><div class="ac-main"><div class="ac-title">My latest report</div><div class="ac-sub">Week 4 progress</div></div><div class="cr-chev">›</div></div>
-  <div style="height:20px"></div></div>`;
 }
 
 /* ============ CLIENTS ============ */
@@ -1150,7 +1141,7 @@ function renderClientList(list){
  return list.map(c=>{const cat=CATS[c.cat];
   return `<div class="clc-card ${c.status==='Paused'?'paused':''}" onclick="openClient(${c.id})">
    <div class="clc-top">
-    <div class="ava clc-ava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
+    <div class="ava clc-ava" style="background:${cat.b};color:${cat.c}">${c.photo?`<img src="${esc(c.photo)}" alt="${esc(c.name)}">`:initials(c.name)}</div>
     <div class="clc-id">
      <div class="clc-name">${esc(c.name)}</div>
      <div class="clc-coach"><i data-lucide="user"></i>Coach: ${esc(c.coach||'Not assigned')}</div>
@@ -1166,7 +1157,7 @@ function renderClientList(list){
 function setFilter(f){cFilter=f;clientShown=CLIENT_BATCH;render()}
 // open the Clients list filtered to EXACTLY a dashboard stat's clients — resets the other list
 // filters/search so the count shown matches the number on the card that was tapped.
-function goStat(key){cFilter=CLIENT_FILTERS[key]?key:'All';coachFilter='All';payFilter='All';stateFilter='All';clientQuery='';searchOpen=false;clientShown=CLIENT_BATCH;profileMenu=false;S.tab='clients';S.view=null;S.subView=null;render();sc();}
+function goStat(key){cFilter=CLIENT_FILTERS[key]?key:'All';coachFilter=homeCoach;payFilter='All';stateFilter='All';clientQuery='';searchOpen=false;clientShown=CLIENT_BATCH;profileMenu=false;coachMenu=false;S.tab='clients';S.view=null;S.subView=null;render();sc();}
 // clear an active dashboard-driven filter, back to the full list
 function clearClientFilter(){cFilter='All';clientShown=CLIENT_BATCH;render()}
 function searchClients(q){clientQuery=q.toLowerCase();clientShown=CLIENT_BATCH;
@@ -1259,7 +1250,7 @@ function vClient(){
  const head=`<div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title" style="font-size:16px">${c.name}</div>
    ${c.assessmentDone?`<button class="iconbtn" onclick="openClientMenu(${c.id})" aria-label="More options">⋮</button>`:''}</div>
   <div class="dhead">
-   <div class="dava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
+   <div class="dava" style="background:${cat.b};color:${cat.c}">${c.photo?`<img src="${esc(c.photo)}" alt="${esc(c.name)}">`:initials(c.name)}</div>
    <div class="dhead-m">
     <div class="dname">${c.name}</div>
     <div class="dmeta"><span class="dmeta-i"><i data-lucide="user"></i>${c.age} yrs</span><span class="dmeta-i"><i data-lucide="calendar"></i>${c.sessions} sessions</span><span class="dmeta-i"><i data-lucide="user"></i>Coach: ${c.coach||'Not assigned'}</span></div>
@@ -1273,7 +1264,7 @@ function vClient(){
  if(!c.scheduleSet)return `<div class="fadein">${head}<div id="ctabContent">${pendingOverview(c)}</div><div style="height:24px"></div></div>`;
  // a section drill-in stacks over the long page, fully replacing it (back button → goBackToClient)
  if(S.subView){
-  const drill={program:vClientProgram,sessions:vClientSessions,progress:vClientProgress,payment:vClientPayment,media:vClientMedia}[S.subView];
+  const drill={program:vClientProgram,sessions:vClientSessions,progress:vClientProgress,payment:vClientPayment,media:vClientMedia,basic:vClientBasic,assessment:vClientAssessment,schedule:vClientSchedule}[S.subView];
   if(drill)return drill(c.id);
  }
  // ---- single-scroll fintech profile (reference redesign) ----
@@ -1283,7 +1274,6 @@ function vClient(){
  const p=c.program||{},wk=S.week||1;
  const payInfo=({Paid:['Up to date','cp-g'],DueSoon:['Due soon','cp-a'],Overdue:['Overdue · '+daysOverdue(c)+'d','cp-r'],New:['No payments','cp-m']}[paymentStatus(c)])||['—','cp-m'];
  const lastSess=c.lastSessionDate?fmtShortDate(c.lastSessionDate):'—';
- const cpXL=cpDates(12);
  return `<div class="fadein cprofile">
   <div class="cp-top">
    <button class="iconbtn" onclick="goBack()" aria-label="Back"><i data-lucide="chevron-left"></i></button>
@@ -1305,15 +1295,10 @@ function vClient(){
    <div class="cp-pay-tx"><div class="cp-pay-t">Payment status</div><div class="cp-pay-s"><b class="${payInfo[1]}">${payInfo[0]}</b> · Last session ${lastSess}</div></div>
    <button class="cp-outline" onclick="event.stopPropagation();openClientSection('payment')">View details</button>
   </div>
-  <div class="cp-metrics">
-   ${cpMetric('Attendance','88%','var(--green)',cpSpark([78,80,79,82,81,84,83,86,85,88,87,88],'#34C759'))}
-   ${cpMetric('Show-up','92%','var(--green)',cpSpark([88,90,89,92,91,93,92,94,93,95,94,92],'#34C759'))}
-   ${cpMetric('On-time','81%','var(--amber)',cpSpark([80,82,81,84,83,82,85,84,83,85,82,81],'#F2B33D'))}
-  </div>
   <div class="cp-card cp-group">
    <div class="cp-row">
     <span class="cp-row-ic" style="background:var(--red-tint);color:var(--accent)"><i data-lucide="calendar-check"></i></span>
-    <div class="cp-row-m"><div class="cp-row-t">Current session</div><div class="cp-row-s">Session ${used} of ${tot}</div></div>
+    <div class="cp-row-m"><div class="cp-row-t">Sessions used</div><div class="cp-row-s">${used} of ${tot} purchased</div></div>
     <div class="cp-prog"><div class="cp-bar"><i style="width:${pct}%"></i></div><span class="cp-pct">${pct}%</span></div>
    </div>
    <div class="cp-row tap" onclick="openClientSection('sessions')">
@@ -1327,12 +1312,22 @@ function vClient(){
     <i class="cp-chev" data-lucide="chevron-right"></i>
    </div>
   </div>
-  <div class="cp-card">
-   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="user-round" style="color:var(--blue)"></i>Basic information</div><button class="cp-link" onclick="openClientMenu(${c.id})">View all</button></div>
-   ${cpKV('phone','Phone number','+91 '+c.phone)}
-   ${cpKV('mail','Email',email)}
-   ${cpKV('tag','Category',c.cat)}
-   ${cpKV('calendar','Start date',c.start)}
+  <div class="cp-card cp-group">
+   <div class="cp-row tap" onclick="openClientSection('basic')">
+    <span class="cp-row-ic" style="background:var(--blue-bg);color:var(--blue)"><i data-lucide="user-round"></i></span>
+    <div class="cp-row-m"><div class="cp-row-t">Basic information</div><div class="cp-row-s">Phone, email & category</div></div>
+    <i class="cp-chev" data-lucide="chevron-right"></i>
+   </div>
+   <div class="cp-row tap" onclick="openClientSection('assessment')">
+    <span class="cp-row-ic" style="background:var(--green-tint);color:var(--green)"><i data-lucide="clipboard-check"></i></span>
+    <div class="cp-row-m"><div class="cp-row-t">Assessment report</div><div class="cp-row-s">${c.assessment?'Measurements, goals & ratings':(c.assessmentDone?'Goals & health summary':'Assessment pending')}</div></div>
+    <i class="cp-chev" data-lucide="chevron-right"></i>
+   </div>
+   <div class="cp-row tap" onclick="openClientSection('schedule')">
+    <span class="cp-row-ic" style="background:var(--amber-tint);color:var(--amber)"><i data-lucide="calendar-clock"></i></span>
+    <div class="cp-row-m"><div class="cp-row-t">Current schedule</div><div class="cp-row-s">${(c.days&&c.days!=='—')?esc(c.days):'Not set'}${(c.time&&c.time!=='—')?' · '+esc(c.time):''}</div></div>
+    <i class="cp-chev" data-lucide="chevron-right"></i>
+   </div>
   </div>
   <div class="cp-card">
    <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="image" style="color:var(--pink)"></i>Progress photos</div><button class="cp-link" onclick="openClientSection('media')">View all</button></div>
@@ -1344,11 +1339,6 @@ function vClient(){
   ${hasProgressData(c)?`<div class="cp-secrow"><div class="cp-sec-t"><i data-lucide="trending-up" style="color:var(--accent)"></i>Strength progress</div><button class="cp-link" onclick="openClientSection('progress')">View all <i data-lucide="chevron-right"></i></button></div>
   ${progSummaryTiles(c)}
   ${progMuscleGrid(c)}`:''}
-  <div class="cp-secrow"><div class="cp-sec-t"><i data-lucide="trending-up" style="color:var(--blue)"></i>Trends</div><button class="cp-link cp-drop" onclick="toast('Date range')">Last 30 days <i data-lucide="chevron-down"></i></button></div>
-  ${cpTrendCard('Workout completion','76%','var(--green)','+12% vs prev 30 days',cpChartLine([55,58,60,57,63,66,64,70,68,72,74,76],cpXL,'#34C759','cpgW','pct'))}
-  ${cpTrendCard('Avg. session rating','4.6 ★','var(--amber)','+0.8 vs prev 30 days',cpChartLine([4.0,4.1,4.0,4.2,4.3,4.2,4.4,4.5,4.4,4.5,4.6,4.6],cpXL,'#F2B33D','cpgR','rating'))}
-  ${cpTrendCard('Consistency','18 / 30 days','var(--blue)','+4 days vs prev 30 days',cpChartBars([2,3,2,4,3,4,5,4,5,4,5,6],cpXL,'#5B8DEF','days'))}
-  <div class="cp-cta"><button class="cp-msg" onclick="toast('Messaging ${esc(first)}\\'s coach')"><i data-lucide="message-circle"></i>Message Coach</button></div>
  </div>`;
 }
 // legacy shim — S.ctab is no longer the source of truth (the long page renders every section);
@@ -1360,7 +1350,7 @@ function ctabContent(){return({overview:tabOverview,program:tabProgram,sessions:
 function dsSecHeader(title,action){return `<div class="ds-sec-header"><div class="ds-sec-title">${title}</div>${action||''}</div>`}
 function dsViewMore(section){return `<button class="ds-view-more" onclick="openClientSection('${section}')">View more →</button>`}
 // the back-button header shared by every section drill-in
-function clientDrillHead(c,label){return `<div class="bar solid"><button class="iconbtn" onclick="goBackToClient()">‹</button><div class="bar-title" style="font-size:16px">${esc(c.name.split(' ')[0])} · ${label}</div></div>`}
+function clientDrillHead(c,label,action){return `<div class="bar solid"><button class="iconbtn" onclick="goBackToClient()">‹</button><div class="bar-title" style="font-size:16px">${esc(c.name.split(' ')[0])} · ${label}</div>${action||''}</div>`}
 
 // ---- Overview section: the full overview content inline (no collapse, no drill-in) ----
 function overviewSection(c){return dsSecHeader('Overview')+tabOverview()}
@@ -1448,6 +1438,52 @@ function goBackToClient(){
   if(el)el.scrollIntoView({block:'start'});else{const s=document.getElementById('screen');if(s)s.scrollTop=S.clientScroll||0;}});
 }
 function scrollToSection(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+// ---- drill-ins for the summary-card rows (Basic info / Assessment / Schedule) ----
+function vClientBasic(clientId){
+ const c=clients.find(x=>x.id===clientId)||cur();
+ const email=c.email||(c.name.toLowerCase().replace(/\s+/g,'.')+'@gmail.com');
+ return `<div class="fadein">${clientDrillHead(c,'Basic information')}<div style="height:10px"></div>
+  <div class="cp-card">
+   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="user-round" style="color:var(--blue)"></i>Basic information</div><button class="cp-link" onclick="openEditClient(${c.id})">Edit</button></div>
+   ${cpKV('user','Name',c.name)}
+   ${cpKV('phone','Phone number','+91 '+c.phone)}
+   ${cpKV('mail','Email',email)}
+   ${cpKV('tag','Category',c.cat)}
+   ${cpKV('calendar','Start date',c.start)}
+   ${cpKV('user-round','Coach',c.coach||'Not assigned')}
+  </div><div style="height:24px"></div></div>`;
+}
+function vClientAssessment(clientId){
+ const c=clients.find(x=>x.id===clientId)||cur();const a=c.assessment||{};const hasA=!!c.assessment;
+ return `<div class="fadein">${clientDrillHead(c,'Assessment report')}<div style="height:10px"></div>
+  <div class="cp-card">
+   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="clipboard-check" style="color:var(--green)"></i>Assessment report</div>${hasA?`<button class="cp-link" onclick="viewAssessment(${c.id})">View report</button>`:`<span class="cp-tagm">${c.assessmentDone?'Completed':'Pending'}</span>`}</div>
+   ${a.date?cpKV('calendar','Assessed on',a.date):''}
+   ${a.by?cpKV('user-round','Coach',a.by):''}
+   ${a.weight?cpKV('scale','Weight',a.weight+' kg'):''}
+   ${a.height?cpKV('ruler','Height',a.height+' cm'):''}
+   ${a.waist?cpKV('ruler','Waist',a.waist+' cm'):''}
+   ${a.primaryGoal?cpKV('target','Primary goal',a.primaryGoal):''}
+   ${a.fitnessLevel?cpKV('trending-up','Fitness level',a.fitnessLevel):''}
+   ${cpKV('flag','Goals',c.goals||'—')}
+   ${cpKV('activity','Activity level',c.activity||'—')}
+   ${cpKV('heart-pulse','Medical',c.medical||'None reported')}
+   ${cpKV('bandage','Injuries',c.injuries||'None')}
+   ${ASSESS_DIMS.filter(d=>a.ratings&&a.ratings[d.k]).map(d=>cpKV('star',d.label,RATE_WORDS[a.ratings[d.k]]||'—')).join('')}
+  </div><div style="height:24px"></div></div>`;
+}
+function vClientSchedule(clientId){
+ const c=clients.find(x=>x.id===clientId)||cur();
+ return `<div class="fadein">${clientDrillHead(c,'Current schedule')}<div style="height:10px"></div>
+  <div class="cp-card">
+   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="calendar-clock" style="color:var(--amber)"></i>Current schedule</div><button class="cp-link" onclick="openAddSchedule(${c.id})">Edit</button></div>
+   ${cpKV('calendar','Training days',(c.days&&c.days!=='—')?c.days:'Not set')}
+   ${cpKV('clock','Time',(c.time&&c.time!=='—')?c.time:'Not set')}
+   ${cpKV('user-round','Coach',c.coach||'Not assigned')}
+   ${c.programStartDate?cpKV('flag','Program start',fmtPayDate(c.programStartDate)):''}
+   ${c.sessionDuration?cpKV('timer','Session length',c.sessionDuration+' min'):''}
+  </div><div style="height:24px"></div></div>`;
+}
 // scroll-spy: highlight the anchor for whichever section is crossing ~30% from the top of #screen
 let _spyObs=null;
 function wireScrollSpy(){
@@ -1468,9 +1504,10 @@ function wireScrollSpy(){
 function vClientProgram(clientId){
  const c=clients.find(x=>x.id===(clientId!=null?clientId:S.clientId));
  const sub=S.progSub==='history'?'history':'current';
- const segBar=`<div class="seg drill-seg"><button class="${sub==='current'?'on':''}" onclick="S.progSub='current';render()">Current</button><button class="${sub==='history'?'on':''}" onclick="S.progSub='history';render()">History</button></div>`;
+ // history lives behind a top-right icon now (toggles current ⇄ history) instead of a segmented bar
+ const histBtn=`<button class="iconbtn ${sub==='history'?'on':''}" onclick="S.progSub='${sub==='history'?'current':'history'}';render()" aria-label="${sub==='history'?'Back to current program':'View program history'}"><i data-lucide="history"></i></button>`;
  const body=sub==='current'?tabProgram():programHistoryBody(c);
- return `<div class="fadein">${clientDrillHead(c,'Program')}${segBar}${body}<div style="height:24px"></div></div>`;
+ return `<div class="fadein">${clientDrillHead(c,sub==='history'?'Program history':'Program',histBtn)}${body}<div style="height:24px"></div></div>`;
 }
 function vClientSessions(clientId){
  const c=clients.find(x=>x.id===(clientId!=null?clientId:S.clientId));
@@ -1502,32 +1539,13 @@ function sessHistRow(rec){
    ${badge}</div>`;
 }
 function sessionHistoryBlock(c){
- const order=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
- const days=(c.days||'').split(',').map(s=>s.trim()).filter(d=>order.indexOf(d)>=0);
- // real archived sessions first (newest first), then synthesised filler for older training days
+ // ONLY real archived sessions (newest first) — no synthesised filler. Empty state when there are none.
  const real=sessionLog[c.id]||[];
- const realDates=new Set(real.map(r=>r.date));
  const realRows=real.map(sessHistRow).join('');
- let synthRows='';
- if(days.length){
-  const focus=OV_FOCUS[c.cat]||'Training session';
-  const rows=[];const d=new Date();let guard=0;
-  while(rows.length<8&&guard<60){guard++;
-   const dn=order[(d.getDay()+6)%7];
-   if(days.includes(dn)&&!realDates.has(dateKey(d))){
-    const cancelled=rows.length===2;   // one believable cancellation in the list
-    rows.push(`<div class="sh-row"><div class="sh-date"><b>${d.getDate()}</b>${d.toLocaleDateString('en-GB',{month:'short'})}</div>
-      <div class="sh-main"><div class="sh-focus">${focus}</div><div class="sh-sub">${dn} · ${c.time||'—'}</div></div>
-      <span class="sh-badge ${cancelled?'cancelled':'done'}">${cancelled?'Cancelled':'✓ Completed'}</span></div>`);
-   }
-   d.setDate(d.getDate()-1);
-  }
-  synthRows=rows.join('');
- }
- if(!realRows&&!synthRows)return '';
  return `<div class="block"><div class="ov-h"><div class="ov-h-t">Session history</div></div>
-   <div class="sh-list">${realRows}${synthRows}</div>
-   <div class="tab-cap" style="text-align:center;padding:8px 0 0">Showing recent sessions</div></div>`;
+   ${realRows?`<div class="sh-list">${realRows}</div>
+   <div class="tab-cap" style="text-align:center;padding:8px 0 0">Showing completed sessions</div>`
+   :`<div class="ph-empty-inline">No completed sessions yet — they'll appear here after ${esc(c.name.split(' ')[0])}'s first session.</div>`}</div>`;
 }
 /* ----- pending overview: shown while a client is still being set up (assessment / schedule not done) ----- */
 // one numbered "Next step" row: completed (green ✓) / active (red, with CTA) / locked (grey, gated)
@@ -1552,27 +1570,32 @@ function pendingOverview(c){
  const step1=pendingStep({n:1,done:aDone,active:!aDone,
   title:'Add assessment',sub:aDraft?'Draft saved — continue to complete it':'Capture baseline measurements & ratings',
   right:aDone?`<button class="ns-view" onclick="viewAssessment(${c.id})"><i data-lucide="eye"></i>View</button>`
-   :`<button class="ns-btn" onclick="openAddAssessment(${c.id})">${aDraft?'Continue':'Add Assessment'} <i>›</i></button>`});
+   :`<button class="ns-btn ns-btn-arrow" onclick="openAddAssessment(${c.id})" aria-label="${aDraft?'Continue assessment':'Add assessment'}"><i>›</i></button>`});
  // Step 2 — schedule & coach: locked until the assessment is done; editable once saved
  const step2=pendingStep({n:2,done:sDone,active:aDone&&!sDone,locked:!aDone,
   title:'Add schedule & coach',sub:'Plan training schedule & assign a coach',
   right:!aDone?'<div class="ns-lock"><i data-lucide="lock"></i></div>'
    :sDone?`<button class="ns-view" onclick="openAddSchedule(${c.id})"><i data-lucide="pencil"></i>Edit</button>`
-   :`<button class="ns-btn" onclick="openAddSchedule(${c.id})">Add Schedule <i>›</i></button>`});
+   :`<button class="ns-btn ns-btn-arrow" onclick="openAddSchedule(${c.id})" aria-label="Add schedule and coach"><i>›</i></button>`});
  // Step 3 — welcome note: locked until the schedule is saved
  const step3=pendingStep({n:3,done:false,active:sDone,locked:!sDone,
   title:'Welcome note',sub:'Review & send the welcome note to finish',
-  right:sDone?`<button class="ns-btn" onclick="openAddWelcome(${c.id})">Welcome Note <i>›</i></button>`
+  right:sDone?`<button class="ns-btn ns-btn-arrow" onclick="openAddWelcome(${c.id})" aria-label="Welcome note"><i>›</i></button>`
    :'<div class="ns-lock"><i data-lucide="lock"></i></div>'});
  const ability=c.cat==='Sports specific'?`<div class="pd-row"><div class="pd-ic"><i data-lucide="medal"></i></div><div class="pd-l">Ability</div><div class="pd-v">${c.ability}</div></div>`:'';
  return `<div class="fadein pending-wrap">
+  <div class="pending-foot">
+   <div class="pf-ic">${ICO.check}</div>
+   <div class="pf-tx"><b>Complete all three steps to activate ${fn}'s training journey.</b><span>You can edit or update details anytime.</span></div>
+   <div class="pf-leaf">🌿</div>
+  </div>
   <div class="block ns-card">
    <div class="ns-head"><span class="ns-h-t">Next steps</span><span class="ns-count">${completed} of 3 completed</span></div>
-   ${step1}${step2}${step3}
+   <div class="ns-steps">${step1}${step2}${step3}</div>
   </div>
   <div class="pending-cols">
    <div class="block pd-card">
-    <div class="pd-head"><span>Client details</span><button class="pd-link" onclick="toast('Editing opens the add-client form')">Edit</button></div>
+    <div class="pd-head"><span>Client details</span><button class="pd-link pd-link-ic" onclick="toast('Editing opens the add-client form')" aria-label="Edit client details"><i data-lucide="pencil"></i></button></div>
     <div class="pd-row"><div class="pd-ic"><i data-lucide="calendar"></i></div><div class="pd-l">Age</div><div class="pd-v">${c.age} yrs</div></div>
     <div class="pd-row"><div class="pd-ic"><i data-lucide="phone"></i></div><div class="pd-l">Phone</div><div class="pd-v">${c.phone}</div></div>
     <div class="pd-row"><div class="pd-ic"><i data-lucide="mail"></i></div><div class="pd-l">Email</div><div class="pd-v">${c.email||'—'}</div></div>
@@ -1585,11 +1608,6 @@ function pendingOverview(c){
     <div class="qs-item"><span class="qs-dot"></span><div class="qs-tx"><div class="qs-t">Medical History</div><div class="qs-s">${esc(c.medical||'—')}</div></div></div>
     <div class="qs-item"><span class="qs-dot"></span><div class="qs-tx"><div class="qs-t">Activity Level</div><div class="qs-s">${esc(c.activity||'—')}</div></div></div>
    </div>
-  </div>
-  <div class="pending-foot">
-   <div class="pf-ic">${ICO.check}</div>
-   <div class="pf-tx"><b>Complete all three steps to activate ${fn}'s training journey.</b><span>You can edit or update details anytime.</span></div>
-   <div class="pf-leaf">🌿</div>
   </div>
   <div style="height:18px"></div></div>`;
 }
@@ -1609,13 +1627,16 @@ function shortRange(t){
  if(m1&&m2&&m1.toUpperCase()===m2.toUpperCase())return t.replace(/\s*(AM|PM)/i,'')+' – '+end;
  return t+' – '+end;
 }
-const OV_FOCUS={'Sports specific':'Strength & Power','Rehab':'Rehabilitation','General wellness':'Conditioning & Mobility','Special children':'Balance & Coordination'};
+// this client's scheduled sessions for the REAL current week — dates derived from this week's Monday,
+// status from the date (a day earlier than today = done, today/later = upcoming). No hardcoded week.
 function weekSessions(c){
  const order=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
- const days=(c.days||'').split(',').map(s=>s.trim()).filter(d=>order.indexOf(d)>=0);
- const base=new Date(2025,4,26);   // Mon 26 May 2025
- return days.map(function(d,i){const dd=new Date(base);dd.setDate(dd.getDate()+order.indexOf(d));
-  return{day:d,date:dd.getDate()+' '+dd.toLocaleDateString('en-GB',{month:'short'}),status:i<days.length-1?'Completed':'Upcoming'}});
+ const days=parseDays(c);
+ const now=new Date(),dow=(now.getDay()+6)%7;                 // Mon=0
+ const monday=new Date(now);monday.setHours(0,0,0,0);monday.setDate(now.getDate()-dow);
+ const todayK=dateKey(now);
+ return days.map(function(d){const dd=new Date(monday);dd.setDate(dd.getDate()+order.indexOf(d));
+  return{day:d,date:dd.getDate()+' '+dd.toLocaleDateString('en-GB',{month:'short'}),status:dateKey(dd)<todayK?'Completed':'Upcoming'}});
 }
 function ovChartLabels(c,n){
  const sd=new Date(c.start),out=[];
@@ -1648,7 +1669,7 @@ function tabOverview(){const c=cur();
   <div class="ov-today">
    <div class="ov-today-main">
     <div class="ov-today-l">Today's session</div>
-    <div class="ov-today-t">${OV_FOCUS[c.cat]||'Training Session'}</div>
+    <div class="ov-today-t">${esc(c.cat||'Training session')}</div>
     <div class="ov-today-time">⏰ ${trFull}</div>
    </div>
    <button class="ov-today-btn" onclick="openSession(${c.id})">🏃  Open session</button>
@@ -1981,8 +2002,8 @@ function renderNewProgramModal(){
     <div class="modal-handle"></div>
     <div class="modal-title">Start new program · ${esc(c.name.split(' ')[0])}</div>
     <div class="pm-form">
-     <div class="pd-field"><label>Program name</label>
-      <input class="np-name-input" value="${esc(f.name)}" placeholder="e.g. Power phase · Block 3" oninput="S.newProg.name=this.value"></div>
+     <div class="pd-field"><label>Program name <span style="color:var(--muted);font-weight:600">· optional</span></label>
+      <input class="np-name-input" value="${esc(f.name)}" placeholder="Defaults to Program #${(c.program&&c.program.no||0)+1}" oninput="S.newProg.name=this.value"></div>
      <div class="pd-field"><label>Length (weeks)</label><div class="pd-chips">${weekChips}</div></div>
      <div class="pd-field"><label>Sessions per week</label><div class="pd-chips">${perChips}</div></div>
      <button class="bigbtn" onclick="newProgramContinue()">Continue · pick exercises ›</button>
@@ -2070,59 +2091,100 @@ function saveNewExercise(){
  toast('Added '+entry.n+' to library');
 }
 
+// one exercise card with the week-load steppers. `i` is the canonical flat index into c.exercises,
+// so adj()/removeEx() keep working unchanged even though cards are grouped by day + program.
+function progExCard(c,ex){const i=c.exercises.indexOf(ex),wk=S.week;
+ const log=getLog(ex,wk),tr=trend(ex,wk),tm={up:['↑ Up','gbg'],down:['↓ Down','abg'],flat:['→ Same','']}[tr];const rep=isRepBased(ex);
+ return `<div class="ex-card"><div class="ex-top"><div><div class="ex-name">${ex.name}${ex.future?`<span class="ex-future">⏳ from ${ex.effLabel}</span>`:''}</div><div class="ex-target">Target ${ex.target}</div></div><div style="display:flex;align-items:center;gap:8px"><div class="ex-trend ${tm[1]}">${tm[0]}</div><button class="ex-remove" onclick="removeEx(${i})" aria-label="Remove">✕</button></div></div>
+   <div class="stepper-row">
+    <div class="stepper"><div class="lbl">${rep?'Level/time':'Weight'}</div><div class="ctl"><button class="stp-btn" onclick="adj(${i},'w',-2.5)">−</button><div class="stp-val" id="w-${i}">${log.w}${rep?'':'<small> kg</small>'}</div><button class="stp-btn" onclick="adj(${i},'w',2.5)">+</button></div></div>
+    <div class="stepper"><div class="lbl">Reps</div><div class="ctl"><button class="stp-btn" onclick="adj(${i},'r',-1)">−</button><div class="stp-val" id="r-${i}">${log.r}</div><button class="stp-btn" onclick="adj(${i},'r',1)">+</button></div></div>
+   </div></div>`;}
+// one Program A / Program B group for a given day: its exercise cards + an "add to this slot" button
+function progSlot(c,day,prog){const exs=exForDayProg(c,day,prog);
+ const cards=exs.length?exs.map(ex=>progExCard(c,ex)).join(''):`<div class="slot-empty">No exercises in Program ${prog} yet — add some below.</div>`;
+ return `<div class="pgrp">
+   <div class="pgrp-head pgrp-${prog.toLowerCase()}"><span class="pgrp-dot"></span><span class="pgrp-name">Program ${prog}</span><span class="pgrp-count">${exs.length} exercise${exs.length!==1?'s':''}</span></div>
+   ${cards}
+   <button class="slot-add" onclick="openLibraryForProgramSlot(${c.id},'${day}','${prog}')">＋ Add exercise to Program ${prog}</button>
+  </div>`;}
 function tabProgram(){const c=cur();
+ const p=c.program||{},weeks=p.weeks||6,curWk=currentWeekFor(c),days=parseDays(c);
+ if(!S.week||S.week<1||S.week>weeks)S.week=curWk;       // clamp the shared week selector to this client's block
+ const wk=S.week,r=rev(c.id);
  if(S.reorder)return `<div class="fadein">
   <div style="padding:14px 18px 4px"><div style="font-weight:700;font-size:17px">Reorder exercises</div><div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:2px">${c.name.split(' ')[0]}'s program · ${c.exercises.length} exercise${c.exercises.length!==1?'s':''}</div></div>
-  <div class="reord-banner">Press the ⠿ handle and drag an exercise up or down. This order applies across all 6 weeks.</div>
+  <div class="reord-banner">Press the ⠿ handle and drag an exercise up or down. This order applies across all ${weeks} weeks.</div>
   <div id="reordList">${c.exercises.map(ex=>`<div class="reord-row">
-    <div class="reord-main"><div class="reord-name">${ex.name}${ex.future?` <span class="reord-future">⏳ from ${ex.effLabel}</span>`:''}</div><div class="reord-target">Target ${ex.target}</div></div>
+    <div class="reord-main"><div class="reord-name">${ex.name}${ex.future?` <span class="reord-future">⏳ from ${ex.effLabel}</span>`:''}</div><div class="reord-target">${ex.day&&ex.prog?`${ex.day} · Program ${ex.prog} · `:''}Target ${ex.target}</div></div>
     <div class="reord-grip" aria-label="Drag to reorder">⠿</div>
    </div>`).join('')}</div>
   <div class="bottom-cta"><button class="bigbtn" onclick="toggleReorder();toast('Exercise order saved')">✓  Done</button></div>
   <div style="height:8px"></div></div>`;
- const wk=S.week,r=rev(c.id);
  const banner=r.due&&c.status==='Active'?`<div class="review-banner"><span class="rb-ic">🔔</span><div class="rb-tx"><b>Time for this week's review</b>Last updated ${r.ago}. Update or confirm ${c.name.split(' ')[0]}'s modules.</div><button class="review-pill" onclick="markReviewed(${c.id});toast('Marked reviewed');render()">Done</button></div>`:'';
  const head=`${banner}<div class="block prog-head">
-   <div class="ov-h"><div class="ov-h-t">Power phase — block 2</div><span class="ov-h-tag">Week ${wk} of 6</span></div>
-   <div class="tab-cap">28 Apr – 8 Jun · reviewed ${r.ago}</div>
-   <div class="grid-toggle" style="margin:14px 0 0"><div class="gt ${S.gridMode==='cards'?'on':''}" onclick="S.gridMode='cards';render()">Log by week</div><div class="gt ${S.gridMode==='grid'?'on':''}" onclick="S.gridMode='grid';render()">Full 6-week grid</div></div>
+   <div class="ov-h"><div class="ov-h-t">${esc(programDisplayName(c))}</div><span class="ov-h-tag">Week ${wk} of ${weeks}</span></div>
+   <div class="tab-cap">${weeks}-week block · ${days.length?days.join(' / '):'no training days set'} · reviewed ${r.ago}</div>
+   <div class="grid-toggle" style="margin:14px 0 0"><div class="gt ${S.gridMode==='cards'?'on':''}" onclick="S.gridMode='cards';render()">Plan by week</div><div class="gt ${S.gridMode==='grid'?'on':''}" onclick="S.gridMode='grid';render()">Full ${weeks}-week grid</div></div>
   </div>`;
- if(S.gridMode==='grid')return `<div class="fadein">${head}${fullGrid()}<button class="ex-add-btn" onclick="openLibraryForClient(${c.id})">＋ Add from exercise library</button><button class="ex-reorder-btn" onclick="toggleReorder()">↕  Reorder exercises</button><div style="height:18px"></div></div>`;
- const weekBtns=[1,2,3,4,5,6].map(w=>{let cls=w<4?'done':w===4?'cur':'plan';if(w===wk)cls='cur';else if(w===4)cls='current';return `<button class="wk ${cls}" onclick="S.week=${w};render()"><small>Wk</small>${w}</button>`}).join('');
- const cards=c.exercises.map((ex,i)=>{const log=getLog(ex,wk),tr=trend(ex,wk),tm={up:['↑ Up','gbg'],down:['↓ Down','abg'],flat:['→ Same','']}[tr];const rep=isRepBased(ex);
-  return `<div class="ex-card"><div class="ex-top"><div><div class="ex-name">${ex.name}${ex.future?`<span class="ex-future">⏳ from ${ex.effLabel}</span>`:''}</div><div class="ex-target">Target ${ex.target}</div></div><div style="display:flex;align-items:center;gap:8px"><div class="ex-trend ${tm[1]}">${tm[0]}</div><button class="ex-remove" onclick="removeEx(${i})" aria-label="Remove">✕</button></div></div>
-   <div class="stepper-row">
-    <div class="stepper"><div class="lbl">${rep?'Level/time':'Weight'}</div><div class="ctl"><button class="stp-btn" onclick="adj(${i},'w',-2.5)">−</button><div class="stp-val" id="w-${i}">${log.w}${rep?'':'<small> kg</small>'}</div><button class="stp-btn" onclick="adj(${i},'w',2.5)">+</button></div></div>
-    <div class="stepper"><div class="lbl">Reps</div><div class="ctl"><button class="stp-btn" onclick="adj(${i},'r',-1)">−</button><div class="stp-val" id="r-${i}">${log.r}</div><button class="stp-btn" onclick="adj(${i},'r',1)">+</button></div></div>
-   </div></div>`}).join('');
- return `<div class="fadein">${head}<div class="weeks">${weekBtns}</div><div class="wkbanner">Week ${wk} · ${WD[wk]}${wk>4?' · planned':''} — tap − / + to adjust</div>${cards}
-  <button class="ex-add-btn" onclick="openLibraryForClient(${c.id})">＋ Add from exercise library</button>
+ const weekBtns=Array.from({length:weeks},(_,idx)=>{const w=idx+1;let cls=w<curWk?'done':w===curWk?'current':'plan';if(w===wk)cls='cur';return `<button class="wk ${cls}" onclick="S.week=${w};render()"><small>Wk</small>${w}</button>`}).join('');
+ if(S.gridMode==='grid')return `<div class="fadein">${head}<div class="weeks">${weekBtns}</div>${fullGrid()}<button class="ex-reorder-btn" onclick="toggleReorder()">↕  Reorder exercises</button><div style="height:18px"></div></div>`;
+ // No training days yet (paused / pre-schedule): fall back to a flat list so the tab still renders.
+ if(!days.length){const flat=c.exercises.map(ex=>progExCard(c,ex)).join('');
+  return `<div class="fadein">${head}<div class="weeks">${weekBtns}</div><div class="wkbanner">Week ${wk}${WD[wk]?' · '+WD[wk]:''} — set a schedule to plan by day</div>${flat}
+   <button class="ex-add-btn" onclick="openLibraryForClient(${c.id})">＋ Add from exercise library</button>
+   <div class="bottom-cta"><button class="bigbtn" onclick="markReviewed(cur().id);render();toast('Week '+S.week+' saved & reviewed')">Save week ${wk}</button></div></div>`;}
+ let day=S.progDay;if(!day||!days.includes(day))day=sessionDayFor(c)||days[0];
+ const isToday=day===todayWeekday();
+ const dayTabs=`<div class="day-tabs">${days.map(d=>`<button class="day-tab ${d===day?'on':''}" onclick="S.progDay='${d}';render()">${d}${d===todayWeekday()?'<span class="day-today">today</span>':''}</button>`).join('')}</div>`;
+ const dayLabel=`<div class="wkbanner">${day}${isToday?' · today':''} · Week ${wk}${WD[wk]?' · '+WD[wk]:''} — tap − / + to set this week's load</div>`;
+ const groups=progSlot(c,day,'A')+progSlot(c,day,'B');
+ return `<div class="fadein">${head}<div class="weeks">${weekBtns}</div>${dayTabs}${dayLabel}${groups}
   <button class="ex-reorder-btn" onclick="toggleReorder()">↕  Reorder exercises</button>
   <div class="bottom-cta"><button class="bigbtn" onclick="markReviewed(cur().id);render();toast('Week '+S.week+' saved & reviewed')">Save week ${wk}</button></div></div>`;
 }
+// open the exercise library to fill ONE (day, Program A/B) slot of the standing plan
+function openLibraryForProgramSlot(id,day,prog){S.attachTo=id;S.attachMode=null;S.attachReturn='planSlot';S.attachDay=day;S.attachProg=prog;
+ S.effFrom='now';S.picks=[];S.libQ='';S.libGroup='All';navTo('library');}
 function removeEx(i){const c=cur();if(c.exercises.length<=1){toast('Add another before removing the last');return}const nm=c.exercises[i].name;c.exercises.splice(i,1);invalidateSession(c.id);render();toast('Removed '+nm)}
 function toggleReorder(){S.reorder=!S.reorder;render();sc()}
-function fullGrid(){const c=cur();
- const rows=c.exercises.map(ex=>{const cells=[1,2,3,4,5,6].map(w=>{const l=ex.logs[w];const now=w===4?'nowcol':'';const plan=w>4;return `<td class="${now}">${l?`<span class="wt" style="${plan?'color:var(--muted)':''}">${l.w}</span><div class="rp">${l.r}r</div>`:'<span class="rp">—</span>'}</td>`}).join('');
-  return `<tr><td class="ex">${ex.name}</td>${cells}</tr>`}).join('');
- return `<div class="fullgrid"><table><thead><tr><th style="text-align:left;padding-left:10px">Exercise</th><th>W1</th><th>W2</th><th>W3</th><th class="nowcol">W4</th><th>W5</th><th>W6</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+function fullGrid(){const c=cur();const weeks=(c.program&&c.program.weeks)||6,curWk=currentWeekFor(c);
+ const wkArr=Array.from({length:weeks},(_,i)=>i+1);
+ const rows=c.exercises.map(ex=>{const cells=wkArr.map(w=>{const l=ex.logs[w];const now=w===curWk?'nowcol':'';const plan=w>curWk;return `<td class="${now}">${l?`<span class="wt" style="${plan?'color:var(--muted)':''}">${l.w}</span><div class="rp">${l.r}r</div>`:'<span class="rp">—</span>'}</td>`}).join('');
+  const tag=ex.day&&ex.prog?`<span class="grid-tag">${ex.day}·${ex.prog}</span>`:'';
+  return `<tr><td class="ex">${ex.name}${tag}</td>${cells}</tr>`}).join('');
+ const heads=wkArr.map(w=>`<th class="${w===curWk?'nowcol':''}">W${w}</th>`).join('');
+ return `<div class="fullgrid"><table><thead><tr><th style="text-align:left;padding-left:10px">Exercise</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function adj(i,k,d){const ex=cur().exercises[i],log=getLog(ex,S.week);log[k]=Math.max(0,Math.round((log[k]+d)*10)/10);const el=document.getElementById(k+'-'+i);if(k==='w')el.innerHTML=log.w+(isRepBased(ex)?'':'<small> kg</small>');else el.innerHTML=log.r}
 
 function tabSessions(){const c=cur();
- const days=['M','T','W','T','F','S','S'];
- const pattern=['','present','','present','present','','', '', 'present','','present','absent','','','','present','','present','present','','','present','','present','','','',''];
- let cal='';for(let i=0;i<28;i++){const st=pattern[i]||'';cal+=`<div class="cal-d ${st}">${i+1}</div>`}
+ const wd=['M','T','W','T','F','S','S'];
+ const now=new Date(),year=now.getFullYear(),month=now.getMonth();
+ const monthName=now.toLocaleDateString('en-GB',{month:'long'});
+ const log=sessionLog[c.id]||[];
+ // real stats: total (stored), this-month (logged sessions in the current calendar month), program completion %
+ const thisMonth=log.filter(r=>{const d=new Date(r.date+'T00:00:00');return !isNaN(d)&&d.getFullYear()===year&&d.getMonth()===month;}).length;
+ const p=c.program||{},total=progTotal(p)||0,done=p.done||0,pct=total?Math.round(done/total*100):0;
+ // real month calendar: a day is green if a session was completed that day (from sessionLog); today shows
+ // red only if attendance was explicitly marked absent/cancelled. No fabricated attendance pattern.
+ const sessDates=new Set(log.map(r=>r.date)),todayK=dateKey(now);
+ const startCol=(new Date(year,month,1).getDay()+6)%7,dim=new Date(year,month+1,0).getDate();
+ const hasAbsent=attStatus[c.id]==='absent'||attStatus[c.id]==='cancelled';
+ let cal='';for(let i=0;i<startCol;i++)cal+=`<div class="cal-d empty"></div>`;
+ for(let d=1;d<=dim;d++){const dk=dateKey(new Date(year,month,d));
+  const st=sessDates.has(dk)?'present':(dk===todayK&&hasAbsent?'absent':'');
+  cal+=`<div class="cal-d ${st}">${d}</div>`;}
  return `<div class="fadein">
   <div class="ov-stats">
    <div class="ov-stat"><div class="ov-stat-ic" style="background:var(--accent-soft)"><i data-lucide="calendar"></i></div><div class="ov-stat-v">${c.sessions}</div><div class="ov-stat-l">Total Sessions</div></div>
-   <div class="ov-stat"><div class="ov-stat-ic" style="background:var(--accent-soft)"><i data-lucide="trending-up"></i></div><div class="ov-stat-v">8</div><div class="ov-stat-l">This Month</div></div>
-   <div class="ov-stat"><div class="ov-stat-ring">${ovRing(92)}</div><div class="ov-stat-v">92%</div><div class="ov-stat-l">Show Rate</div></div>
+   <div class="ov-stat"><div class="ov-stat-ic" style="background:var(--accent-soft)"><i data-lucide="trending-up"></i></div><div class="ov-stat-v">${thisMonth}</div><div class="ov-stat-l">This Month</div></div>
+   <div class="ov-stat"><div class="ov-stat-ring">${ovRing(pct)}</div><div class="ov-stat-v">${pct}%</div><div class="ov-stat-l">Program</div></div>
   </div>
   <div class="block">
-   <div class="ov-h"><div class="ov-h-t">May attendance</div></div>
-   <div class="att-cal">${days.map(d=>`<div class="cal-h">${d}</div>`).join('')}${cal}</div>
-   <div class="att-legend"><span><i class="att-dot present"></i>Present</span><span><i class="att-dot absent"></i>Absent</span></div>
+   <div class="ov-h"><div class="ov-h-t">${monthName} sessions</div></div>
+   <div class="att-cal">${wd.map(d=>`<div class="cal-h">${d}</div>`).join('')}${cal}</div>
+   <div class="att-legend"><span><i class="att-dot present"></i>Session completed</span>${hasAbsent?`<span><i class="att-dot absent"></i>Missed</span>`:''}</div>
   </div>
   <div class="bottom-cta"><button class="bigbtn" onclick="openSession(cur().id)">Open today's session</button></div></div>`;
 }
@@ -2335,12 +2397,66 @@ function openClientMenu(id){
     <div class="modal-title">${esc(c.name)}</div>
     <div class="modal-opts">
      <button class="modal-opt" onclick="clientMenuEdit(${id})"><div class="mo-ic" style="background:var(--blue-bg);color:var(--blue)"><i data-lucide="pencil"></i></div>Edit info</button>
+     <button class="modal-opt" onclick="openCoachMenu(${id})"><div class="mo-ic" style="background:var(--green-bg);color:var(--green)"><i data-lucide="users"></i></div>Change coach</button>
      <button class="modal-opt" onclick="openStatusMenu(${id})"><div class="mo-ic" style="background:var(--amber-bg);color:var(--amber)"><i data-lucide="repeat"></i></div>Change status</button>
     </div>
     <button class="modal-cancel" onclick="closeClientMenu()">Cancel</button>
    </div></div>`);
 }
-function clientMenuEdit(id){closeClientMenu();toast('Edit info — opens the client form');}
+function clientMenuEdit(id){closeClientMenu();openEditClient(id);}
+/* ---- edit client (name / photo / basic info) ---- */
+let clientDraft=null;
+function openEditClient(id){
+ const c=clients.find(x=>x.id===id);if(!c)return;
+ clientDraft={id:c.id,name:c.name,photo:c.photo||'',age:c.age||'',
+  phone:c.phone||'',email:(c.email&&c.email!=='—')?c.email:'',
+  cat:c.cat,coach:c.coach||''};
+ S.clientId=id;navTo('editClient');
+}
+function onClientPhoto(e){
+ const f=e.target.files&&e.target.files[0];if(!f||!clientDraft)return;
+ const r=new FileReader();r.onload=()=>{clientDraft.photo=r.result;render();};r.readAsDataURL(f);
+}
+function removeClientPhoto(){if(clientDraft){clientDraft.photo='';render();}}
+function cancelEditClient(){clientDraft=null;goBack();}
+function saveClient(){
+ if(!clientDraft)return;
+ const c=clients.find(x=>x.id===clientDraft.id);if(!c)return;
+ const name=(clientDraft.name||'').trim();
+ if(!name){toast('Name can’t be empty');return;}
+ const email=(clientDraft.email||'').trim();
+ if(email&&!emailOk(email)){toast('Enter a valid email');return;}
+ c.name=name;c.photo=clientDraft.photo||'';
+ const age=parseInt(clientDraft.age,10);if(!isNaN(age)&&age>0)c.age=age;
+ c.phone=(clientDraft.phone||'').trim();
+ c.email=email;
+ c.cat=clientDraft.cat;
+ c.coach=clientDraft.coach||null;
+ clientDraft=null;goBack();toast('Client updated');
+}
+function vEditClient(){
+ const d=clientDraft;if(!d)return '';
+ const cat=CATS[d.cat]||CATS['General wellness'];
+ const catOpts=Object.keys(CATS).map(k=>`<option value="${esc(k)}" ${d.cat===k?'selected':''}>${esc(k)}</option>`).join('');
+ const coachOpts=['',...coaches.map(c=>c.name)].map(n=>`<option value="${esc(n)}" ${(d.coach||'')===n?'selected':''}>${n?esc(n):'Not assigned'}</option>`).join('');
+ return `<div class="fadein"><div class="bar solid"><div class="bar-title">Edit client</div><button class="iconbtn bar-x" onclick="cancelEditClient()" aria-label="Cancel"><i data-lucide="x"></i></button></div>
+  <div class="ep-photo">
+   <div class="ep-ava" style="background:${cat.b};color:${cat.c}">${d.photo?`<img src="${esc(d.photo)}" alt="Client photo">`:initials(d.name||'?')}</div>
+   <input id="ec-file" type="file" accept="image/*" hidden onchange="onClientPhoto(event)">
+   <div class="ep-photo-acts">
+    <button class="ep-photo-btn" onclick="document.getElementById('ec-file').click()">${d.photo?'Change photo':'Add photo'}</button>
+    ${d.photo?`<button class="ep-photo-rm" onclick="removeClientPhoto()">Remove</button>`:''}
+   </div>
+  </div>
+  <div class="field"><label>Name</label><input type="text" value="${esc(d.name||'')}" placeholder="Client name" oninput="clientDraft.name=this.value"></div>
+  <div class="field"><label>Age</label><input type="number" inputmode="numeric" value="${esc(d.age||'')}" placeholder="Age" oninput="clientDraft.age=this.value"></div>
+  <div class="field"><label>Phone number</label><input type="tel" inputmode="tel" value="${esc(d.phone||'')}" placeholder="+91 90000 00000" oninput="clientDraft.phone=this.value"></div>
+  <div class="field"><label>Email</label><input type="email" inputmode="email" value="${esc(d.email||'')}" placeholder="name@email.com" oninput="clientDraft.email=this.value"></div>
+  <div class="field"><label>Category</label><select onchange="clientDraft.cat=this.value;render()">${catOpts}</select></div>
+  <div class="field"><label>Coach</label><select onchange="clientDraft.coach=this.value">${coachOpts}</select></div>
+  <div class="bottom-cta"><button class="bigbtn" onclick="saveClient()">Save changes</button></div>
+ </div>`;
+}
 function openStatusMenu(id){
  const c=clients.find(x=>x.id===id);if(!c)return;
  const opt=(st,ic,bg,col)=>`<button class="modal-opt ${c.status===st?'cur':''}" onclick="setClientStatus(${id},'${st}')"><div class="mo-ic" style="background:${bg};color:${col}"><i data-lucide="${ic}"></i></div>${st}<span class="mo-cur">current</span></button>`;
@@ -2359,6 +2475,29 @@ function setClientStatus(id,st){
  const c=clients.find(x=>x.id===id);closeClientMenu();
  if(!c||c.status===st)return;
  c.status=st;render();toast(c.name.split(' ')[0]+' is now '+st+(st==='Paused'?' (file saved)':''));
+}
+function openCoachMenu(id){
+ const c=clients.find(x=>x.id===id);if(!c)return;
+ const cur=c.coach||'';
+ const row=(name)=>{const co=name?coaches.find(x=>x.name===name):null;const on=cur===name;
+  return `<button class="modal-opt ${on?'cur':''}" onclick="setClientCoach(${id},'${name}')">
+    <div class="mo-ic" style="background:var(--green-bg);color:var(--green);overflow:hidden">${co&&co.photo?`<img src="${co.photo}" alt="${esc(name)}" style="width:100%;height:100%;object-fit:cover">`:`<i data-lucide="${name?'user':'user-x'}"></i>`}</div>${name||'Not assigned'}${on?'<span class="mo-cur">current</span>':''}</button>`;};
+ mountClientMenu(`<div class="modal-overlay" id="clientMenu" onclick="if(event.target===this)closeClientMenu()">
+   <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Change coach</div>
+    <div class="modal-opts">
+     ${coaches.map(co=>row(co.name)).join('')}
+     ${row('')}
+    </div>
+    <button class="modal-cancel" onclick="closeClientMenu()">Cancel</button>
+   </div></div>`);
+}
+function setClientCoach(id,name){
+ const c=clients.find(x=>x.id===id);closeClientMenu();
+ const next=name||null;
+ if(!c||(c.coach||null)===next)return;
+ c.coach=next;render();toast(c.name.split(' ')[0]+(next?' → Coach '+next:' is now unassigned'));
 }
 
 /* ============ CLIENT HISTORY ============ */
@@ -2497,16 +2636,18 @@ function getSession(id){return sessionProgress[sessKey(id)]||null;}
 // `started` flips true the first time the session runs (auto-started on mark-present); it stays true
 // even when the coach reopens the organise/split screen via ⋯ → Edit, so the session never re-auto-starts.
 function buildSessionState(c){
- const names=sessionExercises(c).map(e=>e.name);
- // A client who already has a standing program gets the default A/B split as an editable starting point.
- // A blank / from-scratch session starts with NO programs, so the coach builds them explicitly:
- // Add program → Program A → add exercises, then Add another program → Program B, … (no limit).
- const half=Math.ceil(names.length/2);
- const programs=names.length
-  ?[{label:'Program A',exercises:names.slice(0,half),sets:3,progress:{}},
-    {label:'Program B',exercises:names.slice(half),sets:3,progress:{}}]
-  :[];
- return {clientId:c.id,date:todayISO(),splitDone:false,started:false,currentProgramIdx:0,programs};
+ // Today's session IS the standing plan for today's scheduled day: that day's Program A + Program B,
+ // pulled straight from c.exercises (tagged by day + prog). One dataset — no separate split to maintain.
+ const day=sessionDayFor(c);
+ const mk=prog=>day?exForDayProg(c,day,prog).map(e=>e.name):[];
+ let programs=[{label:'Program A',exercises:mk('A'),sets:3,progress:{}},
+               {label:'Program B',exercises:mk('B'),sets:3,progress:{}}].filter(p=>p.exercises.length);
+ // Fallback for a client with no tagged plan (e.g. paused, or a blank from-scratch session): default
+ // A/B split of whatever exercises they have, so the coach can still build the session by hand.
+ if(!programs.length){const names=sessionExercises(c).map(e=>e.name);const half=Math.ceil(names.length/2);
+  programs=names.length?[{label:'Program A',exercises:names.slice(0,half),sets:3,progress:{}},
+                         {label:'Program B',exercises:names.slice(half),sets:3,progress:{}}]:[];}
+ return {clientId:c.id,date:todayISO(),sessionDay:day,splitDone:false,started:false,currentProgramIdx:0,programs};
 }
 // finalize the default split and enter the workout — used when marking present starts the session
 // immediately (no organise/split gate). Idempotent via st.started.
@@ -2552,19 +2693,17 @@ function setProgramSets(id,idx,n){const st=getSession(id);if(!st||!st.programs[i
 // stepper for "No. of Sets" — clamp 1..9
 function bumpSets(id,idx,delta){const st=getSession(id);if(!st||!st.programs[idx])return;
  st.programs[idx].sets=Math.max(1,Math.min(9,(st.programs[idx].sets||3)+delta));render();}
-// per-exercise working weight (kg), stepped in 2.5kg plates, min 0 — stored on the program by exercise name
-function exWeight(p,name){return (p.weights&&p.weights[name])||0;}
-function bumpWeight(id,idx,name,delta){const st=getSession(id);if(!st||!st.programs[idx])return;
- const p=st.programs[idx];p.weights=p.weights||{};
- p.weights[name]=Math.max(0,Math.round(((p.weights[name]||0)+delta*2.5)*10)/10);render();}
-// per-exercise REPS — initialised from the exercise's target (e.g. "3×10" → 10), then editable per program.
+// per-exercise REPS target parser — "3×10" → 10. Used to seed reps for an exercise with no logged value yet.
 function repTarget(meta){const t=String((meta&&meta.target)||'');const m=t.match(/[×x]\s*(\d+)/);if(m)return +m[1];const n=t.match(/\d+/);return n?+n[0]:10;}
-function exRepCount(p,name,meta){return (p.reps&&p.reps[name]!=null)?p.reps[name]:repTarget(meta);}
-function bumpReps(id,idx,name,delta){const st=getSession(id);if(!st||!st.programs[idx])return;
- const p=st.programs[idx];p.reps=p.reps||{};
- const c=clients.find(x=>x.id===id);
- const base=(p.reps[name]!=null)?p.reps[name]:repTarget(sessExMeta(c,name));
- p.reps[name]=Math.max(1,base+delta);render();}
+// Session steppers edit the plan's CURRENT week directly (logs[week]), so the Program tab and today's
+// session always show the same number — there is no separate session-only weight/reps store. (idx is
+// kept in the signature for the existing call sites but the weight belongs to the exercise, not a program.)
+function bumpWeight(id,idx,name,delta){const c=clients.find(x=>x.id===id);if(!c)return;
+ const ex=sessExMeta(c,name);if(!ex||!ex.logs)return;const l=getLog(ex,currentWeekFor(c));
+ l.w=Math.max(0,Math.round(((+l.w||0)+delta*2.5)*10)/10);render();}
+function bumpReps(id,idx,name,delta){const c=clients.find(x=>x.id===id);if(!c)return;
+ const ex=sessExMeta(c,name);if(!ex||!ex.logs)return;const l=getLog(ex,currentWeekFor(c));
+ const base=(l.r!=null)?(+l.r||0):repTarget(ex);l.r=Math.max(1,base+delta);render();}
 /* ---- dynamic programs: add / remove a circuit (Program A, B, C …) ---- */
 const PROG_COLORS=['a','b','c','d','e','f'];          // section-header colour class per program slot
 function progLetter(idx){return String.fromCharCode(65+idx);}   // 0→A, 1→B, …
@@ -2729,7 +2868,7 @@ function endSessionEarly(id){closeSessMenu();if(!confirm('End the session now? I
 function sessHeader(c,chip){const cat=CATS[c.cat];
  return `<div class="sx-head2">
    <div class="dava sxh-ava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
-   <div class="sxh-id"><div class="sxh-name">${esc(c.name)}</div><div class="sxh-sub">Mon 19 May · ${esc(c.time||'—')} · ${esc(c.coach||'—')}</div></div>
+   <div class="sxh-id"><div class="sxh-name">${esc(c.name)}</div><div class="sxh-sub">${sessionDayFor(c)?sessionDayFor(c)+' · Week '+currentWeekFor(c)+' · ':''}${esc(c.time||'—')} · ${esc(c.coach||'—')}</div></div>
    ${chip?`<div class="sxh-att">${chip}</div>`:''}
   </div>`;}
 // the present attendance cluster (status pill + change-attendance ⋯)
@@ -2823,8 +2962,8 @@ function builderSection(c,st,pIdx){
    const meta=sessExMeta(c,name);
    const sub=meta.g||exReps(meta.target);   // muscle group as the subtitle (Figma), falling back to the target
    // per-exercise REPS stepper (min 1, step 1) and WEIGHTS stepper (min 0, 2.5kg steps)
-   const reps=exRepCount(p,name,meta);
-   const w=exWeight(p,name),wDisp=Number.isInteger(w)?w:w.toFixed(1);
+   const reps=exRepsFor(c,name);
+   const w=exWeightFor(c,name),wDisp=Number.isInteger(w)?w:w.toFixed(1);
    const repsField=`<div class="pb-wt"><span class="pb-wt-lbl">Reps</span>
        <div class="pb-wt-stepper">
          <button class="pb-wt-btn ${reps<=1?'dim':''}" onclick="bumpReps(${c.id},${pIdx},'${jsq(name)}',-1)" aria-label="Fewer reps"><i data-lucide="minus-circle"></i></button>
@@ -2894,7 +3033,7 @@ function splitScreen(c,st){
 function sessCard(c,chip){const cat=CATS[c.cat];
  return `<div class="se-card">
    <div class="dava se-ava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
-   <div class="se-id"><div class="se-name-row"><span class="se-name">${esc(c.name)}</span>${chip||''}</div><div class="se-meta">Mon 19 May · ${esc(c.time||'—')} · ${esc(c.coach||'—')}</div></div>
+   <div class="se-id"><div class="se-name-row"><span class="se-name">${esc(c.name)}</span>${chip||''}</div><div class="se-meta">${sessionDayFor(c)?sessionDayFor(c)+' · Week '+currentWeekFor(c)+' · ':''}${esc(c.time||'—')} · ${esc(c.coach||'—')}</div></div>
   </div>`;}
 // live-session present pill (maroon) + a ⋯ that opens session options — sits in the session card's name row
 function sessLiveChip(c){const ts=attTime[c.id]?` · ${attTime[c.id]}`:'';
@@ -2976,7 +3115,7 @@ function programBlock(c,p,pIdx,activeIdx){
   const ex=sessExMeta(c,name);
   const reps=exReps(ex.target)||'—';
   if(idle)return `<div class="pgm-ex idle"><div class="pgm-ex-main"><div class="pgm-ex-name">${esc(name)}</div><div class="pgm-ex-sub"><span>${esc(reps)}</span></div></div></div>`;
-  const w=exWeight(p,name);const wLbl=w>0?`${Number.isInteger(w)?w:w.toFixed(1)}kg weights`:'No weights';
+  const w=exWeightFor(c,name);const wLbl=w>0?`${Number.isInteger(w)?w:w.toFixed(1)}kg weights`:'No weights';
   const isCur=active&&name===nextName;
   const cells=Array.from({length:p.sets},(_,i)=>{
    const r=i+1,cellDone=!!p.progress[r+':'+name];
@@ -3614,26 +3753,22 @@ function shareDocVia(via){
 }
 
 /* ============ SCHEDULE ============ */
-let schedDay='Mon';
+let schedDay=(()=>{const d=todayWeekday();return d==='Sun'?'Mon':d;})();   // open on today (Mon–Sat)
 let schedWeek=0;   // 0 = this week, 1 = next week, …
 function schedShift(d){schedWeek=Math.max(0,Math.min(8,schedWeek+d));render()}
 function schedWeekInfo(){
- const start=new Date(2025,4,19);start.setDate(start.getDate()+7*schedWeek);
+ // anchor to the Monday of the real current week (+schedWeek weeks), not a hardcoded date
+ const now=new Date(),dow=(now.getDay()+6)%7;   // Mon=0 … Sun=6
+ const start=new Date(now);start.setHours(0,0,0,0);start.setDate(now.getDate()-dow+7*schedWeek);
  const end=new Date(start);end.setDate(end.getDate()+5);
  const fmt=d=>d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'});
  const label=schedWeek===0?'This week':schedWeek===1?'Next week':'In '+schedWeek+' weeks';
  return {start,label,range:fmt(start)+' – '+fmt(end),fmt};
 }
 function vSchedule(){const days=['Mon','Tue','Wed','Thu','Fri','Sat'];
- const sched={Mon:[{t:'10:00 AM',n:'Kavya Singh',f:'Cardio + mobility',co:'Madhan'},{t:'5:30 PM',n:'Arjun Mehta',f:'Lower body strength',co:'Madhan'}],
-  Tue:[{t:'8:30 AM',n:'Meera Nair',f:'Knee rehab',co:'Suchitha'}],
-  Wed:[{t:'4:00 PM',n:'Dev Krishnan',f:'Balance & coordination',co:'Madhan'},{t:'5:30 PM',n:'Arjun Mehta',f:'Upper body power',co:'Madhan'}],
-  Thu:[{t:'8:30 AM',n:'Meera Nair',f:'Knee rehab',co:'Suchitha'},{t:'10:00 AM',n:'Kavya Singh',f:'Full body',co:'Madhan'}],
-  Fri:[{t:'5:30 PM',n:'Arjun Mehta',f:'Conditioning',co:'Madhan'}],
-  Sat:[{t:'4:00 PM',n:'Dev Krishnan',f:'Play-based session',co:'Madhan'}]};
- let list=(sched[schedDay]||[]).slice();
- if(S.role==='junior')list=list.filter(x=>['Meera Nair','Sara Pinto'].includes(x.n));
- list=list.filter(x=>{const c=clients.find(cl=>cl.name===x.n);return c&&c.scheduleSet;});   // exclude clients still being set up
+ // DERIVED from real schedules: the clients who train on the selected weekday, at their own c.time, with
+ // their actual coach. No hardcoded grid. (Coach comes from c.coach, not a per-row literal.)
+ const list=sessionsOnDay(schedDay,visibleClients());
  const wk=schedWeekInfo();
  const dayDate=new Date(wk.start);dayDate.setDate(dayDate.getDate()+days.indexOf(schedDay));
  return `<div class="fadein">${vTopbar()}<div class="bar"><div class="bar-title">Schedule</div></div>
@@ -3644,10 +3779,10 @@ function vSchedule(){const days=['Mon','Tue','Wed','Thu','Fri','Sat'];
   </div>
   <div class="filters">${days.map(d=>`<button class="fchip ${schedDay===d?'on':''}" onclick="schedDay='${d}';render()">${d}</button>`).join('')}</div>
   <div class="wkbanner" style="padding:8px 18px">${schedDay} ${wk.fmt(dayDate)} · ${list.length} session${list.length!==1?'s':''} — tap a client to open</div>
-  ${list.length?list.map(x=>{const c=clients.find(cl=>cl.name===x.n);const cat=c?CATS[c.cat]:null;return `<div class="sess-row" style="padding:13px;cursor:pointer" onclick="${c?`openClient(${c.id})`:'void(0)'}">
-    <span class="sess-time">${x.t}</span>
-    <div class="ava" style="width:38px;height:38px;font-size:13px;background:${cat?cat.b:'var(--accent-soft)'};color:${cat?cat.c:'var(--accent)'}">${initials(x.n)}</div>
-    <div class="sess-main"><div class="sess-name">${x.n}</div><div class="sess-sub">${x.f} · Coach ${x.co}</div></div>
+  ${list.length?list.map(x=>{const c=x.c,cat=CATS[c.cat];return `<div class="sess-row" style="padding:13px;cursor:pointer" onclick="openClient(${c.id})">
+    <span class="sess-time">${esc(x.t)}</span>
+    <div class="ava" style="width:38px;height:38px;font-size:13px;background:${cat?cat.b:'var(--accent-soft)'};color:${cat?cat.c:'var(--accent)'}">${initials(c.name)}</div>
+    <div class="sess-main"><div class="sess-name">${esc(c.name)}</div><div class="sess-sub">${esc(c.cat||'')} · Coach ${esc(c.coach||'Unassigned')}</div></div>
     <div class="cr-chev">›</div></div>`}).join(''):`<div class="empty"><div class="em">📅</div><p>No sessions on ${schedDay}.</p></div>`}
   <div class="bottom-cta"><button class="bigbtn ghost" onclick="toast('Add session')">+ Add session</button></div>
   <div style="height:80px"></div></div>`;
@@ -3817,17 +3952,16 @@ function reportDocHTML(c){
 }
 function vReportDoc(){const c=cur();
  ensureRepDraft(c);
- const isClient=S.role==='client';
  return `<div class="fadein"><div class="bar solid">
    <button class="iconbtn" onclick="goBack()">‹</button>
-   <div class="bar-title">${isClient?'My weekly report':'Report preview'}</div></div>
-  <div class="rdoc-hint">${isClient?'Your Elevate Fitness progress report.':'This is the PDF your client receives. Download it or share directly.'}</div>
+   <div class="bar-title">Report preview</div></div>
+  <div class="rdoc-hint">This is the PDF your client receives. Download it or share directly.</div>
   <div class="rdoc-wrap"><div class="rdoc-frame" id="rdocFrame">${reportDocHTML(c)}</div></div>
   <div class="rdoc-actions">
    <button class="bigbtn" onclick="downloadReportPDF()">⬇  Download PDF</button>
-   ${isClient?'':`<div class="rdoc-share">
+   <div class="rdoc-share">
     <button class="bigbtn ghost" onclick="shareReportVia('whatsapp')">📲 WhatsApp</button>
-    <button class="bigbtn ghost" onclick="shareReportVia('email')">✉️ Email</button></div>`}
+    <button class="bigbtn ghost" onclick="shareReportVia('email')">✉️ Email</button></div>
   </div>
   <div style="height:24px"></div></div>`;
 }
@@ -3877,12 +4011,91 @@ function shareReportVia(via){
 }
 
 /* ============ MORE ============ */
-function vMore(){return `<div class="fadein">${vTopbar()}<div class="bar"><div class="bar-title">More</div></div>
-  <div class="menu-row" onclick="navTo('announce')"><div class="menu-ic" style="background:var(--amber-bg)"><i data-lucide="megaphone"></i></div>Announcements<div class="menu-chev">›</div></div>
-  <div class="menu-row" onclick="S.attachTo=null;S.libQ='';S.libGroup='All';navTo('library')"><div class="menu-ic" style="background:var(--accent-soft)"><i data-lucide="dumbbell"></i></div>Exercise library<div class="menu-chev">›</div></div>
-  <div class="menu-row" onclick="toast('Settings')"><div class="menu-ic" style="background:var(--bg)"><i data-lucide="settings"></i></div>Settings<div class="menu-chev">›</div></div>
-  <div class="menu-row" onclick="logout()"><div class="menu-ic" style="background:var(--red-bg)"><i data-lucide="log-out"></i></div>Log out<div class="menu-chev">›</div></div>
+function vMore(){
+ const p=PROFILES[S.role];
+ // profile now lives on the More tab — current profile card + manage options
+ return `<div class="fadein">${vTopbar()}<div class="bar"><div class="bar-title">Profile</div></div>
+  <div class="more-prof">
+   <div class="more-prof-ava">${p.photo?`<img src="${p.photo}" alt="${p.name}">`:initials(p.head)}</div>
+   <div class="more-prof-tx"><div class="more-prof-n">${p.name}</div><div class="more-prof-r">${p.role}</div></div>
+   <button class="more-prof-edit" onclick="openEditProfile()" aria-label="Edit profile"><i data-lucide="pencil"></i></button>
+  </div>
+  <div class="more-sec">Manage</div>
+  <div class="mgroup">
+   <div class="mrow" onclick="navTo('announce')">
+    <div class="mrow-ic" style="background:var(--red-bg);color:var(--red)"><i data-lucide="megaphone"></i></div>
+    <div class="mrow-tx"><div class="mrow-t">Announcements</div><div class="mrow-s">Latest updates and news</div></div>
+    <div class="mrow-chev">›</div></div>
+   <div class="mrow" onclick="S.attachTo=null;S.libQ='';S.libGroup='All';navTo('library')">
+    <div class="mrow-ic" style="background:var(--purple-bg);color:var(--purple)"><i data-lucide="dumbbell"></i></div>
+    <div class="mrow-tx"><div class="mrow-t">Exercise library</div><div class="mrow-s">Browse and manage exercises</div></div>
+    <div class="mrow-chev">›</div></div>
+   <div class="mrow" onclick="toast('Settings')">
+    <div class="mrow-ic" style="background:var(--blue-bg);color:var(--blue)"><i data-lucide="settings"></i></div>
+    <div class="mrow-tx"><div class="mrow-t">Settings</div><div class="mrow-s">Preferences and app settings</div></div>
+    <div class="mrow-chev">›</div></div>
+   <div class="mrow" onclick="toast('Help & support')">
+    <div class="mrow-ic" style="background:var(--green-bg);color:var(--green)"><i data-lucide="headset"></i></div>
+    <div class="mrow-tx"><div class="mrow-t">Help &amp; support</div><div class="mrow-s">Get help and view FAQs</div></div>
+    <div class="mrow-chev">›</div></div>
+   <div class="mrow" onclick="toast('Elevate Fitness · v2.4.1')">
+    <div class="mrow-ic" style="background:var(--amber-bg);color:var(--amber)"><i data-lucide="info"></i></div>
+    <div class="mrow-tx"><div class="mrow-t">About Elevate Fitness</div><div class="mrow-s">Version 2.4.1</div></div>
+    <div class="mrow-chev">›</div></div>
+  </div>
+  <div class="mgroup">
+   <div class="mrow danger" onclick="logout()">
+    <div class="mrow-ic" style="background:var(--red-bg);color:var(--red)"><i data-lucide="log-out"></i></div>
+    <div class="mrow-tx"><div class="mrow-t">Log out</div></div>
+    <div class="mrow-chev">›</div></div>
+  </div>
   <div style="height:80px"></div></div>`;
+}
+
+/* ---- edit profile (name / phone / email / photo) ---- */
+let profileDraft=null;
+function openEditProfile(){
+ const p=PROFILES[S.role];
+ // keep a ref to the matching coach record so phone/email/photo stay in sync with the roster
+ const co=coaches.find(c=>p.name.includes(c.name))||null;
+ profileDraft={name:p.name,phone:p.phone||'',email:p.email||'',photo:p.photo||'',co};
+ navTo('editProfile');
+}
+function onProfilePhoto(e){
+ const f=e.target.files&&e.target.files[0];if(!f||!profileDraft)return;
+ const r=new FileReader();r.onload=()=>{profileDraft.photo=r.result;render();};r.readAsDataURL(f);
+}
+function removeProfilePhoto(){if(profileDraft){profileDraft.photo='';render();}}
+function cancelEditProfile(){profileDraft=null;goBack();}
+function saveProfile(){
+ if(!profileDraft)return;
+ const name=(profileDraft.name||'').trim();
+ const email=(profileDraft.email||'').trim();
+ if(!name){toast('Name can’t be empty');return;}
+ if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast('Enter a valid email');return;}
+ const p=PROFILES[S.role];
+ p.name=name;p.head=name;p.phone=(profileDraft.phone||'').trim();p.email=email;p.photo=profileDraft.photo||'';
+ // sync the coach roster record (keep its short name as the key) + login identity
+ if(profileDraft.co){profileDraft.co.phone=p.phone;profileDraft.co.email=p.email;if(p.photo)profileDraft.co.photo=p.photo;}
+ if(S.role==='main'){TRAINER.name=name;if(email)TRAINER.email=email;}
+ profileDraft=null;goBack();toast('Profile updated');
+}
+function vEditProfile(){
+ const d=profileDraft||{};
+ return `<div class="fadein"><div class="bar solid"><div class="bar-title">Edit profile</div><button class="iconbtn bar-x" onclick="cancelEditProfile()" aria-label="Cancel"><i data-lucide="x"></i></button></div>
+  <div class="ep-photo">
+   <div class="ep-ava">${d.photo?`<img src="${esc(d.photo)}" alt="Profile photo">`:initials(d.name||'?')}</div>
+   <input id="ep-file" type="file" accept="image/*" hidden onchange="onProfilePhoto(event)">
+   <div class="ep-photo-acts">
+    <button class="ep-photo-btn" onclick="document.getElementById('ep-file').click()">${d.photo?'Change photo':'Add photo'}</button>
+    ${d.photo?`<button class="ep-photo-rm" onclick="removeProfilePhoto()">Remove</button>`:''}
+   </div>
+  </div>
+  <div class="field"><label>Name</label><input id="ep-name" type="text" value="${esc(d.name||'')}" placeholder="Your name" oninput="profileDraft.name=this.value"></div>
+  <div class="field"><label>Phone number</label><input id="ep-phone" type="tel" inputmode="tel" value="${esc(d.phone||'')}" placeholder="+91 90000 00000" oninput="profileDraft.phone=this.value"></div>
+  <div class="field"><label>Email</label><input id="ep-email" type="email" inputmode="email" value="${esc(d.email||'')}" placeholder="you@elevatefitness.com" oninput="profileDraft.email=this.value"></div>
+  <div class="bottom-cta"><button class="bigbtn" onclick="saveProfile()">Save changes</button></div>
+ </div>`;
 }
 
 /* ============ ANNOUNCEMENTS ============ */
@@ -3992,12 +4205,16 @@ function vLibrary(){
  const back=`onclick="libraryBack()"`;
  const session=attach&&S.attachReturn==='session';
  const program=attach&&S.attachReturn==='program';
+ const planSlot=attach&&S.attachReturn==='planSlot';
+ const slotLbl=planSlot?`${S.attachDay} · Program ${S.attachProg}`:'';
  const progSt=program?getSession(S.attachTo):null;
  const progLbl=(progSt&&progSt.programs[S.attachProgIdx]&&progSt.programs[S.attachProgIdx].label)||progLabel(S.attachProgIdx||0);
- const title=newProg?'New program · '+c.name.split(' ')[0]:program?'Add to '+progLbl:session?"Add to today's session":attach?'Add to '+c.name.split(' ')[0]:'Exercise library';
+ const title=newProg?'New program · '+c.name.split(' ')[0]:planSlot?'Add to '+slotLbl:program?'Add to '+progLbl:session?"Add to today's session":attach?'Add to '+c.name.split(' ')[0]:'Exercise library';
  const chips=LIB_GROUPS.map(g=>`<button class="fchip ${(S.libGroup||'All')===g?'on':''}" onclick="setLibGroup('${g}')">${g}</button>`).join('');
  const cta=newProg
   ? `<div class="bottom-cta sticky-cta"><button class="bigbtn ${S.picks.length?'':'dim'}" onclick="saveNewProgramExercises()">${S.picks.length?'Start program · '+S.picks.length+' exercise'+(S.picks.length!==1?'s':''):'Select exercises to add'}</button></div>`
+  : planSlot
+  ? `<div class="bottom-cta sticky-cta"><button class="bigbtn ${S.picks.length?'':'dim'}" onclick="attachPicked()">${S.picks.length?'Add '+S.picks.length+' to '+slotLbl:'Select exercises for '+slotLbl}</button></div>`
   : program
   ? `<div class="bottom-cta sticky-cta"><button class="bigbtn ${S.picks.length?'':'dim'}" onclick="attachPicked()">${S.picks.length?'Add '+S.picks.length+' to '+progLbl:'Select exercises for '+progLbl}</button></div>`
   : session
@@ -4011,6 +4228,7 @@ function vLibrary(){
   : `<div class="bottom-cta sticky-cta"><button class="bigbtn ghost" onclick="openAddExercise()">+ Add new exercise</button></div>`;
  return `<div class="fadein"><div class="bar solid"><button class="iconbtn" ${back}>‹</button><div class="bar-title">${title}</div></div>
   ${newProg?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick the exercises for ${esc(c.name.split(' ')[0])}'s new program. The current program will be archived to history.</div>`
+   :planSlot?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick exercises for ${esc(slotLbl)}. They become part of the standing plan and show up in this day's session.</div>`
    :program?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick exercises for ${esc(progLbl)}. The same exercise can also be added to other programs.</div>`
    :session?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick exercises for today's session only — these won't change ${esc(c.name.split(' ')[0])}'s standing program.</div>`
    :attach?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick exercises to attach. They run until you change them.</div>`:''}
@@ -4046,7 +4264,7 @@ function vNotifications(){
 }
 
 /* ============ RENDER ============ */
-const VIEWS={client:vClient,session:vSession,attMore:vAttMore,addClient:vAddClient,addAssessment:vAddAssessment,addSchedule:vAddSchedule,addWelcome:vAddWelcome,report:vReport,reportDoc:vReportDoc,assessDoc:vAssessDoc,welcomeDoc:vWelcomeDoc,announce:vAnnounce,annNew:vAnnNew,library:vLibrary,notifications:vNotifications,programHistory:vProgramHistory,programDetail:vProgramDetail};
+const VIEWS={client:vClient,session:vSession,attMore:vAttMore,addClient:vAddClient,addAssessment:vAddAssessment,addSchedule:vAddSchedule,addWelcome:vAddWelcome,report:vReport,reportDoc:vReportDoc,assessDoc:vAssessDoc,welcomeDoc:vWelcomeDoc,announce:vAnnounce,annNew:vAnnNew,library:vLibrary,notifications:vNotifications,programHistory:vProgramHistory,programDetail:vProgramDetail,editProfile:vEditProfile,editClient:vEditClient};
 const TABS={home:vHome,clients:vClients,schedule:vSchedule,reports:vReports,more:vMore};
 function render(){
  if(!authed){
@@ -4066,10 +4284,13 @@ function render(){
  tb.style.display=showChrome?'flex':'none';
  const fab=document.getElementById('fab');
  // floating "+ Add client" button, bottom-right of the Clients tab (trainers only)
- fab.style.display=(showChrome&&S.tab==='clients'&&S.role!=='client')?'flex':'none';
+ fab.style.display=(showChrome&&S.tab==='clients')?'flex':'none';
  fab.classList.remove('locked');   // adding a client never requires attendance — never lock the FAB
  if(showChrome){
-  const items=[['home',ICO.navHome,'Home'],['clients',ICO.users,'Clients'],['schedule',ICO.cal,'Schedule'],['reports',ICO.navReports,'Reports'],['more',ICO.navMore,'More']];
+  // the More tab now carries the profile picture as its icon (its behaviour is unchanged — it still opens More)
+  const pr=PROFILES[S.role];
+  const moreIc=`<span class="tab-ava${pr.photo?' has-photo':''}">${pr.photo?`<img src="${pr.photo}" alt="Profile">`:initials(pr.head)}</span>`;
+  const items=[['home',ICO.navHome,'Home'],['clients',ICO.users,'Clients'],['schedule',ICO.cal,'Schedule'],['reports',ICO.navReports,'Reports'],['more',moreIc,'Profile']];
   tb.innerHTML=items.map(([k,ic,l])=>`<div class="tabitem ${S.tab===k?'on':''}" onclick="tab('${k}')"><span class="ic">${ic}</span>${l}</div>`).join('');
  }
  // live preview wiring for announcement
