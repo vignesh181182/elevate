@@ -1038,20 +1038,7 @@ function vClients(){
   </div>
   <div class="cl-filter-bar">${coachFilterSelect(all)}${payFilterSelect(all)}${stateFilterSelect(all)}</div>
   ${(cFilter!=='All'&&CLIENT_FILTERS[cFilter])?`<div class="cl-fbanner"><span class="cl-fbanner-t"><i data-lucide="filter"></i>${CLIENT_FILTERS[cFilter].label} · ${filtered.length} ${filtered.length===1?'client':'clients'}</span><button class="cl-fbanner-x" onclick="clearClientFilter()">Clear ✕</button></div>`:''}
-  <div class="cl-table-wrap">
-   <table class="cl-table">
-    <colgroup>
-     <col style="width:40%"><col style="width:32%"><col style="width:18%"><col style="width:10%">
-    </colgroup>
-    <thead><tr>
-     <th class="clt-c-client">Client</th>
-     <th>Payment</th>
-     <th class="clt-c-sess">Sessions left</th>
-     <th class="clt-c-actions" aria-label="Actions"></th>
-    </tr></thead>
-    <tbody id="clientList">${clientsListHTML(filtered)}</tbody>
-   </table>
-  </div>
+  <div class="cl-cards" id="clientList">${clientsListHTML(filtered)}</div>
   <div style="height:80px"></div></div>`;
 }
 // filter chips with a leading icon + a live count badge
@@ -1105,10 +1092,10 @@ let clientLazyList=[];               // the active filtered list being lazily re
 let _clientLazyObs=null;
 function clientsListHTML(list){
  clientLazyList=list;
- if(!list.length)return `<tr><td colspan="4"><div class="empty"><div class="em">🔍</div><p>No clients match.</p></div></td></tr>`;
+ if(!list.length)return `<div class="empty"><div class="em">🔍</div><p>No clients match.</p></div>`;
  const rows=renderClientList(list.slice(0,clientShown));
  const more=list.length>clientShown
-  ?`<tr class="clt-sentinel-row"><td colspan="4"><div id="clientSentinel" class="cl-sentinel"><span class="cl-loading">Loading more…</span></div></td></tr>`:'';
+  ?`<div id="clientSentinel" class="cl-sentinel"><span class="cl-loading">Loading more…</span></div>`:'';
  return rows+more;
 }
 function loadMoreClients(){
@@ -1161,20 +1148,20 @@ function clientPaymentCell(c){
 }
 function renderClientList(list){
  return list.map(c=>{const cat=CATS[c.cat];
-  return `<tr class="clt-row ${c.status==='Paused'?'paused':''}" onclick="openClient(${c.id})">
-   <td class="clt-client">
-    <div class="clt-client-wrap">
-     <div class="ava clt-ava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
-     <div class="clt-id">
-      <div class="clt-name">${esc(c.name)}</div>
-      <div class="clt-coach"><i data-lucide="user"></i>Coach: ${esc(c.coach||'Not assigned')}</div>
-     </div>
+  return `<div class="clc-card ${c.status==='Paused'?'paused':''}" onclick="openClient(${c.id})">
+   <div class="clc-top">
+    <div class="ava clc-ava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
+    <div class="clc-id">
+     <div class="clc-name">${esc(c.name)}</div>
+     <div class="clc-coach"><i data-lucide="user"></i>Coach: ${esc(c.coach||'Not assigned')}</div>
     </div>
-   </td>
-   <td>${clientPaymentCell(c)}</td>
-   <td class="clt-sess"><b>${c.sessionsRemaining}</b></td>
-   <td class="clt-actions"><button class="cl-kebab" onclick="event.stopPropagation();openClientMenu(${c.id})" aria-label="More options"><i data-lucide="more-vertical"></i></button></td>
-  </tr>`}).join('');
+    <button class="cl-kebab" onclick="event.stopPropagation();openClientMenu(${c.id})" aria-label="More options"><i data-lucide="more-vertical"></i></button>
+   </div>
+   <div class="clc-foot">
+    ${clientPaymentCell(c)}
+    ${c.scheduleSet?`<span class="clc-sess">${c.sessionsRemaining} session${c.sessionsRemaining===1?'':'s'} left</span>`:''}
+   </div>
+  </div>`}).join('');
 }
 function setFilter(f){cFilter=f;clientShown=CLIENT_BATCH;render()}
 // open the Clients list filtered to EXACTLY a dashboard stat's clients — resets the other list
