@@ -921,7 +921,7 @@ function vHome(){
     ${S.role===k?'<span class="pm-ck">✓</span>':''}</button>`;}).join('');
  const ehDue=dueClients().length+programEndedClients().length;
  return `<div class="fadein eh">
-  <div class="eh-top" style="position:relative">
+  <div class="eh-top" style="position:sticky;top:0">
    <div class="eh-brand"><img src="assets/images/logo.jpg" alt="Elevate"></div>
    <div class="eh-top-act">
     <button class="eh-calbtn eh-notifbtn" onclick="navTo('notifications')" aria-label="Notifications"><i data-lucide="bell"></i>${ehDue?`<span class="eh-nbadge">${ehDue}</span>`:''}</button>
@@ -1549,8 +1549,10 @@ function pendingStep(o){
  const circle=o.done?'<div class="ns-num done">✓</div>':`<div class="ns-num ${cls}">${o.n}</div>`;
  return `<div class="ns-step ${cls}">
    <div class="ns-num-wrap">${circle}</div>
-   <div class="ns-body"><div class="ns-step-t">${o.title}</div><div class="ns-step-s">${o.sub}</div></div>
-   <div class="ns-right">${o.right||''}</div>
+   <div class="ns-box">
+    <div class="ns-body"><div class="ns-step-t">${o.title}</div><div class="ns-step-s">${o.sub}</div></div>
+    <div class="ns-right">${o.right||''}</div>
+   </div>
   </div>`;
 }
 function pendingOverview(c){
@@ -2749,6 +2751,24 @@ function sessAttChip(c){const ts=attTime[c.id]?` · ${attTime[c.id]}`:'';
  const locked=sessionHasProgress(getSession(c.id));
  return `<div class="att-chip ap">✓ Present${ts}</div>`+(locked?'':`<button class="att-dots" onclick="showAttModal()">⋯</button>`);}
 function sessHead(c){return sessHeader(c,sessAttChip(c));}
+// Scroll-aware session title: once the client's name card scrolls up under the sticky bar, show the
+// client's name in the title; restore the default ("Today's Session") when scrolled back to the top.
+let _sessTitleObs=null;
+function wireSessionTitle(){
+ if(_sessTitleObs){_sessTitleObs.disconnect();_sessTitleObs=null;}
+ const root=document.getElementById('screen');if(!root)return;
+ const bar=root.querySelector('.bar.solid');if(!bar)return;
+ const title=bar.querySelector('.bar-title');if(!title)return;
+ const nameEl=root.querySelector('.sxh-name,.se-name');if(!nameEl)return;   // the on-page client name
+ const def=title.textContent,who=nameEl.textContent.trim();
+ if(!who||who===def)return;
+ const set=show=>{const t=show?who:def;if(title.textContent!==t)title.textContent=t;};
+ const barH=Math.round(bar.getBoundingClientRect().height)||52;
+ // fire when the name passes under the sticky bar (root top inset by the bar's height)
+ _sessTitleObs=new IntersectionObserver(es=>es.forEach(e=>set(!e.isIntersecting)),
+  {root:root,rootMargin:`-${barH}px 0px 0px 0px`,threshold:0});
+ _sessTitleObs.observe(nameEl);
+}
 // "modify this session" affordance — opens the library in session-only mode. Available on every session
 // page so a coach can add an exercise to today's circuit at any point (it never touches the standing program).
 function sessAddBtn(id){return `<button class="sess-modify" onclick="buildSessionProgram(${id})">Modify this session</button>`;}
@@ -2933,7 +2953,7 @@ function preStartBuilder(c,st){
   ${sessCard(c)}
   ${slideToStart('Slide to mark present & start')}
   <div class="slide-more" style="margin-top:6px"><button onclick="navTo('attMore',${c.id})">Not present? More options</button></div>
-  ${sections}
+  ${sections?`<div class="sx-prelock-hint"><i data-lucide="lock"></i>Slide to mark present to start</div><div class="sx-prelock">${sections}</div>`:''}
   <button class="sess-modify2" onclick="editProgram(${c.id})"><span class="sm2-ic"><i data-lucide="pencil"></i></span>Create / modify program</button>
   <div style="height:8px"></div></div>`;
 }
@@ -3159,10 +3179,9 @@ function resetMeasures(){onForm.weight='';onForm.height='';onForm.waist='';rende
 function updateNoteCount(el){const n=document.getElementById('anotes-count');if(n)n.textContent=el.value.length+' / 500';}
 // (Schedule & coach + Welcome note are composed directly in vAddSchedule, in the assessment-card style)
 /* ----- the three add-flow screens — each composes the step bodies it owns ----- */
-function vAddClient(){return `<div class="fadein"><div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title">Add client</div></div>
+function vAddClient(){return `<div class="fadein"><div class="bar solid"><div class="bar-title">Add client</div><button class="iconbtn" onclick="goBack()" aria-label="Close">✕</button></div>
   ${stepDetails()}${stepQuestionnaire()}
-  <div class="bottom-cta"><button class="bigbtn" onclick="submitAddClient()">Add client</button></div>
-  <div style="height:8px"></div></div>`;}
+  <div class="bottom-cta sticky-cta cta-row"><button class="bigbtn ghost" onclick="goBack()">Cancel</button><button class="bigbtn" onclick="submitAddClient()">Add client</button></div></div>`;}
 function vAddAssessment(){
  const c=cur();
  const name=esc(c?c.name:(onForm.name||'New client'));
@@ -3193,9 +3212,9 @@ function vAddAssessment(){
    </div>`;
  return `<div class="fadein as-screen">
   <div class="as-head">
-   <button class="iconbtn" onclick="goBack()"><i data-lucide="arrow-left"></i></button>
    <div class="as-head-tx"><div class="as-head-t">Add assessment</div><div class="as-head-s">${name}</div></div>
    ${hasDraft?'<div class="as-saved">Draft saved <span class="as-saved-ic"><i data-lucide="check"></i></span></div>':''}
+   <button class="iconbtn" onclick="goBack()" aria-label="Close">✕</button>
   </div>
   <div class="pad as-body">
    <div class="as-hero">
@@ -3876,12 +3895,6 @@ function vMore(){return `<div class="fadein">${vTopbar()}<div class="bar"><div c
   <div class="menu-row" onclick="S.attachTo=null;S.libQ='';S.libGroup='All';navTo('library')"><div class="menu-ic" style="background:var(--accent-soft)"><i data-lucide="dumbbell"></i></div>Exercise library<div class="menu-chev">›</div></div>
   <div class="menu-row" onclick="toast('Settings')"><div class="menu-ic" style="background:var(--bg)"><i data-lucide="settings"></i></div>Settings<div class="menu-chev">›</div></div>
   <div class="menu-row" onclick="logout()"><div class="menu-ic" style="background:var(--red-bg)"><i data-lucide="log-out"></i></div>Log out<div class="menu-chev">›</div></div>
-  <!-- TEMP: program-history test entry points — remove once the client-detail redesign wires these in -->
-  <div class="bar"><div class="bar-title" style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Dev / test (temporary)</div></div>
-  <div class="menu-row" onclick="navTo('programHistory',1)"><div class="menu-ic" style="background:var(--accent-soft)"><i data-lucide="history"></i></div>Test: Arjun's program history<div class="menu-chev">›</div></div>
-  <div class="menu-row" onclick="navTo('programHistory',2)"><div class="menu-ic" style="background:var(--accent-soft)"><i data-lucide="history"></i></div>Test: Meera's program history<div class="menu-chev">›</div></div>
-  <div class="menu-row" onclick="navTo('programHistory',6)"><div class="menu-ic" style="background:var(--accent-soft)"><i data-lucide="history"></i></div>Test: Nisha's program history (empty)<div class="menu-chev">›</div></div>
-  <div class="menu-row" onclick="startNewProgramFlow(1)"><div class="menu-ic" style="background:var(--accent-soft)"><i data-lucide="plus"></i></div>Test: start new program for Arjun<div class="menu-chev">›</div></div>
   <div style="height:80px"></div></div>`;
 }
 
@@ -4074,8 +4087,8 @@ function render(){
  }
  // live preview wiring for announcement
  if(S.view==='annNew'){const ti=document.getElementById('a-title'),mi=document.getElementById('a-msg');if(ti)ti.oninput=()=>{document.getElementById('pv-t').textContent=ti.value||'Your announcement'};if(mi)mi.oninput=()=>{document.getElementById('pv-m').textContent=mi.value||'Message preview…'}}
- // slide-to-confirm wiring
- if(S.view==='session')wireSlide();
+ // slide-to-confirm wiring + scroll-aware session title (client name appears once scrolled)
+ if(S.view==='session'){wireSlide();wireSessionTitle();}
  // scale the A4 document (report / assessment / welcome note) to fit the screen
  if(S.view==='reportDoc'||S.view==='assessDoc'||S.view==='welcomeDoc'){
   fitReportDoc();

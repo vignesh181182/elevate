@@ -85,6 +85,10 @@ body{font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-se
 .bottom-cta{padding:14px 18px 18px}
 /* sticky picker CTA — stays pinned to the bottom of the scroll area while the list scrolls behind it */
 .bottom-cta.sticky-cta{position:sticky;bottom:0;z-index:6;background:var(--bg);padding-bottom:calc(16px + env(safe-area-inset-bottom));box-shadow:0 -12px 22px -8px var(--bg)}
+/* two-button CTA row (Cancel + primary) — share the width, primary a touch wider */
+.bottom-cta.cta-row{display:flex;gap:10px}
+.bottom-cta.cta-row .bigbtn{flex:1}
+.bottom-cta.cta-row .bigbtn:not(.ghost){flex:1.6}
 .ava{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:var(--weight-bold);flex-shrink:0;overflow:hidden}
 .ava img{width:100%;height:100%;object-fit:cover}
 .tag{font-size:var(--text-sm);font-weight:var(--weight-bold);padding:3px 9px;border-radius:20px;display:inline-block;line-height:1.4}
@@ -200,15 +204,21 @@ body{font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-se
 .ns-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 .ns-h-t{font-size:var(--text-sm);font-weight:var(--weight-bold);letter-spacing:.5px;color:var(--muted);text-transform:uppercase;line-height:1.4}
 .ns-count{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--muted);line-height:1.4}
-.ns-step{display:flex;align-items:center;gap:13px;padding:16px;border-radius:14px;border:1px solid var(--line);margin-top:8px;position:relative;background:var(--card)}
-.ns-step.active{background:var(--red-tint);border-color:rgba(232,17,45,.35)}
-.ns-step.ns-locked{background:var(--card)}
-.ns-num-wrap{position:relative;flex-shrink:0;align-self:flex-start}
-.ns-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:var(--weight-bold);border:2px solid var(--line-strong);color:var(--muted);background:var(--card);line-height:1.4}
+/* the numbered circle + connector live in a left rail OUTSIDE each step box; the box holds body + action */
+.ns-step{display:flex;align-items:stretch;gap:13px;margin-top:10px;position:relative}
+.ns-box{flex:1;min-width:0;display:flex;align-items:center;gap:13px;padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
+.ns-step.active .ns-box{background:var(--red-tint);border-color:rgba(232,17,45,.35)}
+.ns-step.ns-locked .ns-box{background:var(--card)}
+/* left rail: full-height column with the circle vertically centred against its box */
+.ns-num-wrap{position:relative;flex-shrink:0;width:30px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ns-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:var(--weight-bold);border:2px solid var(--line-strong);color:var(--muted);background:var(--card);line-height:1.4;position:relative;z-index:1}
 .ns-num.active{border-color:var(--accent);color:var(--accent)}
 .ns-num.done{background:var(--green);border-color:var(--green);color:#fff}
-/* dashed connector between the two step circles */
-.ns-step:not(:last-child) .ns-num-wrap::after{content:'';position:absolute;left:50%;top:34px;height:32px;border-left:2px dashed var(--line-strong);transform:translateX(-50%)}
+/* continuous dashed rail behind the centred circles (the opaque circles sit on top of it) */
+.ns-step .ns-num-wrap::after{content:'';position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed var(--line-strong);z-index:0}
+.ns-step:first-of-type .ns-num-wrap::after{top:50%;bottom:-10px}
+.ns-step:not(:first-of-type):not(:last-of-type) .ns-num-wrap::after{top:0;bottom:-10px}
+.ns-step:last-of-type .ns-num-wrap::after{top:0;bottom:50%}
 .ns-body{flex:1;min-width:0;align-self:center}
 .ns-step-t{font-size:var(--text-md);font-weight:var(--weight-bold);color:var(--ink)}
 .ns-step.ns-locked .ns-step-t{color:var(--ink)}
@@ -294,6 +304,11 @@ body{font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-se
 .att-opt.sc{border-color:var(--amber);background:var(--amber-bg)}
 .att-ck{margin-left:auto;font-size:28px;opacity:0}
 .att-opt.sp .att-ck,.att-opt.sa .att-ck,.att-opt.sc .att-ck{opacity:1}
+/* pre-start: program blocks are shown but disabled (dimmed + non-interactive) until the coach
+   slides to mark present; the lock hint explains why */
+.sx-prelock{opacity:.45;pointer-events:none;filter:grayscale(.25)}
+.sx-prelock-hint{display:flex;align-items:center;justify-content:center;gap:7px;margin:2px 18px 4px;font-size:var(--text-sm);font-weight:var(--weight-semi);color:var(--muted);line-height:1.4}
+.sx-prelock-hint svg{width:14px;height:14px;stroke-width:1.9px}
 /* progress chart */
 .chart-wrap{padding:6px 6px}
 .measure-pick{display:flex;gap:6px;padding:0 18px 8px}
@@ -363,7 +378,7 @@ body{font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-se
 .steps{display:flex;gap:6px;padding:12px 18px}
 .step-dot{flex:1;height:5px;border-radius:3px;background:var(--line-strong)}
 .step-dot.on{background:var(--fill)}
-.step-title{padding:4px 18px 2px;font-size:var(--text-xl);font-weight:var(--weight-bold);letter-spacing:-0.01em;line-height:1.15}
+.step-title{padding:24px 18px 2px;font-size:var(--text-xl);font-weight:var(--weight-bold);letter-spacing:-0.01em;line-height:1.15}
 .step-sub{padding:0 18px 10px;font-size:var(--text-md);color:var(--muted);font-weight:var(--weight-body)}
 .field{margin:0 18px 14px}
 .field label{display:block;font-size:var(--text-sm);font-weight:var(--weight-bold);margin-bottom:6px;line-height:1.4}
@@ -1988,7 +2003,7 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 .ic-purple{background:var(--purple-tint);color:var(--purple)}
 .ic-grey{background:var(--neutral-tint);color:var(--text-muted)}
 /* header */
-.eh-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 0}
+.eh-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 10px;background:var(--bg)}
 .eh-brand{display:flex;align-items:center;gap:11px;min-width:0}
 .eh-brand img{width:34px;height:34px;border-radius:9px;object-fit:cover;flex-shrink:0}
 .eh-word{font-size:var(--text-lg);font-weight:var(--weight-semi);letter-spacing:.2em;color:var(--text);line-height:1.3}
