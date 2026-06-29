@@ -1,7 +1,14 @@
 import { useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Check, ArrowRight, PlayCircle, Clock } from 'lucide-react';
-import { useClient, useClientExercises, useMarkAttendance, useSession, useSetProgress } from '../hooks/useData';
+import { ChevronLeft, Check, ArrowRight, PlayCircle, Clock, Flag } from 'lucide-react';
+import {
+  useClient,
+  useClientExercises,
+  useCompleteSession,
+  useMarkAttendance,
+  useSession,
+  useSetProgress,
+} from '../hooks/useData';
 import { useAuth } from '../auth/AuthProvider';
 import { useToast } from '../components/Toast';
 import AttendanceSheet from '../components/AttendanceSheet';
@@ -15,11 +22,23 @@ import {
   nextExercise,
   programComplete,
   progressKey,
+  roundComplete,
+  roundCounts,
+  sessionComplete,
   splitPrograms,
   type CircuitProgram,
   type Progress,
 } from '../domain/session';
-import type { ProgramExercise } from '../domain/types';
+import type { ProgramExercise, SessionLog } from '../domain/types';
+
+const nowTime = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+/** Rounds ticked for one program (≤ ROUNDS) — the per-program `sets` in the archive. */
+function programSets(p: CircuitProgram, progress: Progress): number {
+  let n = 0;
+  for (let r = 1; r <= ROUNDS; r++) if (roundComplete(p, r, progress)) n++;
+  return n;
+}
 
 const fmtW = (w: number) => (Number.isInteger(w) ? `${w}` : w.toFixed(1));
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -35,7 +54,9 @@ export default function ClientSession() {
   const { data: session } = useSession(id, date);
   const mark = useMarkAttendance(date);
   const setProgress = useSetProgress(id, date);
+  const complete = useCompleteSession(id, date);
   const [sheet, setSheet] = useState(false);
+  const [endEarly, setEndEarly] = useState(false);
 
   if (isLoading || !client) {
     return (
@@ -74,10 +95,39 @@ export default function ClientSession() {
     setProgress.mutate({ key, done });
   }
 
+  function buildArchive(early: boolean): SessionLog {
+    const counts = roundCounts(programs, progress);
+    return {
+      date,
+      when: nowTime(),
+      early,
+      roundsCompleted: counts.done,
+      totalRounds: counts.total,
+      programs: programs.map((p) => ({
+        label: p.label,
+        sets: programSets(p, progress),
+        exercises: p.exercises.map((e) => e.name),
+      })),
+    };
+  }
+
+  function finish(early: boolean) {
+    setEndEarly(false);
+    complete.mutate(
+      { early, archive: buildArchive(early) },
+      {
+        onError: () => toast('Could not complete session'),
+        onSuccess: () => toast(early ? 'Session ended early' : 'Session completed'),
+      },
+    );
+  }
+
   const cat = catStyle(client.category);
   const avaStyle = { '--c-bg': cat.b, '--c-fg': cat.c } as CSSProperties;
   const present = attendance === 'present';
   const closed = attendance === 'absent' || attendance === 'cancelled';
+  const allDone = sessionComplete(programs, progress);
+  const counts = roundCounts(programs, progress);
 
   return (
     <div className="screen">
@@ -168,6 +218,17 @@ export default function ClientSession() {
             </span>
             Change attendance
           </button>
+          <div className="bottom-cta sticky-cta">
+            {allDone ? (
+              <button className="bigbtn" onClick={() => finish(false)} disabled={complete.isPending}>
+                <Check size={18} /> {complete.isPending ? 'Saving…' : 'Complete session'}
+              </button>
+            ) : (
+              <button className="bigbtn ghost" onClick={() => setEndEarly(true)} disabled={complete.isPending}>
+                <Flag size={16} /> End session early
+              </button>
+            )}
+          </div>
         </>
       )}
 
@@ -180,6 +241,28 @@ export default function ClientSession() {
           onPick={pickAttendance}
           onClose={() => setSheet(false)}
         />
+      )}
+
+      {endEarly && (
+        <div className="modal-overlay" onClick={() => setEndEarly(false)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">End session early?</div>
+            <p className="modal-note">
+              {counts.done} of {counts.total} rounds done. This counts as a completed session and uses one from
+              {' '}
+              {client.name.split(' ')[0]}&rsquo;s package.
+            </p>
+            <div className="modal-opts">
+              <button className="bigbtn" onClick={() => finish(true)} disabled={complete.isPending}>
+                <Flag size={16} /> {complete.isPending ? 'Saving…' : 'End session early'}
+              </button>
+            </div>
+            <button className="modal-cancel" onClick={() => setEndEarly(false)}>
+              Keep going
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

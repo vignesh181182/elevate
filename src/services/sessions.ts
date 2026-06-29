@@ -9,8 +9,11 @@ import {
   FieldPath,
   getDoc,
   getDocs,
+  increment,
+  runTransaction,
   setDoc,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Attendance, SessionDoc, SessionLog } from '../domain/types';
@@ -74,6 +77,52 @@ export async function markAttendance(
     { attendance: status, markedAt: new Date().toISOString(), markedBy },
     { merge: true },
   );
+}
+
+/**
+ * Complete a client's session (any coach), money-safely. The once-only guard is a
+ * transaction on the SESSION doc ALONE (junior-readable): if it's already
+ * `completed`, abort — so a double-tap never double-decrements. If this call wins,
+ * the billing/client/archive side-effects fire in a single writeBatch with NO reads
+ * (a junior can't read billing but the rules let any coach increment it blindly).
+ * `archive` is the SessionLog record, prebuilt by the caller (it owns programs+progress).
+ * Returns whether this call won the guard (false ⇒ it was already completed).
+ */
+export async function completeSession(
+  clientId: string,
+  date: string,
+  opts: { early: boolean; archive: SessionLog },
+): Promise<boolean> {
+  const sessionRef = doc(db, 'clients', clientId, 'sessions', date);
+
+  const won = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(sessionRef);
+    if ((snap.data() as SessionDoc | undefined)?.status === 'completed') return false;
+    tx.set(
+      sessionRef,
+      { status: 'completed', completedAt: new Date().toISOString(), early: opts.early },
+      { merge: true },
+    );
+    return true;
+  });
+
+  if (!won) return false;
+
+  // Blind side-effects — no reads, junior-safe. Only run for the call that won the guard.
+  const batch = writeBatch(db);
+  batch.set(
+    doc(db, 'clients', clientId, 'billing', 'summary'),
+    { sessionsRemaining: increment(-1), lastSessionDate: date },
+    { merge: true },
+  );
+  batch.update(doc(db, 'clients', clientId), {
+    sessions: increment(1),
+    'program.done': increment(1),
+  });
+  batch.set(doc(db, 'clients', clientId, 'sessionLog', date), opts.archive);
+  await batch.commit();
+
+  return true;
 }
 
 export async function fetchAllSessionLogs(): Promise<SessionLogWithClient[]> {

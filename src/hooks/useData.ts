@@ -24,6 +24,7 @@ import {
   type LibraryExerciseInput,
 } from '../services/library';
 import {
+  completeSession,
   fetchAllSessionLogs,
   fetchDaySessions,
   fetchSession,
@@ -36,7 +37,7 @@ import { fetchReports } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Attendance, Coach, Payment, ProgramExercise, SessionDoc } from '../domain/types';
+import type { Attendance, Coach, Payment, ProgramExercise, SessionDoc, SessionLog } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -217,6 +218,26 @@ export function useSetProgress(clientId: string | undefined, date: string) {
     },
     onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
     onSettled: () => qc.invalidateQueries({ queryKey: qk }),
+  });
+}
+
+/**
+ * Complete (or end-early) a session: the once-only guard + money side-effects live in
+ * the service. Not optimistic — billing decrements only on a confirmed server win.
+ * Invalidates the session, the client (sessions/program.done changed), and both the
+ * per-client and cross-client session-log views.
+ */
+export function useCompleteSession(clientId: string | undefined, date: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { early: boolean; archive: SessionLog }) =>
+      completeSession(clientId as string, date, vars),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session', clientId, date] });
+      qc.invalidateQueries({ queryKey: ['client', clientId] });
+      qc.invalidateQueries({ queryKey: ['sessionLog', clientId] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
   });
 }
 
