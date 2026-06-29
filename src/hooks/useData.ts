@@ -7,9 +7,11 @@ import {
   fetchClients,
   removeProgramExercise,
   reorderProgramExercises,
+  saveAssessment,
   saveWeekLoads,
   setClientSchedule,
   updateProgramExercise,
+  type AssessmentInput,
   type NewClientInput,
   type NewProgramExercise,
   type ScheduleInput,
@@ -57,6 +59,22 @@ export function useSetSchedule(id: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: ScheduleInput) => setClientSchedule(id as string, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['client', id] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+/**
+ * Save a client's first-assessment. Invalidates the client (report + measures) and
+ * the clients list (the "Assessment pending" pill + "Assessment due" filter depend
+ * on assessmentDone).
+ */
+export function useSaveAssessment(id: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AssessmentInput) => saveAssessment(id as string, input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['client', id] });
       qc.invalidateQueries({ queryKey: ['clients'] });

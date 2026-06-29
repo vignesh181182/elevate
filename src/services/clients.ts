@@ -14,7 +14,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Client, ProgramExercise, ProgramHistory } from '../domain/types';
+import type { Assessment, Client, ProgramExercise, ProgramHistory } from '../domain/types';
 
 /** Fields a coach fills in the add-client form; everything else is defaulted. */
 export interface NewClientInput {
@@ -187,6 +187,25 @@ export async function setClientSchedule(id: string, input: ScheduleInput): Promi
     program: { no: 1, weeks: input.weeks, perWeek: 3, done: 0, startDate: input.programStartDate },
     scheduleDone: true,
     scheduleSet: true,
+  });
+}
+
+export interface AssessmentInput {
+  assessment: Assessment;
+  measures: Record<string, number[]>; // full merged map (baseline-seeded, history preserved)
+}
+
+/**
+ * Save a client's first-assessment (any coach — training data, not billing). Stores
+ * the assessment, flips assessmentDone, and writes the measures map (already merged
+ * by the caller so existing series aren't clobbered). Money-free: the assessment fee
+ * is recorded separately via the payment flow.
+ */
+export async function saveAssessment(id: string, input: AssessmentInput): Promise<void> {
+  await updateDoc(doc(db, 'clients', id), {
+    assessment: input.assessment,
+    assessmentDone: true,
+    measures: input.measures,
   });
 }
 

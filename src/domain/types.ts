@@ -64,6 +64,26 @@ export interface Client {
   review?: ReviewState;
   welcomeMsg?: string;
   sessionDuration?: number;
+  assessment?: Assessment;
+}
+
+/**
+ * A client's baseline first-assessment, stored on the client doc (training data, not
+ * billing — any coach reads/writes). Money-decoupled: the assessment FEE is recorded
+ * separately via the payment flow, so there is no fee gate here. `by` is the coach uid.
+ */
+export interface Assessment {
+  date: string; // YYYY-MM-DD it was captured
+  by: string; // coach uid who assessed
+  weight?: number; // kg
+  height?: number; // cm
+  waist?: number; // cm
+  ratings: Record<string, number>; // dimension key → 1..5
+  bodyType?: string;
+  fitnessLevel?: string;
+  primaryGoal?: string;
+  focusAreas: string[];
+  notes?: string;
 }
 
 /** clients/{id}/exercises/{exId} — source of truth for the standing program. */
