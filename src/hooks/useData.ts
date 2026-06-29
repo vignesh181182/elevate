@@ -1,5 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createClient, fetchClient, fetchClientExercises, fetchClients, type NewClientInput } from '../services/clients';
+import {
+  createClient,
+  fetchClient,
+  fetchClientExercises,
+  fetchClients,
+  setClientSchedule,
+  type NewClientInput,
+  type ScheduleInput,
+} from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
 import { fetchLibrary } from '../services/library';
 import { fetchAllSessionLogs, fetchDaySessions, fetchSessionLog, markAttendance } from '../services/sessions';
@@ -20,6 +28,18 @@ export function useCreateClient() {
   return useMutation({
     mutationFn: (input: NewClientInput) => createClient(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+  });
+}
+
+/** Assign schedule & coach (activates the client). Invalidates the client + list. */
+export function useSetSchedule(id: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ScheduleInput) => setClientSchedule(id as string, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['client', id] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
   });
 }
 

@@ -1,14 +1,15 @@
 // Pure client-lifecycle helpers ported from the prototype.
 import type { Client, ClientProgram, ProgramExercise } from './types';
 
-export type ClientStage = 'Assessment pending' | 'Schedule pending' | 'Welcome note pending' | null;
+export type ClientStage = 'Schedule pending' | null;
 
-/** Onboarding stage during the staged add-client flow; null once fully set up. */
-export function clientStage(c: Pick<Client, 'assessmentDone' | 'scheduleDone' | 'scheduleSet'>): ClientStage {
-  if (!c.assessmentDone) return 'Assessment pending';
-  if (!c.scheduleDone) return 'Schedule pending';
-  if (!c.scheduleSet) return 'Welcome note pending';
-  return null;
+/**
+ * Onboarding stage; null once fully set up. In the money-decoupled model, assigning
+ * a schedule & coach is what activates a client (scheduleSet), so a lead is simply
+ * "Schedule pending" — the fee-gated assessment/welcome sub-stages were dropped.
+ */
+export function clientStage(c: Pick<Client, 'scheduleSet'>): ClientStage {
+  return c.scheduleSet ? null : 'Schedule pending';
 }
 
 /** A fully set-up client (renders the rich detail page rather than the pending overview). */

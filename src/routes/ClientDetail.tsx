@@ -14,6 +14,7 @@ import {
   Stethoscope,
   Activity,
   AlertTriangle,
+  CalendarPlus,
 } from 'lucide-react';
 import { useClient, useCoachNameMap } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
@@ -89,10 +90,7 @@ export default function ClientDetail() {
   } as CSSProperties;
   const coach = c.coachId ? coachName[c.coachId] ?? 'Not assigned' : 'Not assigned';
   const stage = clientStage(c);
-  const stageStyle = {
-    '--c-bg': stage === 'Assessment pending' ? 'var(--amber-bg)' : 'var(--blue-bg)',
-    '--c-fg': stage === 'Assessment pending' ? 'var(--amber)' : 'var(--blue)',
-  } as CSSProperties;
+  const stageStyle = { '--c-bg': 'var(--blue-bg)', '--c-fg': 'var(--blue)' } as CSSProperties;
 
   return (
     <div className="screen">
@@ -146,7 +144,7 @@ export default function ClientDetail() {
           </span>
           {stage && (
             <span className="tag tint-cat" style={stageStyle}>
-              {stage === 'Assessment pending' ? '🩺' : '📅'} {stage}
+              📅 {stage}
             </span>
           )}
         </div>
@@ -181,6 +179,24 @@ export default function ClientDetail() {
           <About icon={Activity} k="Activity level" v={c.activity} />
           <About icon={AlertTriangle} k="Injuries" v={c.injuries} />
         </div>
+
+        {/* Lead activation — assign a coach + schedule to set the client up */}
+        {!c.scheduleSet && (
+          <div className="cp-card">
+            <div className="cp-sec">
+              <div className="cp-sec-t">
+                <CalendarPlus size={16} className="t-blue" />
+                Set up training
+              </div>
+            </div>
+            <div className="cp-about-v">
+              Assign a coach and training schedule to activate {c.name.split(' ')[0]}.
+            </div>
+            <button className="bigbtn cp-cta-btn" onClick={() => navigate(`/clients/${c.id}/schedule`)}>
+              <CalendarPlus size={18} /> Schedule &amp; coach
+            </button>
+          </div>
+        )}
 
         {/* Current program + exercises */}
         {c.scheduleSet && <ProgramCard client={c} />}

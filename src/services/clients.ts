@@ -1,7 +1,7 @@
 // Client data-access layer (Firestore reads). Per the access model, ALL coaches
 // see ALL clients — only payment data is gated (see services/payments.ts +
 // firestore.rules). So these reads are not coach-filtered.
-import { collection, doc, getDoc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Client, ProgramExercise, ProgramHistory } from '../domain/types';
 
@@ -78,6 +78,35 @@ export async function createClient(input: NewClientInput): Promise<string> {
     lastSessionDate: null,
   });
   return ref.id;
+}
+
+/** Schedule & coach assignment from the activation form. */
+export interface ScheduleInput {
+  coachId: string;
+  days: string[]; // e.g. ['Mon','Wed','Fri']
+  time: string; // "5:30 PM"
+  weeks: number; // program length
+  sessionDuration: number; // minutes
+  programStartDate: string; // YYYY-MM-DD
+}
+
+/**
+ * Assign a coach + training schedule + first program, activating the client
+ * (scheduleSet=true). Money-free by design: the head coach records the program
+ * package separately via the payment flow (juniors never touch billing). Any coach
+ * may run this. Works for both first setup and editing an existing schedule.
+ */
+export async function setClientSchedule(id: string, input: ScheduleInput): Promise<void> {
+  await updateDoc(doc(db, 'clients', id), {
+    coachId: input.coachId,
+    days: input.days.join(', '),
+    time: input.time,
+    sessionDuration: input.sessionDuration,
+    programStartDate: input.programStartDate,
+    program: { no: 1, weeks: input.weeks, perWeek: 3, done: 0, startDate: input.programStartDate },
+    scheduleDone: true,
+    scheduleSet: true,
+  });
 }
 
 export async function fetchProgramHistory(id: string): Promise<ProgramHistory[]> {

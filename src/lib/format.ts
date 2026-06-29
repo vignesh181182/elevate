@@ -38,3 +38,22 @@ export function relativeDay(iso?: string | null): string {
   if (diff < 7) return `${diff} days ago`;
   return fmtShortDate(iso);
 }
+
+/** "17:30" (24h, from <input type=time>) → "5:30 PM" — the app's stored time format. */
+export function to12h(hhmm: string): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+  if (!m) return '';
+  let h = +m[1];
+  const ap = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m[2]} ${ap}`;
+}
+
+/** "5:30 PM" → "17:30" — to pre-fill an <input type=time> when editing. */
+export function to24h(t12: string): string {
+  const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t12 || '');
+  if (!m) return '';
+  let h = +m[1] % 12;
+  if (/pm/i.test(m[3])) h += 12;
+  return `${String(h).padStart(2, '0')}:${m[2]}`;
+}

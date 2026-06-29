@@ -7,6 +7,7 @@ import Home from './routes/Home';
 import Clients from './routes/Clients';
 import ClientNew from './routes/ClientNew';
 import ClientDetail from './routes/ClientDetail';
+import ClientSchedule from './routes/ClientSchedule';
 import Library from './routes/Library';
 import Schedule from './routes/Schedule';
 import Reports from './routes/Reports';
@@ -33,6 +34,7 @@ export default function App() {
           {/* Plain routes — no bottom nav */}
           <Route path="/clients/new" element={<ClientNew />} />
           <Route path="/clients/:id" element={<ClientDetail />} />
+          <Route path="/clients/:id/schedule" element={<ClientSchedule />} />
           <Route path="/library" element={<Library />} />
         </Route>
 
