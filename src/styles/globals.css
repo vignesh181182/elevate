@@ -2478,6 +2478,8 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 .cp-kv{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid rgba(255,255,255,.045)}
 .cp-kv:first-of-type{border-top:none;padding-top:2px}
 .cp-kv:last-of-type{padding-bottom:2px}
+.cp-kv.tap{cursor:pointer;margin:0 -6px;padding-left:6px;padding-right:6px;border-radius:10px}
+.cp-kv.tap:active{background:var(--bg)}
 .cp-kic{color:var(--text-dim);display:flex;flex-shrink:0}
 .cp-kic svg{width:18px;height:18px;stroke-width:1.75px}
 .cp-kk{font-size:var(--text-md);color:var(--text-muted);font-weight:var(--weight-semi)}

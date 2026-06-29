@@ -1,13 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchClient, fetchClientExercises, fetchClients } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
 import { fetchLibrary } from '../services/library';
 import { fetchAllSessionLogs, fetchSessionLog } from '../services/sessions';
 import { fetchMedia } from '../services/media';
 import { fetchReports } from '../services/reports';
-import { fetchBilling, fetchBillingSummaries, fetchPayments } from '../services/payments';
+import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
+import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Coach } from '../domain/types';
+import type { Coach, Payment } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -96,5 +97,22 @@ export function usePayments(clientId: string | undefined) {
     queryKey: ['payments', clientId],
     queryFn: () => fetchPayments(clientId as string),
     enabled: isMain && !!clientId,
+  });
+}
+
+/**
+ * Add or edit a payment — MAIN COACH ONLY. Pass the full payment and the prior
+ * record (null when adding); the billing delta is derived here. Invalidates the
+ * payment + billing queries so the card refreshes.
+ */
+export function useSavePayment(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ payment, prev }: { payment: Payment; prev: Payment | null }) =>
+      savePayment(clientId as string, payment, billingAdjustment(payment, prev)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments', clientId] });
+      qc.invalidateQueries({ queryKey: ['billing', clientId] });
+    },
   });
 }

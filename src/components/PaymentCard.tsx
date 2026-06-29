@@ -1,7 +1,7 @@
-import type { ComponentType } from 'react';
+import { useState, type ComponentType } from 'react';
 import { Wallet, CalendarCheck, PlayCircle, RotateCcw, CreditCard, ClipboardList } from 'lucide-react';
 import { useBilling, usePayments } from '../hooks/useData';
-import { useToast } from './Toast';
+import PaymentForm from './PaymentForm';
 import { fmtPayDate, fmtShortDate } from '../lib/format';
 import {
   paymentStatus,
@@ -11,7 +11,7 @@ import {
   lastPayment,
   paymentLabel,
 } from '../domain/payments';
-import type { Client } from '../domain/types';
+import type { Client, Payment } from '../domain/types';
 
 function KV({ icon: Icon, k, v }: { icon: ComponentType<{ size?: number }>; k: string; v: string }) {
   return (
@@ -28,9 +28,10 @@ function KV({ icon: Icon, k, v }: { icon: ComponentType<{ size?: number }>; k: s
 // Head-coach-only payment card. Money-free: shows what was bought, sessions
 // remaining, the projected due date, and each payment's status + date — never an amount.
 export default function PaymentCard({ client }: { client: Client }) {
-  const toast = useToast();
   const { data: billing, isLoading: bLoading } = useBilling(client.id);
   const { data: payments = [], isLoading: pLoading } = usePayments(client.id);
+  // null = closed; { p } = editing that payment; { p: null } = recording a new one.
+  const [form, setForm] = useState<{ p: Payment | null } | null>(null);
 
   if (bLoading || pLoading)
     return (
@@ -86,7 +87,7 @@ export default function PaymentCard({ client }: { client: Client }) {
             <CreditCard size={15} /> Payment history
           </div>
           {payments.map((p) => (
-            <div className="cp-kv" key={p.id}>
+            <div className="cp-kv tap" key={p.id} role="button" tabIndex={0} onClick={() => setForm({ p })}>
               <span className="cp-kic">
                 <CreditCard size={15} />
               </span>
@@ -99,9 +100,13 @@ export default function PaymentCard({ client }: { client: Client }) {
         </>
       )}
 
-      <button className="cp-link" onClick={() => toast('Record payment — coming soon')}>
+      <button className="cp-link" onClick={() => setForm({ p: null })}>
         + Record payment
       </button>
+
+      {form && (
+        <PaymentForm client={client} payments={payments} editing={form.p} onClose={() => setForm(null)} />
+      )}
     </div>
   );
 }

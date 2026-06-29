@@ -82,3 +82,25 @@ export function paymentLabel(p: Payment): string {
   if (p.type === 'assessment') return 'Assessment fee';
   return p.sessions ? `Package · ${p.sessions} sessions` : 'Package';
 }
+
+/** Next numeric payment id (max existing + 1), starting at 1. */
+export function nextPaymentId(payments: Payment[]): number {
+  return (payments || []).reduce((m, p) => Math.max(m, p.id), 0) + 1;
+}
+
+/**
+ * Billing-summary adjustment when saving a payment. `prev` is the payment being
+ * edited (null for a new one). Only package sessions move the running balance —
+ * the delta lets edits self-correct (e.g. 12 → 16 adds 4). packageSize is set to
+ * the package's sessions, or left untouched (null) for assessment fees.
+ */
+export function billingAdjustment(
+  next: Payment,
+  prev: Payment | null,
+): { sessionsDelta: number; packageSize: number | null } {
+  const sessionsOf = (p: Payment | null) => (p && p.type === 'package' ? p.sessions ?? 0 : 0);
+  return {
+    sessionsDelta: sessionsOf(next) - sessionsOf(prev),
+    packageSize: next.type === 'package' ? next.sessions ?? next.packageSize : null,
+  };
+}
