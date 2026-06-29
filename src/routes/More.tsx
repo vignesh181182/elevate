@@ -83,7 +83,7 @@ export default function More() {
 
       <div className="more-sec">Manage</div>
       <div className="mgroup">
-        <div className="mrow" onClick={() => toast('Exercise library — coming soon')}>
+        <div className="mrow" onClick={() => navigate('/library')}>
           <div className="mrow-ic tint-purple">
             <Dumbbell />
           </div>

@@ -7,6 +7,7 @@ import Home from './routes/Home';
 import Clients from './routes/Clients';
 import ClientNew from './routes/ClientNew';
 import ClientDetail from './routes/ClientDetail';
+import Library from './routes/Library';
 import Schedule from './routes/Schedule';
 import Reports from './routes/Reports';
 import More from './routes/More';
@@ -32,6 +33,7 @@ export default function App() {
           {/* Plain routes — no bottom nav */}
           <Route path="/clients/new" element={<ClientNew />} />
           <Route path="/clients/:id" element={<ClientDetail />} />
+          <Route path="/library" element={<Library />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/home" replace />} />

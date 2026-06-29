@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchClient, fetchClients } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
+import { fetchLibrary } from '../services/library';
 import { fetchBilling, fetchBillingSummaries, fetchPayments } from '../services/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import type { Coach } from '../domain/types';
@@ -19,6 +20,10 @@ export function useClient(id: string | undefined) {
 
 export function useCoaches() {
   return useQuery({ queryKey: ['coaches'], queryFn: fetchCoaches });
+}
+
+export function useLibrary() {
+  return useQuery({ queryKey: ['library'], queryFn: fetchLibrary });
 }
 
 /** id → coach name map, for resolving a client's coachId to a display name. */
