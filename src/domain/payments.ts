@@ -65,3 +65,20 @@ export function projectedRenewalDate(billing: Billing | null, days: string | und
 export function lifetimeSessions(payments: Payment[]): number {
   return (payments || []).reduce((s, p) => s + (p.type === 'package' ? p.sessions ?? 0 : 0), 0);
 }
+
+/** Sessions purchased for the current cycle (falls back to the last package size). */
+export function totalPurchased(payments: Payment[], packageSize: number): number {
+  return lifetimeSessions(payments) || packageSize || 0;
+}
+
+/** Most recent payment by date (newest), or null. */
+export function lastPayment(payments: Payment[]): Payment | null {
+  if (!payments || payments.length === 0) return null;
+  return [...payments].sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+}
+
+/** Human label for a payment record — money-free (no amount). */
+export function paymentLabel(p: Payment): string {
+  if (p.type === 'assessment') return 'Assessment fee';
+  return p.sessions ? `Package · ${p.sessions} sessions` : 'Package';
+}

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchClient, fetchClients } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
-import { fetchBillingSummaries } from '../services/payments';
+import { fetchBilling, fetchBillingSummaries, fetchPayments } from '../services/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import type { Coach } from '../domain/types';
 
@@ -36,5 +36,25 @@ export function useBillings(clientIds: string[]) {
     queryKey: ['billings', clientIds.slice().sort()],
     queryFn: () => fetchBillingSummaries(clientIds),
     enabled: isMain && clientIds.length > 0,
+  });
+}
+
+/** One client's billing summary — MAIN COACH ONLY. */
+export function useBilling(clientId: string | undefined) {
+  const isMain = useIsMainCoach();
+  return useQuery({
+    queryKey: ['billing', clientId],
+    queryFn: () => fetchBilling(clientId as string),
+    enabled: isMain && !!clientId,
+  });
+}
+
+/** One client's payment history — MAIN COACH ONLY. */
+export function usePayments(clientId: string | undefined) {
+  const isMain = useIsMainCoach();
+  return useQuery({
+    queryKey: ['payments', clientId],
+    queryFn: () => fetchPayments(clientId as string),
+    enabled: isMain && !!clientId,
   });
 }

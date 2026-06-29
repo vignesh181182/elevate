@@ -16,6 +16,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useClient, useCoachNameMap } from '../hooks/useData';
+import { useIsMainCoach } from '../auth/AuthProvider';
+import PaymentCard from '../components/PaymentCard';
 import { useToast } from '../components/Toast';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
@@ -50,6 +52,7 @@ export default function ClientDetail() {
   const toast = useToast();
   const { data: c, isLoading } = useClient(id);
   const coachName = useCoachNameMap();
+  const isMain = useIsMainCoach();
 
   if (isLoading)
     return (
@@ -174,6 +177,9 @@ export default function ClientDetail() {
           <About icon={Activity} k="Activity level" v={c.activity} />
           <About icon={AlertTriangle} k="Injuries" v={c.injuries} />
         </div>
+
+        {/* Payment — head coach only (juniors never receive billing/payment data) */}
+        {isMain && c.scheduleSet && <PaymentCard client={c} />}
 
         <div className="sp24" />
       </div>

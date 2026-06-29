@@ -2692,3 +2692,4 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 .cp-about-k{font-size:var(--text-sm);color:var(--muted);font-weight:var(--weight-semi);margin-bottom:4px;display:flex;align-items:center;gap:7px}
 .cp-about-k svg{width:15px;height:15px;color:var(--muted)}
 .cp-about-v{font-size:var(--text-md);color:var(--text);font-weight:var(--weight-med);line-height:1.45}
+.cp-hist-h{margin-top:12px}
