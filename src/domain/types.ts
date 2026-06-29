@@ -135,6 +135,12 @@ export interface SessionDoc {
   attendance?: Attendance;
   markedAt?: string; // ISO timestamp the attendance was set
   markedBy?: string; // coach uid who marked it
+  // A/B circuit — programs are derived (the flat list split in half), 3 fixed rounds,
+  // so only the ticks + completion are stored. progress keys: "A:1:Back squat".
+  progress?: Record<string, boolean>;
+  status?: 'completed';
+  completedAt?: string; // ISO when the session was completed
+  early?: boolean; // completed with partial progress
 }
 
 /** clients/{id}/sessionLog/{date} — permanent completed-session archive. */
