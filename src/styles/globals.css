@@ -2677,3 +2677,11 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 .page-stub{padding:60px 22px;text-align:center}
 .page-stub h1{font-size:var(--text-xl);font-weight:var(--weight-x);margin-bottom:8px}
 .page-stub p{font-size:var(--text-sm);color:var(--muted);font-weight:var(--weight-semi);line-height:1.5}
+/* coach profile detail card (More tab) */
+.prof-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-card);margin:0 18px 14px;padding:16px}
+.prof-tagline{font-size:var(--text-md);font-weight:var(--weight-semi);color:var(--text);line-height:1.4;margin-bottom:6px}
+.prof-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 2px}
+.prof-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);font-size:var(--text-sm)}
+.prof-row svg{width:16px;height:16px;color:var(--muted);flex-shrink:0}
+.prof-row-label{color:var(--muted);font-weight:var(--weight-semi);min-width:92px}
+.prof-row-val{color:var(--text);font-weight:var(--weight-semi)}
