@@ -21,6 +21,7 @@ import PaymentCard from '../components/PaymentCard';
 import ProgramCard from '../components/ProgramCard';
 import SessionsCard from '../components/SessionsCard';
 import MediaCard from '../components/MediaCard';
+import ProgressCard from '../components/ProgressCard';
 import { useToast } from '../components/Toast';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
@@ -183,6 +184,9 @@ export default function ClientDetail() {
 
         {/* Current program + exercises */}
         {c.scheduleSet && <ProgramCard client={c} />}
+
+        {/* Strength progress (only renders when there's logged data) */}
+        {c.scheduleSet && <ProgressCard client={c} />}
 
         {/* Completed-session history */}
         {c.scheduleSet && <SessionsCard client={c} />}
