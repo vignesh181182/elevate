@@ -18,6 +18,7 @@ import {
 import { useClient, useCoachNameMap } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import PaymentCard from '../components/PaymentCard';
+import ProgramCard from '../components/ProgramCard';
 import { useToast } from '../components/Toast';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
@@ -177,6 +178,9 @@ export default function ClientDetail() {
           <About icon={Activity} k="Activity level" v={c.activity} />
           <About icon={AlertTriangle} k="Injuries" v={c.injuries} />
         </div>
+
+        {/* Current program + exercises */}
+        {c.scheduleSet && <ProgramCard client={c} />}
 
         {/* Payment — head coach only (juniors never receive billing/payment data) */}
         {isMain && c.scheduleSet && <PaymentCard client={c} />}

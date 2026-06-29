@@ -4,15 +4,10 @@ import { ChevronRight } from 'lucide-react';
 import { useClients, useCoachNameMap } from '../hooks/useData';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
+import { parseDays } from '../domain/client';
 import type { Client } from '../domain/types';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-// "Mon, Wed, Fri" → ['Mon','Wed','Fri']; '—'/empty → [].
-function parseDays(days: string | undefined): string[] {
-  if (!days || days === '—') return [];
-  return days.split(',').map((d) => d.trim()).filter(Boolean);
-}
 
 function timeToMinutes(t: string): number {
   const m = String(t || '').match(/(\d+):(\d+)\s*(AM|PM)/i);

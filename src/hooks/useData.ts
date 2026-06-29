@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchClient, fetchClients } from '../services/clients';
+import { fetchClient, fetchClientExercises, fetchClients } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
 import { fetchLibrary } from '../services/library';
 import { fetchAllSessionLogs } from '../services/sessions';
@@ -15,6 +15,14 @@ export function useClient(id: string | undefined) {
   return useQuery({
     queryKey: ['client', id],
     queryFn: () => fetchClient(id as string),
+    enabled: !!id,
+  });
+}
+
+export function useClientExercises(id: string | undefined) {
+  return useQuery({
+    queryKey: ['exercises', id],
+    queryFn: () => fetchClientExercises(id as string),
     enabled: !!id,
   });
 }
