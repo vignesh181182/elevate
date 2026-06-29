@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchClient, fetchClientExercises, fetchClients } from '../services/clients';
+import { createClient, fetchClient, fetchClientExercises, fetchClients, type NewClientInput } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
 import { fetchLibrary } from '../services/library';
 import { fetchAllSessionLogs, fetchSessionLog } from '../services/sessions';
@@ -12,6 +12,15 @@ import type { Coach, Payment } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
+}
+
+/** Create a new client (lead). Invalidates the clients list; resolves to the new id. */
+export function useCreateClient() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NewClientInput) => createClient(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+  });
 }
 
 export function useClient(id: string | undefined) {

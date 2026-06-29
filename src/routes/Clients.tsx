@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Users, Search, X, User, CreditCard, Activity, ChevronDown, Filter } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Users, Search, X, User, CreditCard, Activity, ChevronDown, Filter, Plus } from 'lucide-react';
 import { useClients, useCoaches, useCoachNameMap, useBillings } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import { paymentStatusFromBilling } from '../domain/payments';
@@ -10,6 +10,7 @@ import ClientCard from '../components/ClientCard';
 type PayFilter = 'All' | 'Paid' | 'DueSoon' | 'Overdue';
 
 export default function Clients() {
+  const navigate = useNavigate();
   const isMain = useIsMainCoach();
   const { data: clients = [], isLoading } = useClients();
   const { data: coaches = [] } = useCoaches();
@@ -162,6 +163,10 @@ export default function Clients() {
         )}
       </div>
       <div className="sp80" />
+
+      <button className="fab" onClick={() => navigate('/clients/new')} aria-label="Add client">
+        <Plus size={26} />
+      </button>
     </div>
   );
 }
