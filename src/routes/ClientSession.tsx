@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Check, ArrowRight, PlayCircle, Clock } from 'lucide-react';
-import { useClient, useClientExercises, useMarkAttendance, useSession } from '../hooks/useData';
+import { useClient, useClientExercises, useMarkAttendance, useSession, useSetProgress } from '../hooks/useData';
 import { useAuth } from '../auth/AuthProvider';
 import { useToast } from '../components/Toast';
 import AttendanceSheet from '../components/AttendanceSheet';
@@ -34,6 +34,7 @@ export default function ClientSession() {
   const date = todayISO();
   const { data: session } = useSession(id, date);
   const mark = useMarkAttendance(date);
+  const setProgress = useSetProgress(id, date);
   const [sheet, setSheet] = useState(false);
 
   if (isLoading || !client) {
@@ -67,6 +68,10 @@ export default function ClientSession() {
     if (!coach?.id) return toast('Not signed in');
     mark.mutate({ clientId: client!.id, status, markedBy: coach.id }, { onError: () => toast('Could not save') });
     setSheet(false);
+  }
+
+  function toggleSet(key: string, done: boolean) {
+    setProgress.mutate({ key, done });
   }
 
   const cat = catStyle(client.category);
@@ -147,7 +152,15 @@ export default function ClientSession() {
       ) : (
         <>
           {programs.map((p, i) => (
-            <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={activeIdx} progress={progress} week={week} />
+            <ProgramBlock
+              key={p.label}
+              program={p}
+              pIdx={i}
+              activeIdx={activeIdx}
+              progress={progress}
+              week={week}
+              onToggle={toggleSet}
+            />
           ))}
           <button className="sess-modify2 sess-history" onClick={() => setSheet(true)}>
             <span className="sm2-ic">
@@ -180,12 +193,14 @@ function ProgramBlock({
   activeIdx,
   progress,
   week,
+  onToggle,
 }: {
   program: CircuitProgram;
   pIdx: number;
   activeIdx: number;
   progress: Progress;
   week: number;
+  onToggle?: (key: string, done: boolean) => void;
 }) {
   const done = programComplete(program, progress);
   const active = pIdx === activeIdx && !done;
@@ -245,11 +260,26 @@ function ProgramBlock({
                     const r = i + 1;
                     const cellDone = !!progress[progressKey(program.label, r, ex.name)];
                     const curCell = active && r === curR && isCur && !cellDone;
-                    return (
+                    const interactive = active && r === curR && !!onToggle;
+                    const inner = (
+                      <span className={`pgm-set${cellDone ? ' done' : curCell ? ' cur' : ''}`}>
+                        {cellDone ? <Check size={13} /> : curCell ? <ArrowRight size={13} /> : ''}
+                      </span>
+                    );
+                    return interactive ? (
+                      <span
+                        className="pgm-cell tap"
+                        key={r}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${cellDone ? 'Undo' : 'Complete'} ${ex.name} set ${r}`}
+                        onClick={() => onToggle!(progressKey(program.label, r, ex.name), !cellDone)}
+                      >
+                        {inner}
+                      </span>
+                    ) : (
                       <span className="pgm-cell" key={r}>
-                        <span className={`pgm-set${cellDone ? ' done' : curCell ? ' cur' : ''}`}>
-                          {cellDone ? <Check size={13} /> : curCell ? <ArrowRight size={13} /> : ''}
-                        </span>
+                        {inner}
                       </span>
                     );
                   })}

@@ -23,13 +23,20 @@ import {
   updateLibraryExercise,
   type LibraryExerciseInput,
 } from '../services/library';
-import { fetchAllSessionLogs, fetchDaySessions, fetchSession, fetchSessionLog, markAttendance } from '../services/sessions';
+import {
+  fetchAllSessionLogs,
+  fetchDaySessions,
+  fetchSession,
+  fetchSessionLog,
+  markAttendance,
+  setSessionProgress,
+} from '../services/sessions';
 import { addMedia, deleteMedia, fetchMedia, type NewMedia } from '../services/media';
 import { fetchReports } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Attendance, Coach, Payment, ProgramExercise } from '../domain/types';
+import type { Attendance, Coach, Payment, ProgramExercise, SessionDoc } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -184,6 +191,32 @@ export function useSession(clientId: string | undefined, date: string) {
     queryKey: ['session', clientId, date],
     queryFn: () => fetchSession(clientId as string, date),
     enabled: !!clientId,
+  });
+}
+
+/**
+ * Tick/untick one circuit set. Optimistic: the cached session updates instantly so
+ * the grid responds, rolls back on error, and re-syncs on settle.
+ */
+export function useSetProgress(clientId: string | undefined, date: string) {
+  const qc = useQueryClient();
+  const qk = ['session', clientId, date];
+  return useMutation({
+    mutationFn: ({ key, done }: { key: string; done: boolean }) =>
+      setSessionProgress(clientId as string, date, key, done),
+    onMutate: async ({ key, done }) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<SessionDoc | null>(qk);
+      qc.setQueryData<SessionDoc | null>(qk, (old) => {
+        const progress = { ...(old?.progress ?? {}) };
+        if (done) progress[key] = true;
+        else delete progress[key];
+        return { ...(old ?? {}), progress };
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
   });
 }
 

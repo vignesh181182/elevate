@@ -1,7 +1,17 @@
 // Session-log reads. sessionLog lives per-client (clients/{id}/sessionLog/{date});
 // a collection-group query gathers completed sessions across all clients. The
 // emulator doesn't require indexes; we sort client-side to avoid needing one.
-import { collection, collectionGroup, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import {
+  collection,
+  collectionGroup,
+  deleteField,
+  doc,
+  FieldPath,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Attendance, SessionDoc, SessionLog } from '../domain/types';
 
@@ -19,6 +29,21 @@ export async function fetchSessionLog(clientId: string): Promise<SessionLog[]> {
 export async function fetchSession(clientId: string, date: string): Promise<SessionDoc | null> {
   const snap = await getDoc(doc(db, 'clients', clientId, 'sessions', date));
   return snap.exists() ? (snap.data() as SessionDoc) : null;
+}
+
+/**
+ * Tick/untick one circuit set (any coach). Ticking writes progress.{key}=true;
+ * unticking deletes the key (keeps the map tidy). FieldPath handles the ':'/space in
+ * keys like "A:1:Back squat". The session doc already exists (attendance was marked).
+ */
+export async function setSessionProgress(
+  clientId: string,
+  date: string,
+  key: string,
+  done: boolean,
+): Promise<void> {
+  const ref = doc(db, 'clients', clientId, 'sessions', date);
+  await updateDoc(ref, new FieldPath('progress', key), done ? true : deleteField());
 }
 
 /** Each listed client's session doc for one date (clientId → SessionDoc), unmarked omitted. */

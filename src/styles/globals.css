@@ -771,6 +771,8 @@ body.ex-drag-on{user-select:none;-webkit-user-select:none}
 .pgm-dot{width:4px;height:4px;border-radius:50%;background:var(--muted);flex-shrink:0;opacity:.7}
 .pgm-cells{display:flex;flex-shrink:0}
 .pgm-cell{width:38px;display:flex;align-items:center;justify-content:center}
+.pgm-cell.tap{cursor:pointer}
+.pgm-cell.tap:active{transform:scale(.88)}
 .pgm-set{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid #3a4d4c}
 .pgm-set svg{width:13px;height:13px;stroke-width:2.5px}
 .pgm-set.done{background:var(--green);border-color:var(--green);color:#fff}
