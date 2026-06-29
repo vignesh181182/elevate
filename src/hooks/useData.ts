@@ -4,6 +4,7 @@ import { fetchCoaches } from '../services/coaches';
 import { fetchLibrary } from '../services/library';
 import { fetchAllSessionLogs, fetchSessionLog } from '../services/sessions';
 import { fetchMedia } from '../services/media';
+import { fetchReports } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments } from '../services/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import type { Coach } from '../domain/types';
@@ -34,6 +35,10 @@ export function useCoaches() {
 
 export function useLibrary() {
   return useQuery({ queryKey: ['library'], queryFn: fetchLibrary });
+}
+
+export function useReports() {
+  return useQuery({ queryKey: ['reports'], queryFn: fetchReports });
 }
 
 export function useSessionLogs() {
