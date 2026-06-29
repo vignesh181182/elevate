@@ -2685,3 +2685,10 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 .prof-row svg{width:16px;height:16px;color:var(--muted);flex-shrink:0}
 .prof-row-label{color:var(--muted);font-weight:var(--weight-semi);min-width:92px}
 .prof-row-val{color:var(--text);font-weight:var(--weight-semi)}
+/* client-detail header tags + multi-line "about" rows */
+.cp-tags{display:flex;flex-wrap:wrap;gap:6px;padding:0 18px 6px}
+.cp-about-row{padding:11px 0;border-top:1px solid var(--border)}
+.cp-about-row:first-child{border-top:none;padding-top:2px}
+.cp-about-k{font-size:var(--text-sm);color:var(--muted);font-weight:var(--weight-semi);margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.cp-about-k svg{width:15px;height:15px;color:var(--muted)}
+.cp-about-v{font-size:var(--text-md);color:var(--text);font-weight:var(--weight-med);line-height:1.45}
