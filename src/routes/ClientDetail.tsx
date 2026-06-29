@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useClient, useCoachNameMap } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
+import AssessmentCard from '../components/AssessmentCard';
 import PaymentCard from '../components/PaymentCard';
 import ProgramCard from '../components/ProgramCard';
 import SessionsCard from '../components/SessionsCard';
@@ -186,6 +187,9 @@ export default function ClientDetail() {
           <About icon={Activity} k="Activity level" v={c.activity} />
           <About icon={AlertTriangle} k="Injuries" v={c.injuries} />
         </div>
+
+        {/* First-assessment — capturable for any client (not an onboarding gate) */}
+        <AssessmentCard client={c} />
 
         {/* Lead activation — assign a coach + schedule to set the client up */}
         {!c.scheduleSet && (
