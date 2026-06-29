@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchClient, fetchClientExercises, fetchClients } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
 import { fetchLibrary } from '../services/library';
-import { fetchAllSessionLogs } from '../services/sessions';
+import { fetchAllSessionLogs, fetchSessionLog } from '../services/sessions';
 import { fetchBilling, fetchBillingSummaries, fetchPayments } from '../services/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import type { Coach } from '../domain/types';
@@ -37,6 +37,14 @@ export function useLibrary() {
 
 export function useSessionLogs() {
   return useQuery({ queryKey: ['sessionLogs'], queryFn: fetchAllSessionLogs });
+}
+
+export function useClientSessionLog(id: string | undefined) {
+  return useQuery({
+    queryKey: ['sessionLog', id],
+    queryFn: () => fetchSessionLog(id as string),
+    enabled: !!id,
+  });
 }
 
 /** id → coach name map, for resolving a client's coachId to a display name. */
