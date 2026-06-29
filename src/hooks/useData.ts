@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  addProgramExercises,
   createClient,
   fetchClient,
   fetchClientExercises,
   fetchClients,
+  removeProgramExercise,
   setClientSchedule,
   type NewClientInput,
+  type NewProgramExercise,
   type ScheduleInput,
 } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
@@ -56,6 +59,24 @@ export function useClientExercises(id: string | undefined) {
     queryKey: ['exercises', id],
     queryFn: () => fetchClientExercises(id as string),
     enabled: !!id,
+  });
+}
+
+/** Append picked library exercises to a client's program. Invalidates their exercises. */
+export function useAddProgramExercises(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (items: NewProgramExercise[]) => addProgramExercises(clientId as string, items),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
+  });
+}
+
+/** Remove one exercise from a client's program. Invalidates their exercises. */
+export function useRemoveProgramExercise(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (exId: string) => removeProgramExercise(clientId as string, exId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
   });
 }
 

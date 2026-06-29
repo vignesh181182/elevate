@@ -1,7 +1,18 @@
 // Client data-access layer (Firestore reads). Per the access model, ALL coaches
 // see ALL clients — only payment data is gated (see services/payments.ts +
 // firestore.rules). So these reads are not coach-filtered.
-import { collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Client, ProgramExercise, ProgramHistory } from '../domain/types';
 
@@ -26,6 +37,35 @@ export async function fetchClients(): Promise<Client[]> {
 export async function fetchClient(id: string): Promise<Client | null> {
   const snap = await getDoc(doc(db, 'clients', id));
   return snap.exists() ? (snap.data() as Client) : null;
+}
+
+/** A library pick to add into a client's standing program. */
+export interface NewProgramExercise {
+  name: string;
+  group?: string;
+  target: string;
+}
+
+/**
+ * Append exercises to a client's program (any coach). Each lands after the current
+ * last (order = max+1) with empty per-week logs, in one atomic batch.
+ */
+export async function addProgramExercises(clientId: string, items: NewProgramExercise[]): Promise<void> {
+  if (!items.length) return;
+  const col = collection(db, 'clients', clientId, 'exercises');
+  const snap = await getDocs(col);
+  let order = snap.docs.reduce((m, d) => Math.max(m, (d.data() as ProgramExercise).order ?? 0), 0);
+  const batch = writeBatch(db);
+  for (const it of items) {
+    order += 1;
+    batch.set(doc(col), { name: it.name, group: it.group ?? '', target: it.target, order, logs: {} });
+  }
+  await batch.commit();
+}
+
+/** Remove one exercise from a client's program. */
+export async function removeProgramExercise(clientId: string, exId: string): Promise<void> {
+  await deleteDoc(doc(db, 'clients', clientId, 'exercises', exId));
 }
 
 export async function fetchClientExercises(id: string): Promise<ProgramExercise[]> {

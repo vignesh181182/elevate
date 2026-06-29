@@ -35,6 +35,7 @@ export default function App() {
           <Route path="/clients/new" element={<ClientNew />} />
           <Route path="/clients/:id" element={<ClientDetail />} />
           <Route path="/clients/:id/schedule" element={<ClientSchedule />} />
+          <Route path="/clients/:id/library" element={<Library />} />
           <Route path="/library" element={<Library />} />
         </Route>
 
