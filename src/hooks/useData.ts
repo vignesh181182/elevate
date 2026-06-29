@@ -6,11 +6,13 @@ import {
   fetchClientExercises,
   fetchClients,
   removeProgramExercise,
+  saveWeekLoads,
   setClientSchedule,
   updateProgramExercise,
   type NewClientInput,
   type NewProgramExercise,
   type ScheduleInput,
+  type WeekLoad,
 } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
 import { fetchLibrary } from '../services/library';
@@ -77,6 +79,16 @@ export function useRemoveProgramExercise(clientId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (exId: string) => removeProgramExercise(clientId as string, exId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
+  });
+}
+
+/** Save per-week loads for one program week. Invalidates the client's exercises. */
+export function useSaveWeekLoads(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ week, loads }: { week: number; loads: WeekLoad[] }) =>
+      saveWeekLoads(clientId as string, week, loads),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
   });
 }

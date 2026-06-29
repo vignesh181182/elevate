@@ -68,6 +68,27 @@ export async function removeProgramExercise(clientId: string, exId: string): Pro
   await deleteDoc(doc(db, 'clients', clientId, 'exercises', exId));
 }
 
+/** One exercise's weight/reps for a given week. */
+export interface WeekLoad {
+  exId: string;
+  w: number;
+  r: number;
+}
+
+/**
+ * Save per-week loads for a program week (any coach). Uses the dotted `logs.{week}`
+ * field path so only that week is written — other weeks' logs are untouched — all in
+ * one atomic batch.
+ */
+export async function saveWeekLoads(clientId: string, week: number, loads: WeekLoad[]): Promise<void> {
+  if (!loads.length) return;
+  const batch = writeBatch(db);
+  for (const l of loads) {
+    batch.update(doc(db, 'clients', clientId, 'exercises', l.exId), { [`logs.${week}`]: { w: l.w, r: l.r } });
+  }
+  await batch.commit();
+}
+
 /** Patch editable fields of a program exercise (target now; name/group later). */
 export async function updateProgramExercise(
   clientId: string,

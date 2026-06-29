@@ -121,6 +121,11 @@ export default function ProgramCard({ client }: { client: Client }) {
               + Add exercise
             </button>
             {list.length > 0 && (
+              <button className="cp-link" onClick={() => navigate(`/clients/${client.id}/program`)}>
+                Set loads
+              </button>
+            )}
+            {list.length > 0 && (
               <button className="cp-link" onClick={() => setEditing((v) => !v)}>
                 {editing ? 'Done' : 'Edit'}
               </button>

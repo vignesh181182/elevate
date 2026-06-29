@@ -44,3 +44,28 @@ export function loadLabel(ex: ProgramExercise): string {
   if (!l) return '';
   return l.w > 0 ? `${l.w}kg × ${l.r}` : `${l.r} reps`;
 }
+
+/** Time/level-based exercise (planks, walks, etc.) — reps column means seconds/level, no weight. */
+export function isRepBased(ex: Pick<ProgramExercise, 'target' | 'name'>): boolean {
+  const t = (ex.target ?? '').trim();
+  return /s$|min/i.test(t) || /step|balance|walk|wall|circuit|plank/i.test(ex.name ?? '');
+}
+
+/** The week's load, carrying forward the most recent earlier week when unset (default 0kg × 8). */
+export function weekLoad(ex: ProgramExercise, week: number): { w: number; r: number } {
+  const logs = ex.logs ?? {};
+  if (logs[week]) return logs[week];
+  for (let w = week - 1; w >= 1; w--) if (logs[w]) return logs[w];
+  return { w: 0, r: 8 };
+}
+
+/** The live program week, derived from the start date and clamped to 1..weeks. */
+export function currentProgramWeek(c: Pick<Client, 'program' | 'programStartDate'>): number {
+  const weeks = c.program?.weeks ?? 6;
+  if (!c.programStartDate) return 1;
+  const start = new Date(c.programStartDate + 'T00:00:00');
+  if (isNaN(+start)) return 1;
+  const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00');
+  const days = Math.floor((+today - +start) / 86400000);
+  return Math.max(1, Math.min(weeks, Math.floor(days / 7) + 1));
+}
