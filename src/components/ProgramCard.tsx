@@ -1,28 +1,44 @@
 import { useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Dumbbell } from 'lucide-react';
-import { useClientExercises, useRemoveProgramExercise, useUpdateProgramExercise } from '../hooks/useData';
+import { ClipboardList, Dumbbell, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  useClientExercises,
+  useRemoveProgramExercise,
+  useReorderProgramExercises,
+  useUpdateProgramExercise,
+} from '../hooks/useData';
 import { useToast } from './Toast';
 import { muscleColor } from '../lib/muscleColors';
 import { programDisplayName, parseDays, loadLabel } from '../domain/client';
 import type { Client, ProgramExercise } from '../domain/types';
 
-// Current-program section: program meta + exercise list (name, group tag, latest
-// logged load, target). Coaches can add exercises from the library and, in edit
-// mode, remove them. Per-week load editing & reorder are separate (later) tasks.
+type Mode = 'view' | 'edit' | 'reorder';
+
+// Current-program section: program meta + exercise list. Coaches can add exercises
+// from the library, edit targets, remove, and reorder (↑/↓). Per-week loads live on
+// a dedicated screen (Set loads).
 export default function ProgramCard({ client }: { client: Client }) {
   const navigate = useNavigate();
   const toast = useToast();
   const { data: exercises = [], isLoading } = useClientExercises(client.id);
   const remove = useRemoveProgramExercise(client.id);
   const update = useUpdateProgramExercise(client.id);
-  const [editing, setEditing] = useState(false);
-  // Per-exercise target draft while editing; absent ⇒ show the stored value.
+  const reorder = useReorderProgramExercises(client.id);
+
+  const [mode, setMode] = useState<Mode>('view');
   const [targets, setTargets] = useState<Record<string, string>>({});
+  // Optimistic order while reordering (null otherwise).
+  const [order, setOrder] = useState<ProgramExercise[] | null>(null);
 
   const p = client.program;
   const days = parseDays(client.days);
   const list = exercises.filter((e) => !e.future && e.name !== 'Tap to add exercise');
+  const display = mode === 'reorder' && order ? order : list;
+
+  function leaveMode() {
+    setMode('view');
+    setOrder(null);
+  }
 
   function onRemove(ex: ProgramExercise) {
     if (!ex.id) return;
@@ -39,6 +55,18 @@ export default function ProgramCard({ client }: { client: Client }) {
     update.mutate(
       { exId: ex.id, patch: { target: next } },
       { onSuccess: () => toast('Target updated'), onError: () => toast('Could not update target') },
+    );
+  }
+
+  function move(i: number, dir: -1 | 1) {
+    const arr = [...display];
+    const j = i + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    setOrder(arr);
+    reorder.mutate(
+      arr.map((e) => e.id as string),
+      { onError: () => { setOrder(null); toast('Could not reorder'); } },
     );
   }
 
@@ -67,7 +95,7 @@ export default function ProgramCard({ client }: { client: Client }) {
             <div className="cp-about-v cp-hist-h">No exercises in this program yet.</div>
           ) : (
             <div className="cp-hist-h">
-              {list.map((ex) => {
+              {display.map((ex, i) => {
                 const mc = muscleColor(ex.group ?? '');
                 const tagStyle = { '--c-bg': mc.b, '--c-fg': mc.c } as CSSProperties;
                 const load = loadLabel(ex);
@@ -85,9 +113,10 @@ export default function ProgramCard({ client }: { client: Client }) {
                           </span>
                         )}
                       </div>
-                      {load && <div className="lib-cat">Latest · {load}</div>}
+                      {mode !== 'reorder' && load && <div className="lib-cat">Latest · {load}</div>}
                     </div>
-                    {editing ? (
+
+                    {mode === 'edit' ? (
                       <div className="ex-edit">
                         <input
                           className="ex-target-input"
@@ -107,6 +136,20 @@ export default function ProgramCard({ client }: { client: Client }) {
                           ✕
                         </button>
                       </div>
+                    ) : mode === 'reorder' ? (
+                      <div className="ex-edit">
+                        <button className="stp-btn" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up">
+                          <ChevronUp size={18} />
+                        </button>
+                        <button
+                          className="stp-btn"
+                          disabled={i === display.length - 1}
+                          onClick={() => move(i, 1)}
+                          aria-label="Move down"
+                        >
+                          <ChevronDown size={18} />
+                        </button>
+                      </div>
                     ) : (
                       <span className="lib-target">{ex.target}</span>
                     )}
@@ -117,17 +160,30 @@ export default function ProgramCard({ client }: { client: Client }) {
           )}
 
           <div className="cp-actions">
-            <button className="cp-link" onClick={() => navigate(`/clients/${client.id}/library`)}>
-              + Add exercise
-            </button>
-            {list.length > 0 && (
-              <button className="cp-link" onClick={() => navigate(`/clients/${client.id}/program`)}>
-                Set loads
-              </button>
-            )}
-            {list.length > 0 && (
-              <button className="cp-link" onClick={() => setEditing((v) => !v)}>
-                {editing ? 'Done' : 'Edit'}
+            {mode === 'view' ? (
+              <>
+                <button className="cp-link" onClick={() => navigate(`/clients/${client.id}/library`)}>
+                  + Add exercise
+                </button>
+                {list.length > 0 && (
+                  <button className="cp-link" onClick={() => navigate(`/clients/${client.id}/program`)}>
+                    Set loads
+                  </button>
+                )}
+                {list.length > 0 && (
+                  <button className="cp-link" onClick={() => setMode('edit')}>
+                    Edit
+                  </button>
+                )}
+                {list.length > 1 && (
+                  <button className="cp-link" onClick={() => { setMode('reorder'); setOrder(list); }}>
+                    Reorder
+                  </button>
+                )}
+              </>
+            ) : (
+              <button className="cp-link" onClick={leaveMode}>
+                Done
               </button>
             )}
           </div>

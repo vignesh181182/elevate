@@ -68,6 +68,14 @@ export async function removeProgramExercise(clientId: string, exId: string): Pro
   await deleteDoc(doc(db, 'clients', clientId, 'exercises', exId));
 }
 
+/** Persist a new exercise order — writes order = 1..N in the given id sequence, atomically. */
+export async function reorderProgramExercises(clientId: string, orderedIds: string[]): Promise<void> {
+  if (!orderedIds.length) return;
+  const batch = writeBatch(db);
+  orderedIds.forEach((id, i) => batch.update(doc(db, 'clients', clientId, 'exercises', id), { order: i + 1 }));
+  await batch.commit();
+}
+
 /** One exercise's weight/reps for a given week. */
 export interface WeekLoad {
   exId: string;

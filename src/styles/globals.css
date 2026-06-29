@@ -314,6 +314,8 @@ svg.ic{display:inline-block;background-color:currentColor;flex-shrink:0}
 .stepper .ctl{display:flex;align-items:center;justify-content:space-between;margin-top:5px}
 .stp-btn{width:34px;height:34px;border-radius:10px;background:var(--card);font-size:var(--text-lg);font-weight:var(--weight-bold);cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center;border:1px solid var(--line);line-height:1.3}
 .stp-btn:active{transform:scale(.9);background:var(--accent-soft)}
+.stp-btn:disabled{opacity:.35;cursor:default}
+.stp-btn:disabled:active{transform:none;background:var(--card)}
 .stp-val{font-size:var(--text-lg);font-weight:var(--weight-bold);min-width:46px;text-align:center;line-height:1.3}
 .stp-val small{font-size:var(--text-sm);font-weight:var(--weight-semi);color:var(--muted);line-height:1.4}
 .grid-toggle{margin:6px 18px;display:flex;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px}

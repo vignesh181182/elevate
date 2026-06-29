@@ -6,6 +6,7 @@ import {
   fetchClientExercises,
   fetchClients,
   removeProgramExercise,
+  reorderProgramExercises,
   saveWeekLoads,
   setClientSchedule,
   updateProgramExercise,
@@ -95,6 +96,15 @@ export function useSaveWeekLoads(clientId: string | undefined) {
   return useMutation({
     mutationFn: ({ week, loads }: { week: number; loads: WeekLoad[] }) =>
       saveWeekLoads(clientId as string, week, loads),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
+  });
+}
+
+/** Persist a new exercise order. Invalidates the client's exercises. */
+export function useReorderProgramExercises(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (orderedIds: string[]) => reorderProgramExercises(clientId as string, orderedIds),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
   });
 }
