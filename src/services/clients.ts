@@ -80,6 +80,8 @@ export async function createClient(input: NewClientInput): Promise<string> {
   return ref.id;
 }
 
+const WEEK_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 /** Schedule & coach assignment from the activation form. */
 export interface ScheduleInput {
   coachId: string;
@@ -97,9 +99,10 @@ export interface ScheduleInput {
  * may run this. Works for both first setup and editing an existing schedule.
  */
 export async function setClientSchedule(id: string, input: ScheduleInput): Promise<void> {
+  const days = [...input.days].sort((a, b) => WEEK_ORDER.indexOf(a) - WEEK_ORDER.indexOf(b));
   await updateDoc(doc(db, 'clients', id), {
     coachId: input.coachId,
-    days: input.days.join(', '),
+    days: days.join(', '),
     time: input.time,
     sessionDuration: input.sessionDuration,
     programStartDate: input.programStartDate,

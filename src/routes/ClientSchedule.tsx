@@ -61,7 +61,7 @@ function Form({
     save.mutate(
       {
         coachId,
-        days: DAYS.filter((d) => days.includes(d)), // keep canonical week order
+        days, // service normalises to canonical week order
         time: to12h(time),
         weeks,
         sessionDuration: duration,
