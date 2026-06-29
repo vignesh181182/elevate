@@ -33,6 +33,13 @@ service cloud.firestore {
     // Gym-wide collections — all coaches.
     match /reports/{id} { allow read, write: if isAuthed(); }
 
+    // Collection-group read for completed-session logs (Home activity feed,
+    // schedule). A collectionGroup query needs a recursive-wildcard rule; the
+    // depth-specific rule under clients/ below still governs direct reads/writes.
+    match /{path=**}/sessionLog/{logId} {
+      allow read: if isAuthed();
+    }
+
     // Activity feed: payment-type activity is main-only; everything else shared.
     match /activity/{id} {
       allow read: if isAuthed() && (isMain() || resource.data.type != 'PAYMENT');
