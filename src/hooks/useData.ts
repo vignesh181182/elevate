@@ -23,7 +23,7 @@ import {
   type LibraryExerciseInput,
 } from '../services/library';
 import { fetchAllSessionLogs, fetchDaySessions, fetchSessionLog, markAttendance } from '../services/sessions';
-import { fetchMedia } from '../services/media';
+import { addMedia, deleteMedia, fetchMedia, type NewMedia } from '../services/media';
 import { fetchReports } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
@@ -178,6 +178,24 @@ export function useClientMedia(id: string | undefined) {
     queryKey: ['media', id],
     queryFn: () => fetchMedia(id as string),
     enabled: !!id,
+  });
+}
+
+/** Add a (compressed) progress photo. Invalidates the client's media. */
+export function useAddMedia(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (media: NewMedia) => addMedia(clientId as string, media),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['media', clientId] }),
+  });
+}
+
+/** Delete a progress photo. Invalidates the client's media. */
+export function useDeleteMedia(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (mediaId: string) => deleteMedia(clientId as string, mediaId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['media', clientId] }),
   });
 }
 
