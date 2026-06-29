@@ -68,6 +68,15 @@ export async function removeProgramExercise(clientId: string, exId: string): Pro
   await deleteDoc(doc(db, 'clients', clientId, 'exercises', exId));
 }
 
+/** Patch editable fields of a program exercise (target now; name/group later). */
+export async function updateProgramExercise(
+  clientId: string,
+  exId: string,
+  patch: Partial<Pick<ProgramExercise, 'name' | 'group' | 'target' | 'future'>>,
+): Promise<void> {
+  await updateDoc(doc(db, 'clients', clientId, 'exercises', exId), patch);
+}
+
 export async function fetchClientExercises(id: string): Promise<ProgramExercise[]> {
   const snap = await getDocs(query(collection(db, 'clients', id, 'exercises'), orderBy('order')));
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ProgramExercise, 'id'>) }));

@@ -7,6 +7,7 @@ import {
   fetchClients,
   removeProgramExercise,
   setClientSchedule,
+  updateProgramExercise,
   type NewClientInput,
   type NewProgramExercise,
   type ScheduleInput,
@@ -19,7 +20,7 @@ import { fetchReports } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Attendance, Coach, Payment } from '../domain/types';
+import type { Attendance, Coach, Payment, ProgramExercise } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -76,6 +77,16 @@ export function useRemoveProgramExercise(clientId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (exId: string) => removeProgramExercise(clientId as string, exId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
+  });
+}
+
+/** Patch a program exercise (e.g. its target). Invalidates the client's exercises. */
+export function useUpdateProgramExercise(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ exId, patch }: { exId: string; patch: Partial<ProgramExercise> }) =>
+      updateProgramExercise(clientId as string, exId, patch),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
   });
 }
