@@ -13,6 +13,3 @@ gym bkup/
 # temp
 scratchpad/
 node_modules/
-
-# unused vendored icons (app uses Lucide CDN); 95MB, not referenced
-assets/icons/

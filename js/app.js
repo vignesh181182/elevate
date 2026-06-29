@@ -1,3 +1,19 @@
+/* ============================================================================
+   ELEVATE FITNESS — coach app (single-file vanilla JS, no framework/build)
+   ----------------------------------------------------------------------------
+   Architecture: one in-memory state (S + the `clients`/`coaches`/… arrays).
+   render() rebuilds the active screen's innerHTML from that state on every
+   change; navTo()/goBack() drive a fixed screen hierarchy (see NAV). All markup
+   is produced as template strings here; all styling lives in css/styles.css
+   (no inline style="" except --c-bg/--c-fg/--pct data hooks). PDFs render into
+   #rdoc via html2pdf.
+
+   SECTIONS (search the banners below):
+     DATA · HELPERS · AUTH · NAV · DASHBOARD · ICONS · CLIENTS · CLIENT DETAIL ·
+     ADD TO EXERCISE LIBRARY · CLIENT HISTORY · TODAY'S SESSION · ATTENDANCE ·
+     ONBOARDING · SCHEDULE · REPORTS · MORE · ANNOUNCEMENTS
+   ============================================================================ */
+
 /* ============ DATA ============ */
 const CATS={
  'General wellness':{c:'var(--green)',b:'var(--green-bg)',ic:'🌿'},
@@ -24,7 +40,21 @@ let clients=[
    {name:'Deadlift',g:'Hamstrings',target:'3×5',logs:{1:{w:95,r:5},2:{w:95,r:5},3:{w:102.5,r:5},4:{w:102.5,r:5},5:{w:110,r:5},6:{w:110,r:5}}},
    {name:'Overhead press',g:'Shoulders',target:'3×8',logs:{1:{w:32.5,r:8},2:{w:32.5,r:8},3:{w:37.5,r:8},4:{w:37.5,r:8},5:{w:42.5,r:8},6:{w:42.5,r:8}}},
    {name:'Bent-over row',g:'Back',target:'4×8',logs:{1:{w:50,r:8},2:{w:50,r:8},3:{w:55,r:8},4:{w:55,r:8},5:{w:60,r:8},6:{w:60,r:8}}},
-   {name:'Cable crunch',g:'Core',target:'3×15',logs:{1:{w:20,r:15},2:{w:20,r:15},3:{w:25,r:15},4:{w:25,r:15},5:{w:30,r:15},6:{w:30,r:15}}}]},
+   {name:'Cable crunch',g:'Core',target:'3×15',logs:{1:{w:20,r:15},2:{w:20,r:15},3:{w:25,r:15},4:{w:25,r:15},5:{w:30,r:15},6:{w:30,r:15}}},
+   // 3 accessory ("mini") movements — light, high-rep finishers
+   {name:'Hanging leg raise',g:'Core',target:'3×12',logs:{1:{w:0,r:10},2:{w:0,r:10},3:{w:0,r:12},4:{w:0,r:12},5:{w:0,r:12},6:{w:0,r:15}}},
+   {name:'Standing calf raise',g:'Calves',target:'3×15',logs:{1:{w:40,r:15},2:{w:40,r:15},3:{w:50,r:15},4:{w:50,r:15},5:{w:60,r:15},6:{w:60,r:15}}},
+   {name:'Face pull',g:'Shoulders',target:'3×15',logs:{1:{w:15,r:15},2:{w:15,r:15},3:{w:20,r:15},4:{w:20,r:15},5:{w:25,r:15},6:{w:25,r:15}}},
+   // extra compound + accessory work so each scheduled day fills both Program A & B with 3 exercises
+   {name:'Romanian deadlift',g:'Hamstrings',target:'3×8',logs:{1:{w:60,r:8},2:{w:60,r:8},3:{w:67.5,r:8},4:{w:67.5,r:8},5:{w:75,r:8},6:{w:75,r:8}}},
+   {name:'Front squat',g:'Quads',target:'4×6',logs:{1:{w:50,r:6},2:{w:50,r:6},3:{w:57.5,r:6},4:{w:57.5,r:6},5:{w:65,r:6},6:{w:65,r:6}}},
+   {name:'Pull-up',g:'Back',target:'3×8',logs:{1:{w:0,r:6},2:{w:0,r:6},3:{w:0,r:7},4:{w:0,r:7},5:{w:0,r:8},6:{w:0,r:9}}},
+   {name:'Incline bench press',g:'Chest',target:'3×8',logs:{1:{w:40,r:8},2:{w:40,r:8},3:{w:45,r:8},4:{w:45,r:8},5:{w:50,r:8},6:{w:50,r:8}}},
+   {name:'Bulgarian split squat',g:'Quads',target:'3×10',logs:{1:{w:12,r:10},2:{w:12,r:10},3:{w:16,r:10},4:{w:16,r:10},5:{w:20,r:10},6:{w:20,r:10}}},
+   {name:'Hip thrust',g:'Glutes',target:'3×10',logs:{1:{w:60,r:10},2:{w:60,r:10},3:{w:75,r:10},4:{w:75,r:10},5:{w:90,r:10},6:{w:90,r:10}}},
+   {name:'Lateral raise',g:'Shoulders',target:'3×15',logs:{1:{w:6,r:15},2:{w:6,r:15},3:{w:8,r:15},4:{w:8,r:15},5:{w:12,r:15},6:{w:12,r:15}}},
+   {name:'Leg press',g:'Quads',target:'3×10',logs:{1:{w:120,r:10},2:{w:120,r:10},3:{w:140,r:10},4:{w:140,r:10},5:{w:160,r:10},6:{w:160,r:10}}},
+   {name:'Russian twist',g:'Core',target:'3×20',logs:{1:{w:5,r:20},2:{w:5,r:20},3:{w:8,r:20},4:{w:8,r:20},5:{w:12,r:20},6:{w:12,r:20}}}]},
  {id:2,name:'Meera Nair',age:45,phone:'98201 11223',cat:'Rehab',ability:'Abled',status:'Active',coach:'Kiran',joined:'Feb 2024',start:'12 Mar 2025',sessions:18,days:'Tue, Thu',time:'8:30 AM',programStartDate:'2026-06-09',
   goals:'Recover knee strength and mobility post-surgery.',medical:'ACL reconstruction Jan 2025. Cleared for loaded rehab.',activity:'Low — building back up',injuries:'Right knee (recovering)',
   weights:[68,67.8,67.5,67.2,67],measures:{Weight:[68,67.8,67.5,67.2,67],Waist:[80,79.5,79,78.5,78]},
@@ -241,15 +271,15 @@ function paymentDue(c){const s=paymentStatus(c);return s==='DueSoon'||s==='Overd
  });
 })();
 const coaches=[
- {name:'Madhan',role:'Main trainer',clients:[1,3],photo:'assets/images/madhan.jpg',
+ {name:'Madhan',role:'Coach',main:true,clients:[1,3],photo:'assets/images/madhan.jpg',
   phone:'+91 91234 56789',email:'madhan@elevatefitness.com',yearsExp:6,
   specializations:['Strength & Conditioning Specialist'],certifications:['Certified Personal Trainer'],
   tagline:"I'll guide you. You focus."},
- {name:'Kiran',role:'Junior trainer',clients:[2,5],
+ {name:'Kiran',role:'Coach',clients:[2,5],
   phone:'+91 90000 11223',email:'kiran@elevatefitness.com',yearsExp:3,
   specializations:['Rehab & Mobility'],certifications:['Certified Personal Trainer'],
   tagline:"Small steps, steady wins."},
- {name:'Shakthi',role:'Junior trainer',clients:[4],
+ {name:'Shakthi',role:'Coach',clients:[4],
   phone:'+91 90000 44556',email:'shakthi@elevatefitness.com',yearsExp:3,
   specializations:['General Fitness'],certifications:['Certified Personal Trainer'],
   tagline:"Show up. The rest follows."}
@@ -259,8 +289,8 @@ function dateKey(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,
 function todayKey(){return dateKey(new Date())}
 function nowTime(){return new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}
 function currentCoach(){ // logged-in coach — main trainer (Madhan / TRAINER) by default
- if(S.role==='junior'){const j=coaches.find(c=>c.role!=='Main trainer');return j?j.name:coaches[0].name}
- const m=coaches.find(c=>c.role==='Main trainer');return m?m.name:coaches[0].name}
+ if(S.role==='junior'){const j=coaches.find(c=>!c.main);return j?j.name:coaches[0].name}
+ const m=coaches.find(c=>c.main);return m?m.name:coaches[0].name}
 let announcements=[
  {type:'Holiday',title:'Gym closed for Diwali',msg:'We will be closed 20–22 Oct. Sessions resume 23 Oct. Happy Diwali! 🪔',to:'All clients',when:'2 days ago'},
  {type:'Event',title:'Free posture workshop',msg:'Join our posture & mobility workshop this Saturday 11 AM. Open to all.',to:'All clients',when:'1 week ago'}
@@ -504,8 +534,8 @@ const ASSESS_PROFILE={
 };
 // switchable profiles shown in the home-header dropdown
 const PROFILES={
- main:{name:'Coach Madhan',head:'Coach Madhan',role:'Main trainer',ic:'🛡️',photo:'assets/images/madhan.jpg',phone:'+91 91234 56789',email:'madhan@elevatefitness.com',greet:'Good morning,',emoji:'👋'},
- junior:{name:'Coach Kiran',head:'Coach Kiran',role:'Junior trainer',ic:'👥',phone:'+91 90000 11223',email:'kiran@elevatefitness.com',greet:'Good morning,',emoji:'👋'}
+ main:{name:'Coach Madhan',head:'Coach Madhan',role:'Coach',ic:'🛡️',photo:'assets/images/madhan.jpg',phone:'+91 91234 56789',email:'madhan@elevatefitness.com',greet:'Good morning,',emoji:'👋'},
+ junior:{name:'Coach Kiran',head:'Coach Kiran',role:'Coach',ic:'👥',phone:'+91 90000 11223',email:'kiran@elevatefitness.com',greet:'Good morning,',emoji:'👋'}
  // no 'client' profile — this is a coach-only app (no client login)
 };
 
@@ -526,7 +556,7 @@ function clientStage(c){
 function stageTagHTML(c){
  const s=clientStage(c);if(!s)return '';
  const amber=s==='Assessment pending';
- return `<span class="tag" style="background:${amber?'var(--amber-bg)':'var(--blue-bg)'};color:${amber?'var(--amber)':'var(--blue)'}">${amber?'🩺':'📅'} ${s}</span>`;
+ return `<span class="tag tint-cat" style="--c-bg:${amber?'var(--amber-bg)':'var(--blue-bg)'};--c-fg:${amber?'var(--amber)':'var(--blue)'}">${amber?'🩺':'📅'} ${s}</span>`;
 }
 function trend(ex,wk){const cw=ex.logs[wk],pw=ex.logs[wk-1];if(!cw||!pw)return'flat';return cw.w>pw.w?'up':cw.w<pw.w?'down':'flat'}
 function getLog(ex,wk){if(!ex.logs[wk]){const p=ex.logs[wk-1]||{w:0,r:8};ex.logs[wk]={w:p.w,r:p.r}}return ex.logs[wk]}
@@ -622,7 +652,7 @@ function attachPicked(){if(!S.picks.length){toast('Tap + to pick exercises first
  toast(n+' exercise'+(n!==1?'s':'')+' added — effective '+lbl);}
 function toast(m){const t=document.getElementById('toast');t.onclick=null;t.textContent='✓  '+m;t.classList.add('show');clearTimeout(t._undoTimer);setTimeout(()=>t.classList.remove('show'),2400)}
 // tappable "undo" toast used by the mark-absent confirmation pattern
-function toastUndo(m,undo){const t=document.getElementById('toast');t.innerHTML='✓  '+m+'  <b style="text-decoration:underline">Undo</b>';t.classList.add('show');
+function toastUndo(m,undo){const t=document.getElementById('toast');t.innerHTML='✓  '+m+'  <b class="u">Undo</b>';t.classList.add('show');
  t.onclick=()=>{undo();t.onclick=null;clearTimeout(t._undoTimer);t.classList.remove('show')};
  clearTimeout(t._undoTimer);t._undoTimer=setTimeout(()=>{t.classList.remove('show');t.onclick=null},3000)}
 
@@ -753,23 +783,68 @@ function setHomeCoach(name){homeCoach=name;coachMenu=false;coachFilter=name;rend
  toast(name==='All'?'Viewing all coaches':"Viewing "+name+"'s clients");}
 /* inline icon set — keeps the home page crisp at any size */
 const ICO={
- bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.4a6 6 0 1 0-12 0c0 6.5-2.6 8.6-2.6 8.6h17.2S18 14.9 18 8.4"/><path d="M13.7 20.5a2 2 0 0 1-3.4 0"/></svg>',
- users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 20v-1.6a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8.75" cy="7.5" r="3.75"/><path d="M22 20v-1.6a4 4 0 0 0-3-3.9"/><path d="M16 3.9a4 4 0 0 1 0 7.5"/></svg>',
- cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.6"/><path d="M3 9.6h18M8 2.5v4M16 2.5v4"/></svg>',
- ring:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-4.1-7.27"/><path d="M9.3 11.7l2.4 2.4 5.1-5.4"/></svg>',
- doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.8 2.6H7A2.5 2.5 0 0 0 4.5 5.1v13.8A2.5 2.5 0 0 0 7 21.4h10a2.5 2.5 0 0 0 2.5-2.5V8.2z"/><path d="M13.8 2.6v5.6h5.7M8.5 13h7M8.5 16.7h7"/></svg>',
- check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6.5 9.2 17.2 4 12"/></svg>',
- clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 6.9V12l3.4 2.1"/></svg>',
- spin:'<svg class="ico-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 2.8a9.2 9.2 0 1 0 9.2 9.2"/></svg>',
- warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6 1.9 21.2h20.2z"/><path d="M12 9.7v4.6M12 17.8h.01"/></svg>',
- plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5v13M5.5 12h13"/></svg>',
- caret:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5 12 8.5l6 6"/></svg>',
- navHome:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.9 12 3l9 6.9V20a1.6 1.6 0 0 1-1.6 1.6H4.6A1.6 1.6 0 0 1 3 20z"/><path d="M9.3 21.6v-7.1h5.4v7.1"/></svg>',
- navReports:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20.5v-5.6M12 20.5V8.2M17 20.5v-9.1"/><path d="M3.5 20.6h17"/></svg>',
- navMore:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
- signin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>',
- signout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>'
+ bell:'<i data-lucide="ico-bell"></i>',
+ users:'<i data-lucide="ico-users"></i>',
+ cal:'<i data-lucide="ico-cal"></i>',
+ ring:'<i data-lucide="ico-ring"></i>',
+ doc:'<i data-lucide="ico-doc"></i>',
+ check:'<i data-lucide="ico-check"></i>',
+ clock:'<i data-lucide="ico-clock"></i>',
+ spin:'<i data-lucide="ico-spin"></i>',
+ warn:'<i data-lucide="ico-warn"></i>',
+ plus:'<i data-lucide="ico-plus"></i>',
+ caret:'<i data-lucide="ico-caret"></i>',
+ navHome:'<i data-lucide="ico-nav-home"></i>',
+ navReports:'<i data-lucide="ico-nav-reports"></i>',
+ navMore:'<i data-lucide="ico-nav-more"></i>',
+ signin:'<i data-lucide="ico-sign-in"></i>',
+ signout:'<i data-lucide="ico-sign-out"></i>'
 };
+
+/* ============ ICONS ============
+   Icons are SVG files in assets/icons/. <i data-lucide="name"> placeholders are swapped by paintIcons():
+   - app UI            -> empty <svg class="ic"> tinted via CSS mask (non-inline, follows currentColor)
+   - PDF docs (#rdoc)  -> real inline <svg> read from the file, so html2canvas/PDF renders it
+   This replaces the old Lucide CDN. */
+const ICON_CACHE={};
+const ALL_ICONS=["arrow-left","arrow-right","badge-check","ban","bell","cake","calendar","calendar-check","calendar-clock","calendar-days","camera","chart-column","check","check-circle-2","chevron-down","chevron-left","chevron-right","circle-alert","circle-dot","clipboard-check","clipboard-list","clipboard-pen","clock","credit-card","cross","dumbbell","eye","filter","flag","globe","headset","height","history","ico-bell","ico-cal","ico-caret","ico-check","ico-clock","ico-doc","ico-nav-home","ico-nav-more","ico-nav-reports","ico-plus","ico-ring","ico-sign-in","ico-sign-out","ico-spin","ico-users","ico-warn","image","image-plus","info","line-chart","lock","log-out","mail","map-pin","medal","megaphone","minus-circle","more-horizontal","more-vertical","pause","pencil","phone","play-circle","plus","plus-circle","repeat","rotate-ccw","save","search","send","settings","stethoscope","tag","target","ticket","trending-up","user","user-check","user-plus","user-round","user-x","users","waist","wallet","weight","x"];
+function loadIcon(name){
+ if(name in ICON_CACHE)return Promise.resolve(ICON_CACHE[name]);
+ ICON_CACHE[name]='';
+ return fetch('assets/icons/'+name+'.svg').then(function(r){return r.ok?r.text():'';}).then(function(t){ICON_CACHE[name]=t;return t;}).catch(function(){return '';});
+}
+const ICONS_READY=Promise.all(ALL_ICONS.map(loadIcon));
+function _maskIcon(el,name){
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ svg.setAttribute('class',('ic '+(el.getAttribute('class')||'')).trim());
+ // default 24px via attributes (specificity 0) so any CSS rule — incl. single-class ones like
+ // .cl-select-ic — still sizes the icon, mirroring how Lucide sized its <svg>.
+ svg.setAttribute('width','24');svg.setAttribute('height','24');
+ const url='url(assets/icons/'+name+'.svg) center/contain no-repeat';
+ let st=el.getAttribute('style')||'';if(st&&!/;\s*$/.test(st))st+=';';
+ svg.setAttribute('style',st+'-webkit-mask:'+url+';mask:'+url);
+ el.parentNode.replaceChild(svg,el);
+}
+function _inlineIcon(el,svgText){
+ const tpl=document.createElement('template');tpl.innerHTML=(svgText||'').trim();
+ const svg=tpl.content.firstElementChild;
+ if(!svg||svg.tagName.toLowerCase()!=='svg')return _maskIcon(el,el.getAttribute('data-lucide'));
+ const cls=el.getAttribute('class');if(cls)svg.setAttribute('class',((svg.getAttribute('class')||'')+' '+cls).trim());
+ const st=el.getAttribute('style');if(st){const ex=svg.getAttribute('style')||'';svg.setAttribute('style',(ex?ex.replace(/;?\s*$/,';'):'')+st);}
+ el.parentNode.replaceChild(svg,el);
+}
+function paintIcons(root){
+ const scope=(root&&root.querySelectorAll)?root:document;
+ const nodes=scope.querySelectorAll('i[data-lucide]');
+ for(let i=0;i<nodes.length;i++){
+  const el=nodes[i],name=el.getAttribute('data-lucide');
+  if(!name)continue;
+  if(el.closest('#rdoc')||el.closest('#rdocFrame')){
+   const t=ICON_CACHE[name];
+   if(t)_inlineIcon(el,t);else _maskIcon(el,name);
+  }else _maskIcon(el,name);
+ }
+}
 /* shared topbar — logo, notifications, profile — appears on every tab */
 function vTopbar(){
  const due=dueClients().length+programEndedClients().length;
@@ -908,7 +983,7 @@ function vHome(){
       const cls=s==='inprogress'?'live':dim(x)?'missed':'';
       return `<div class="es-row${cls?' '+cls:''}" onclick="${rowGo(x)}">
         <span class="es-node"><span class="es-dot"></span></span>
-        <div class="es-ava" style="background:${cat.b};color:${cat.c}">${initials(x.c.name)}</div>
+        <div class="es-ava tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${initials(x.c.name)}</div>
         <div class="es-main"><div class="es-name">${x.c.name}</div><div class="es-prog">${esc(x.c.cat||'')}${homeCoach==='All'?` · <span class="es-coach">${esc(x.c.coach||'Unassigned')}</span>`:''}</div></div>${stTag(x)}</div>`;}).join('')+`</div>`).join('')+`</div>`;
   if(hidden>0)html+=`<button class="es-more" onclick="tab('schedule')">+${hidden} more session${hidden!==1?'s':''}<i>›</i></button>`;
   return html;
@@ -922,12 +997,12 @@ function vHome(){
  if(m.dueSoon.length)alerts.push({ic:'calendar',color:'var(--amber)',t:'Membership Expiring',s:`${m.dueSoon.length} ${cl(m.dueSoon.length)} in next 7 days`,go:`goStat('Membership expiring')`});
  if(m.overdue.length)alerts.push({ic:'wallet',color:'var(--red)',t:'Payment Overdue',s:`${m.overdue.length} ${cl(m.overdue.length)} ${m.overdue.length===1?'has':'have'} pending payments`,go:`goStat('Payment overdue')`});
  const alertsHTML=alerts.length?alerts.map(a=>`<div class="ea-row" onclick="${a.go}">
-    <div class="ea-ic" style="color:${a.color||'var(--red)'}">${a.svg||`<i data-lucide="${a.ic}"></i>`}</div>
+    <div class="ea-ic uc" style="--c-fg:${a.color||'var(--red)'}">${a.svg||`<i data-lucide="${a.ic}"></i>`}</div>
     <div class="ea-main"><div class="ea-t">${a.t}</div><div class="ea-s">${a.s}</div></div>
     <div class="ea-chev">›</div></div>`).join(''):`<div class="ea-empty">All clear — no critical alerts.</div>`;
  const ehDue=dueClients().length+programEndedClients().length;
  return `<div class="fadein eh">
-  <div class="eh-top" style="position:sticky;top:0;z-index:30">
+  <div class="eh-top sticky-top">
    <button class="eh-brand eh-coachsw${coachMenu?' open':''}" onclick="toggleCoachMenu()" aria-label="Switch coach">
     <img src="assets/images/logo.jpg" alt="Elevate">
     <span class="eh-csw-lbl">${homeCoach==='All'?'All coaches':esc(homeCoach)}</span>
@@ -988,7 +1063,7 @@ function vHome(){
      <div class="ei-l">Memberships Expiring</div><div class="ei-s">In next 7 days</div></div>
    </div>
   </div>
-  <div style="height:24px"></div></div>`;
+  <div class="sp24"></div></div>`;
 }
 // logged activity entries rendered as Home "Activity" rows (newest first), above the static demo rows
 function activityRowsHTML(){
@@ -1030,7 +1105,7 @@ function vClients(){
   <div class="cl-filter-bar">${coachFilterSelect(all)}${payFilterSelect(all)}${stateFilterSelect(all)}</div>
   ${(cFilter!=='All'&&CLIENT_FILTERS[cFilter])?`<div class="cl-fbanner"><span class="cl-fbanner-t"><i data-lucide="filter"></i>${CLIENT_FILTERS[cFilter].label} · ${filtered.length} ${filtered.length===1?'client':'clients'}</span><button class="cl-fbanner-x" onclick="clearClientFilter()">Clear ✕</button></div>`:''}
   <div class="cl-cards" id="clientList">${clientsListHTML(filtered)}</div>
-  <div style="height:80px"></div></div>`;
+  <div class="sp80"></div></div>`;
 }
 // filter chips with a leading icon + a live count badge
 function clientFilterChips(all){
@@ -1049,12 +1124,13 @@ function clientFilterChips(all){
   {k:'Assessment pending',label:'Assessment pending',ic:'clipboard-list'}
  ];
  return defs.map(d=>{const on=cFilter===d.k;
-  const lead=d.dot?`<span class="cl-chip-dot" style="background:${d.dot}"></span>`:`<i data-lucide="${d.ic}"></i>`;
+  const lead=d.dot?`<span class="cl-chip-dot swatch" style="--c-bg:${d.dot}"></span>`:`<i data-lucide="${d.ic}"></i>`;
   return `<button class="fchip cl-chip ${on?'on':''} ${d.attn?'attn':''}" onclick="setFilter('${d.k}')">${lead}<span>${d.label}</span><span class="cl-chip-n">${cnt[d.k]}</span></button>`;
  }).join('');
 }
 // Coach & payment-status dropdowns (next to the search box)
-function coachNames(all){return [...new Set(all.map(c=>c.coach||'Not assigned'))].sort();}
+function coachNames(all){const names=[...new Set(all.map(c=>c.coach||'Not assigned'))].sort();
+ return [...names.filter(n=>n!=='Not assigned'),...(names.includes('Not assigned')?['Not assigned']:[])];}
 function coachFilterSelect(all){
  const opts=['All',...coachNames(all)];
  return `<div class="cl-select-wrap"><i data-lucide="user" class="cl-select-ic"></i><select class="cl-select" onchange="setCoachFilter(this.value)">`
@@ -1068,7 +1144,7 @@ function payFilterSelect(all){
   +`</select><i data-lucide="chevron-down" class="cl-select-caret"></i></div>`;
 }
 function stateFilterSelect(all){
- const opts=[['All','States'],['Active','Active'],['Paused','Paused']];
+ const opts=[['All','All status'],['Active','Active'],['Paused','Paused']];
  return `<div class="cl-select-wrap"><i data-lucide="circle-dot" class="cl-select-ic"></i><select class="cl-select" onchange="setStateFilter(this.value)">`
   +opts.map(([v,l])=>`<option value="${v}" ${stateFilter===v?'selected':''}>${l}</option>`).join('')
   +`</select><i data-lucide="chevron-down" class="cl-select-caret"></i></div>`;
@@ -1093,7 +1169,7 @@ function loadMoreClients(){
  if(clientShown>=clientLazyList.length)return;
  clientShown+=CLIENT_BATCH;
  const el=document.getElementById('clientList');
- if(el){el.innerHTML=clientsListHTML(clientLazyList);if(window.lucide&&lucide.createIcons)lucide.createIcons();}
+ if(el){el.innerHTML=clientsListHTML(clientLazyList);paintIcons();}
  wireClientLazy();
 }
 // observe the bottom sentinel; when it nears the viewport, reveal the next batch
@@ -1141,7 +1217,7 @@ function renderClientList(list){
  return list.map(c=>{const cat=CATS[c.cat];
   return `<div class="clc-card ${c.status==='Paused'?'paused':''}" onclick="openClient(${c.id})">
    <div class="clc-top">
-    <div class="ava clc-ava" style="background:${cat.b};color:${cat.c}">${c.photo?`<img src="${esc(c.photo)}" alt="${esc(c.name)}">`:initials(c.name)}</div>
+    <div class="ava clc-ava tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${c.photo?`<img src="${esc(c.photo)}" alt="${esc(c.name)}">`:initials(c.name)}</div>
     <div class="clc-id">
      <div class="clc-name">${esc(c.name)}</div>
      <div class="clc-coach"><i data-lucide="user"></i>Coach: ${esc(c.coach||'Not assigned')}</div>
@@ -1161,7 +1237,7 @@ function goStat(key){cFilter=CLIENT_FILTERS[key]?key:'All';coachFilter=homeCoach
 // clear an active dashboard-driven filter, back to the full list
 function clearClientFilter(){cFilter='All';clientShown=CLIENT_BATCH;render()}
 function searchClients(q){clientQuery=q.toLowerCase();clientShown=CLIENT_BATCH;
- const el=document.getElementById('clientList');if(el){el.innerHTML=clientsListHTML(filteredClients());if(window.lucide&&lucide.createIcons)lucide.createIcons();}
+ const el=document.getElementById('clientList');if(el){el.innerHTML=clientsListHTML(filteredClients());paintIcons();}
  wireClientLazy();}
 // collapse/expand the search field; closing clears the query so the dropdowns return to full results
 function toggleSearch(){
@@ -1226,9 +1302,9 @@ function wireCpCharts(){
   wrap.addEventListener('mousemove',move);wrap.addEventListener('mouseleave',hide);
   wrap.addEventListener('touchstart',move,{passive:false});wrap.addEventListener('touchmove',move,{passive:false});wrap.addEventListener('touchend',hide);
  })}
-function cpMetric(label,val,color,spark){return `<div class="cp-metric"><div class="cp-ml">${label} <i data-lucide="info"></i></div><div class="cp-mv" style="color:${color}">${val}</div><div class="cp-spark">${spark}</div><div class="cp-mf">Last 30 days</div></div>`}
+function cpMetric(label,val,color,spark){return `<div class="cp-metric"><div class="cp-ml">${label} <i data-lucide="info"></i></div><div class="cp-mv uc" style="--c-fg:${color}">${val}</div><div class="cp-spark">${spark}</div><div class="cp-mf">Last 30 days</div></div>`}
 function cpKV(icn,k,v){return `<div class="cp-kv"><span class="cp-kic"><i data-lucide="${icn}"></i></span><span class="cp-kk">${k}</span><span class="cp-kvv">${esc(v)}</span></div>`}
-function cpTrendCard(label,val,color,delta,chart){return `<div class="cp-card cp-tcard"><div class="cp-thead"><div class="cp-tlabel">${label}</div><div class="cp-tbig" style="color:${color}">${val}</div><div class="cp-tdelta">${delta} ↗</div></div>${chart}</div>`}
+function cpTrendCard(label,val,color,delta,chart){return `<div class="cp-card cp-tcard"><div class="cp-thead"><div class="cp-tlabel">${label}</div><div class="cp-tbig uc" style="--c-fg:${color}">${val}</div><div class="cp-tdelta">${delta} ↗</div></div>${chart}</div>`}
 function vClient(){
  const c=cur(),cat=CATS[c.cat];
  const tabs=['overview','program','sessions','progress','payment','media'];
@@ -1247,21 +1323,21 @@ function vClient(){
     <span class="phc-ic"><i data-lucide="wallet"></i></span>
     <div class="phc-tx"><b>${hc.title}</b><span>Last session date: ${c.lastSessionDate?fmtPayDate(c.lastSessionDate):'—'}</span></div>
     <div class="phc-chev">›</div></div>`:'';
- const head=`<div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title" style="font-size:16px">${c.name}</div>
+ const head=`<div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title nm">${c.name}</div>
    ${c.assessmentDone?`<button class="iconbtn" onclick="openClientMenu(${c.id})" aria-label="More options">⋮</button>`:''}</div>
   <div class="dhead">
-   <div class="dava" style="background:${cat.b};color:${cat.c}">${c.photo?`<img src="${esc(c.photo)}" alt="${esc(c.name)}">`:initials(c.name)}</div>
+   <div class="dava tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${c.photo?`<img src="${esc(c.photo)}" alt="${esc(c.name)}">`:initials(c.name)}</div>
    <div class="dhead-m">
     <div class="dname">${c.name}</div>
     <div class="dmeta"><span class="dmeta-i"><i data-lucide="user"></i>${c.age} yrs</span><span class="dmeta-i"><i data-lucide="calendar"></i>${c.sessions} sessions</span><span class="dmeta-i"><i data-lucide="user"></i>Coach: ${c.coach||'Not assigned'}</span></div>
-    <div class="dtags"><span class="tag" style="background:${cat.b};color:${cat.c}">${cat.ic} ${c.cat}${c.cat==='Sports specific'?' · '+c.ability:''}</span>
-    <span class="tag" style="background:${c.status==='Active'?'var(--green-bg)':'var(--bg)'};color:${c.status==='Active'?'var(--green)':'var(--muted)'}">● ${c.status}</span>
+    <div class="dtags"><span class="tag tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${cat.ic} ${c.cat}${c.cat==='Sports specific'?' · '+c.ability:''}</span>
+    <span class="tag tint-cat" style="--c-bg:${c.status==='Active'?'var(--green-bg)':'var(--bg)'};--c-fg:${c.status==='Active'?'var(--green)':'var(--muted)'}">● ${c.status}</span>
     ${stageTagHTML(c)}</div>
    </div>
    ${payHeadCard}
   </div>`;
  // staged add: until the schedule & coach are set, show only a pending Overview with action cards — no sub-tabs
- if(!c.scheduleSet)return `<div class="fadein">${head}<div id="ctabContent">${pendingOverview(c)}</div><div style="height:24px"></div></div>`;
+ if(!c.scheduleSet)return `<div class="fadein">${head}<div id="ctabContent">${pendingOverview(c)}</div><div class="sp24"></div></div>`;
  // a section drill-in stacks over the long page, fully replacing it (back button → goBackToClient)
  if(S.subView){
   const drill={program:vClientProgram,sessions:vClientSessions,progress:vClientProgress,payment:vClientPayment,media:vClientMedia,basic:vClientBasic,assessment:vClientAssessment,schedule:vClientSchedule}[S.subView];
@@ -1283,7 +1359,7 @@ function vClient(){
    </div>
   </div>
   <div class="cp-prof">
-   <div class="cp-ava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}<span class="cp-on ${c.status==='Active'?'':'off'}"></span></div>
+   <div class="cp-ava tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${initials(c.name)}<span class="cp-on ${c.status==='Active'?'':'off'}"></span></div>
    <div class="cp-id">
     <div class="cp-name">${esc(c.name)}</div>
     <div class="cp-status ${c.status==='Active'?'on':'off'}"><span class="cp-dot"></span>${c.status}</div>
@@ -1297,46 +1373,46 @@ function vClient(){
   </div>
   <div class="cp-card cp-group">
    <div class="cp-row">
-    <span class="cp-row-ic" style="background:var(--red-tint);color:var(--accent)"><i data-lucide="calendar-check"></i></span>
+    <span class="cp-row-ic tint-red"><i data-lucide="calendar-check"></i></span>
     <div class="cp-row-m"><div class="cp-row-t">Sessions used</div><div class="cp-row-s">${used} of ${tot} purchased</div></div>
-    <div class="cp-prog"><div class="cp-bar"><i style="width:${pct}%"></i></div><span class="cp-pct">${pct}%</span></div>
+    <div class="cp-prog"><div class="cp-bar"><i style="--pct:${pct}%"></i></div><span class="cp-pct">${pct}%</span></div>
    </div>
    <div class="cp-row tap" onclick="openClientSection('sessions')">
-    <span class="cp-row-ic" style="background:var(--green-tint);color:var(--green)"><i data-lucide="play-circle"></i></span>
+    <span class="cp-row-ic tint-green"><i data-lucide="play-circle"></i></span>
     <div class="cp-row-m"><div class="cp-row-t">Active sessions</div><div class="cp-row-s">${rem} session${rem!==1?'s':''} remaining</div></div>
     <i class="cp-chev" data-lucide="chevron-right"></i>
    </div>
    <div class="cp-row tap" onclick="openClientSection('program')">
-    <span class="cp-row-ic" style="background:var(--purple-tint);color:var(--purple)"><i data-lucide="clipboard-list"></i></span>
+    <span class="cp-row-ic tint-purple"><i data-lucide="clipboard-list"></i></span>
     <div class="cp-row-m"><div class="cp-row-t">Current active program</div><div class="cp-row-s">${esc(programDisplayName(c))} · Week ${wk} of ${p.weeks||6}</div></div>
     <i class="cp-chev" data-lucide="chevron-right"></i>
    </div>
   </div>
   <div class="cp-card cp-group">
    <div class="cp-row tap" onclick="openClientSection('basic')">
-    <span class="cp-row-ic" style="background:var(--blue-bg);color:var(--blue)"><i data-lucide="user-round"></i></span>
+    <span class="cp-row-ic tint-blue"><i data-lucide="user-round"></i></span>
     <div class="cp-row-m"><div class="cp-row-t">Basic information</div><div class="cp-row-s">Phone, email & category</div></div>
     <i class="cp-chev" data-lucide="chevron-right"></i>
    </div>
    <div class="cp-row tap" onclick="openClientSection('assessment')">
-    <span class="cp-row-ic" style="background:var(--green-tint);color:var(--green)"><i data-lucide="clipboard-check"></i></span>
+    <span class="cp-row-ic tint-green"><i data-lucide="clipboard-check"></i></span>
     <div class="cp-row-m"><div class="cp-row-t">Assessment report</div><div class="cp-row-s">${c.assessment?'Measurements, goals & ratings':(c.assessmentDone?'Goals & health summary':'Assessment pending')}</div></div>
     <i class="cp-chev" data-lucide="chevron-right"></i>
    </div>
    <div class="cp-row tap" onclick="openClientSection('schedule')">
-    <span class="cp-row-ic" style="background:var(--amber-tint);color:var(--amber)"><i data-lucide="calendar-clock"></i></span>
+    <span class="cp-row-ic tint-amber"><i data-lucide="calendar-clock"></i></span>
     <div class="cp-row-m"><div class="cp-row-t">Current schedule</div><div class="cp-row-s">${(c.days&&c.days!=='—')?esc(c.days):'Not set'}${(c.time&&c.time!=='—')?' · '+esc(c.time):''}</div></div>
     <i class="cp-chev" data-lucide="chevron-right"></i>
    </div>
   </div>
   <div class="cp-card">
-   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="image" style="color:var(--pink)"></i>Progress photos</div><button class="cp-link" onclick="openClientSection('media')">View all</button></div>
+   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="image" class="t-pink"></i>Progress photos</div><button class="cp-link" onclick="openClientSection('media')">View all</button></div>
    <div class="cp-photos">
-    ${(c.photos&&c.photos.length?c.photos:[{t:'—',d:'No photos',c:'before'}]).slice(0,6).map(ph=>{const col=ph.c==='before'?'var(--muted)':'var(--accent)';return `<div class="cp-photo"><div class="cp-photo-img" style="background:linear-gradient(160deg,${col},#16161a 82%)">${esc(ph.t)}</div><div class="cp-photo-cap">${esc(ph.d)}</div></div>`}).join('')}
+    ${(c.photos&&c.photos.length?c.photos:[{t:'—',d:'No photos',c:'before'}]).slice(0,6).map(ph=>{const col=ph.c==='before'?'var(--muted)':'var(--accent)';return `<div class="cp-photo"><div class="cp-photo-img swatch" style="--c-bg:linear-gradient(160deg,${col},#16161a 82%)">${esc(ph.t)}</div><div class="cp-photo-cap">${esc(ph.d)}</div></div>`}).join('')}
     <button class="cp-photo-add" onclick="openClientSection('media')"><i data-lucide="camera"></i><span>Add new</span></button>
    </div>
   </div>
-  ${hasProgressData(c)?`<div class="cp-secrow"><div class="cp-sec-t"><i data-lucide="trending-up" style="color:var(--accent)"></i>Strength progress</div><button class="cp-link" onclick="openClientSection('progress')">View all <i data-lucide="chevron-right"></i></button></div>
+  ${hasProgressData(c)?`<div class="cp-secrow"><div class="cp-sec-t"><i data-lucide="trending-up" class="t-accent"></i>Strength progress</div><button class="cp-link" onclick="openClientSection('progress')">View all <i data-lucide="chevron-right"></i></button></div>
   ${progSummaryTiles(c)}
   ${progMuscleGrid(c)}`:''}
  </div>`;
@@ -1350,7 +1426,7 @@ function ctabContent(){return({overview:tabOverview,program:tabProgram,sessions:
 function dsSecHeader(title,action){return `<div class="ds-sec-header"><div class="ds-sec-title">${title}</div>${action||''}</div>`}
 function dsViewMore(section){return `<button class="ds-view-more" onclick="openClientSection('${section}')">View more →</button>`}
 // the back-button header shared by every section drill-in
-function clientDrillHead(c,label,action){return `<div class="bar solid"><button class="iconbtn" onclick="goBackToClient()">‹</button><div class="bar-title" style="font-size:16px">${esc(c.name.split(' ')[0])} · ${label}</div>${action||''}</div>`}
+function clientDrillHead(c,label,action){return `<div class="bar solid"><button class="iconbtn" onclick="goBackToClient()">‹</button><div class="bar-title nm">${esc(c.name.split(' ')[0])} · ${label}</div>${action||''}</div>`}
 
 // ---- Overview section: the full overview content inline (no collapse, no drill-in) ----
 function overviewSection(c){return dsSecHeader('Overview')+tabOverview()}
@@ -1418,7 +1494,7 @@ function mediaSection(c){
  `<div class="ds-preview"><div class="block">
    <div class="ds-media-count">${all.length} photo${all.length!==1?'s':''}</div>
    ${recent.length?`<div class="ds-media-strip">${recent.map(p=>{const col=p.c==='before'?'var(--muted)':'var(--accent)';
-     return `<div class="ds-media-thumb" style="background:linear-gradient(160deg,${col},${p.c==='before'?'#9b988f':'var(--accent-dark)'})">${p.t}<span>${p.d}</span></div>`}).join('')}</div>`
+     return `<div class="ds-media-thumb swatch" style="--c-bg:linear-gradient(160deg,${col},${p.c==='before'?'#9b988f':'var(--accent-dark)'})">${p.t}<span>${p.d}</span></div>`}).join('')}</div>`
     :'<div class="ov-empty">No media yet.</div>'}
   </div></div>`;
 }
@@ -1442,22 +1518,22 @@ function scrollToSection(id){const el=document.getElementById(id);if(el)el.scrol
 function vClientBasic(clientId){
  const c=clients.find(x=>x.id===clientId)||cur();
  const email=c.email||(c.name.toLowerCase().replace(/\s+/g,'.')+'@gmail.com');
- return `<div class="fadein">${clientDrillHead(c,'Basic information')}<div style="height:10px"></div>
+ return `<div class="fadein">${clientDrillHead(c,'Basic information')}<div class="sp10"></div>
   <div class="cp-card">
-   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="user-round" style="color:var(--blue)"></i>Basic information</div><button class="cp-link" onclick="openEditClient(${c.id})">Edit</button></div>
+   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="user-round" class="t-blue"></i>Basic information</div><button class="cp-link" onclick="openEditClient(${c.id})">Edit</button></div>
    ${cpKV('user','Name',c.name)}
    ${cpKV('phone','Phone number','+91 '+c.phone)}
    ${cpKV('mail','Email',email)}
    ${cpKV('tag','Category',c.cat)}
    ${cpKV('calendar','Start date',c.start)}
    ${cpKV('user-round','Coach',c.coach||'Not assigned')}
-  </div><div style="height:24px"></div></div>`;
+  </div><div class="sp24"></div></div>`;
 }
 function vClientAssessment(clientId){
  const c=clients.find(x=>x.id===clientId)||cur();const a=c.assessment||{};const hasA=!!c.assessment;
- return `<div class="fadein">${clientDrillHead(c,'Assessment report')}<div style="height:10px"></div>
+ return `<div class="fadein">${clientDrillHead(c,'Assessment report')}<div class="sp10"></div>
   <div class="cp-card">
-   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="clipboard-check" style="color:var(--green)"></i>Assessment report</div>${hasA?`<button class="cp-link" onclick="viewAssessment(${c.id})">View report</button>`:`<span class="cp-tagm">${c.assessmentDone?'Completed':'Pending'}</span>`}</div>
+   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="clipboard-check" class="t-green"></i>Assessment report</div>${hasA?`<button class="cp-link" onclick="viewAssessment(${c.id})">View report</button>`:`<span class="cp-tagm">${c.assessmentDone?'Completed':'Pending'}</span>`}</div>
    ${a.date?cpKV('calendar','Assessed on',a.date):''}
    ${a.by?cpKV('user-round','Coach',a.by):''}
    ${a.weight?cpKV('scale','Weight',a.weight+' kg'):''}
@@ -1470,19 +1546,19 @@ function vClientAssessment(clientId){
    ${cpKV('heart-pulse','Medical',c.medical||'None reported')}
    ${cpKV('bandage','Injuries',c.injuries||'None')}
    ${ASSESS_DIMS.filter(d=>a.ratings&&a.ratings[d.k]).map(d=>cpKV('star',d.label,RATE_WORDS[a.ratings[d.k]]||'—')).join('')}
-  </div><div style="height:24px"></div></div>`;
+  </div><div class="sp24"></div></div>`;
 }
 function vClientSchedule(clientId){
  const c=clients.find(x=>x.id===clientId)||cur();
- return `<div class="fadein">${clientDrillHead(c,'Current schedule')}<div style="height:10px"></div>
+ return `<div class="fadein">${clientDrillHead(c,'Current schedule')}<div class="sp10"></div>
   <div class="cp-card">
-   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="calendar-clock" style="color:var(--amber)"></i>Current schedule</div><button class="cp-link" onclick="openAddSchedule(${c.id})">Edit</button></div>
+   <div class="cp-sec"><div class="cp-sec-t"><i data-lucide="calendar-clock" class="t-amber"></i>Current schedule</div><button class="cp-link" onclick="openAddSchedule(${c.id})">Edit</button></div>
    ${cpKV('calendar','Training days',(c.days&&c.days!=='—')?c.days:'Not set')}
    ${cpKV('clock','Time',(c.time&&c.time!=='—')?c.time:'Not set')}
    ${cpKV('user-round','Coach',c.coach||'Not assigned')}
    ${c.programStartDate?cpKV('flag','Program start',fmtPayDate(c.programStartDate)):''}
    ${c.sessionDuration?cpKV('timer','Session length',c.sessionDuration+' min'):''}
-  </div><div style="height:24px"></div></div>`;
+  </div><div class="sp24"></div></div>`;
 }
 // scroll-spy: highlight the anchor for whichever section is crossing ~30% from the top of #screen
 let _spyObs=null;
@@ -1507,11 +1583,11 @@ function vClientProgram(clientId){
  // history lives behind a top-right icon now (toggles current ⇄ history) instead of a segmented bar
  const histBtn=`<button class="iconbtn ${sub==='history'?'on':''}" onclick="S.progSub='${sub==='history'?'current':'history'}';render()" aria-label="${sub==='history'?'Back to current program':'View program history'}"><i data-lucide="history"></i></button>`;
  const body=sub==='current'?tabProgram():programHistoryBody(c);
- return `<div class="fadein">${clientDrillHead(c,sub==='history'?'Program history':'Program',histBtn)}${body}<div style="height:24px"></div></div>`;
+ return `<div class="fadein">${clientDrillHead(c,sub==='history'?'Program history':'Program',histBtn)}${body}<div class="sp24"></div></div>`;
 }
 function vClientSessions(clientId){
  const c=clients.find(x=>x.id===(clientId!=null?clientId:S.clientId));
- return `<div class="fadein">${clientDrillHead(c,'Sessions')}${tabSessions()}${sessionHistoryBlock(c)}<div style="height:24px"></div></div>`;
+ return `<div class="fadein">${clientDrillHead(c,'Sessions')}${tabSessions()}${sessionHistoryBlock(c)}<div class="sp24"></div></div>`;
 }
 function vClientProgress(clientId){
  const c=clients.find(x=>x.id===(clientId!=null?clientId:S.clientId));
@@ -1544,7 +1620,7 @@ function sessionHistoryBlock(c){
  const realRows=real.map(sessHistRow).join('');
  return `<div class="block"><div class="ov-h"><div class="ov-h-t">Session history</div></div>
    ${realRows?`<div class="sh-list">${realRows}</div>
-   <div class="tab-cap" style="text-align:center;padding:8px 0 0">Showing completed sessions</div>`
+   <div class="tab-cap foot">Showing completed sessions</div>`
    :`<div class="ph-empty-inline">No completed sessions yet — they'll appear here after ${esc(c.name.split(' ')[0])}'s first session.</div>`}</div>`;
 }
 /* ----- pending overview: shown while a client is still being set up (assessment / schedule not done) ----- */
@@ -1609,7 +1685,7 @@ function pendingOverview(c){
     <div class="qs-item"><span class="qs-dot"></span><div class="qs-tx"><div class="qs-t">Activity Level</div><div class="qs-s">${esc(c.activity||'—')}</div></div></div>
    </div>
   </div>
-  <div style="height:18px"></div></div>`;
+  <div class="sp18"></div></div>`;
 }
 
 /* ----- overview helpers ----- */
@@ -1662,8 +1738,8 @@ function tabOverview(){const c=cur();
  const infoRow=(ic,label,val)=>`<div class="ov-info-i"><span class="ov-info-ic"><i data-lucide="${ic}"></i></span><div class="ov-info-tx"><div class="ov-info-l">${label}</div><div class="ov-info-v">${esc(val||'—')}</div></div></div>`;
  return `<div class="fadein">
   <div class="ov-stats">
-   <div class="ov-stat"><div class="ov-stat-ic" style="background:var(--accent-soft)"><i data-lucide="calendar"></i></div><div class="ov-stat-v">${c.sessions}</div><div class="ov-stat-l">Total Sessions</div></div>
-   <div class="ov-stat"><div class="ov-stat-ic" style="background:var(--accent-soft)"><i data-lucide="trending-up"></i></div><div class="ov-stat-v">8</div><div class="ov-stat-l">This Month</div></div>
+   <div class="ov-stat"><div class="ov-stat-ic bg-accent-soft"><i data-lucide="calendar"></i></div><div class="ov-stat-v">${c.sessions}</div><div class="ov-stat-l">Total Sessions</div></div>
+   <div class="ov-stat"><div class="ov-stat-ic bg-accent-soft"><i data-lucide="trending-up"></i></div><div class="ov-stat-v">8</div><div class="ov-stat-l">This Month</div></div>
    <div class="ov-stat"><div class="ov-stat-ring">${ovRing(92)}</div><div class="ov-stat-v">92%</div><div class="ov-stat-l">Show Rate</div></div>
   </div>
   <div class="ov-today">
@@ -1703,7 +1779,7 @@ function tabOverview(){const c=cur();
    </div>
    <div class="block ov-wide">
     <div class="ov-h"><div class="ov-h-t">Progress Photos</div><button class="ov-h-act" onclick="openClientSection('media')">View All</button></div>
-    ${photos.length?`<div class="ov-photos">${photos.map(p=>{const col=p.c==='before'?'var(--muted)':'var(--accent)';return `<div class="ov-photo"><div class="ov-photo-img" style="background:linear-gradient(160deg,${col},${p.c==='before'?'#9b988f':'var(--accent-dark)'})">${p.t}</div><div class="ov-photo-cap">${p.d}</div></div>`}).join('')}</div>`:'<div class="ov-empty">No progress photos yet.</div>'}
+    ${photos.length?`<div class="ov-photos">${photos.map(p=>{const col=p.c==='before'?'var(--muted)':'var(--accent)';return `<div class="ov-photo"><div class="ov-photo-img swatch" style="--c-bg:linear-gradient(160deg,${col},${p.c==='before'?'#9b988f':'var(--accent-dark)'})">${p.t}</div><div class="ov-photo-cap">${p.d}</div></div>`}).join('')}</div>`:'<div class="ov-empty">No progress photos yet.</div>'}
    </div>
    <div class="block ov-wide">
     <div class="ov-h"><div class="ov-h-t">Progress Overview</div>${mkeys.length>1?`<div class="ov-sel"><select onchange="S.measure=this.value;render()">${mkeys.map(k=>`<option ${k===mk?'selected':''}>${k}</option>`).join('')}</select></div>`:(mkeys.length?`<span class="ov-h-tag">${mk}</span>`:'')}</div>
@@ -1720,7 +1796,7 @@ function tabOverview(){const c=cur();
    <div class="ov-report-m"><div class="ov-report-t">Send Weekly Report</div><div class="ov-report-s">Share progress summary with client</div></div>
    <button class="ov-report-btn" onclick="openReport(${c.id})">➤ Send Report</button>
   </div>
-  <div style="height:14px"></div></div>`;
+  <div class="sp14"></div></div>`;
 }
 /* ----- payment date helpers ----- */
 function todayISO(){return todayKey()}                                  // 'YYYY-MM-DD' for date inputs
@@ -1766,7 +1842,7 @@ function paymentTabContent(c){
  if(!c.payments||!c.payments.length){
   return `<div class="fadein"><div class="pad"><div class="block pay-block">${header}
    <div class="pay-empty">No payments recorded yet. Add the first payment to get started.</div>
-  </div></div><div style="height:18px"></div></div>`;
+  </div></div><div class="sp18"></div></div>`;
  }
  // summary stat cards (money-free — no amounts)
  const lp=lastPayment(c);const ps=paymentStatus(c);
@@ -1806,7 +1882,7 @@ function paymentTabContent(c){
    </table></div>
    <div class="pay-summary">${summary}</div>
   </div>
- </div><div style="height:18px"></div></div>`;
+ </div><div class="sp18"></div></div>`;
 }
 
 /* ----- package payment add/edit (popup modal) ----- */
@@ -1821,7 +1897,7 @@ function recomputeBalance(c,consumedBefore){
 }
 function nextPaymentId(c){return (c.payments||[]).reduce((m,p)=>Math.max(m,p.id||0),0)+1}
 function closePaymentModal(){const m=document.getElementById('payModal');if(m)m.remove();}
-function mountPaymentModal(html){closePaymentModal();const app=document.getElementById('app');if(app)app.insertAdjacentHTML('beforeend',html);if(window.lucide&&lucide.createIcons)lucide.createIcons();}
+function mountPaymentModal(html){closePaymentModal();const app=document.getElementById('app');if(app)app.insertAdjacentHTML('beforeend',html);paintIcons();}
 // open the add/edit popup. paymentId null/undefined = add mode; otherwise edit that record.
 function openPaymentForm(id,paymentId){
  const c=clients.find(x=>x.id===id);if(!c)return;
@@ -1953,14 +2029,14 @@ function programHistoryBody(c){
 }
 function vProgramHistory(clientId){
  const c=clients.find(x=>x.id===(clientId!=null?clientId:S.clientId));
- const head=cid=>`<div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title" style="font-size:16px">${cid}</div></div>`;
+ const head=cid=>`<div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title nm">${cid}</div></div>`;
  if(!c)return `<div class="fadein">${head('Program history')}</div>`;
- return `<div class="fadein">${head(esc(c.name)+' · Program history')}${programHistoryBody(c)}<div style="height:18px"></div></div>`;
+ return `<div class="fadein">${head(esc(c.name)+' · Program history')}${programHistoryBody(c)}<div class="sp18"></div></div>`;
 }
 function vProgramDetail(clientId,programId){
  const c=clients.find(x=>x.id===(clientId!=null?clientId:S.clientId));
  const pid=programId!=null?programId:S.programDetailId;
- const back=t=>`<div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title" style="font-size:16px">${t}</div></div>`;
+ const back=t=>`<div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title nm">${t}</div></div>`;
  if(!c)return `<div class="fadein">${back('Program')}</div>`;
  const rec=pid==='current'?currentProgramRec(c):(c.programHistory||[]).find(p=>p.id===pid);
  if(!rec)return `<div class="fadein">${back('Program')}<div class="pad"><div class="ph-empty-inline">Program not found.</div></div></div>`;
@@ -1978,7 +2054,7 @@ function vProgramDetail(clientId,programId){
    <div class="block"><div class="block-t">Exercises${rec.current?'':' · read-only'}</div>
     <div class="pde-list">${exRows||'<div class="ph-empty-inline">No exercises recorded.</div>'}</div>
    </div>
-  </div><div style="height:18px"></div></div>`;
+  </div><div class="sp18"></div></div>`;
 }
 
 /* ----- start a new program (explicit, independent of payment) ----- */
@@ -2002,7 +2078,7 @@ function renderNewProgramModal(){
     <div class="modal-handle"></div>
     <div class="modal-title">Start new program · ${esc(c.name.split(' ')[0])}</div>
     <div class="pm-form">
-     <div class="pd-field"><label>Program name <span style="color:var(--muted);font-weight:600">· optional</span></label>
+     <div class="pd-field"><label>Program name <span class="opt-note">· optional</span></label>
       <input class="np-name-input" value="${esc(f.name)}" placeholder="Defaults to Program #${(c.program&&c.program.no||0)+1}" oninput="S.newProg.name=this.value"></div>
      <div class="pd-field"><label>Length (weeks)</label><div class="pd-chips">${weekChips}</div></div>
      <div class="pd-field"><label>Sessions per week</label><div class="pd-chips">${perChips}</div></div>
@@ -2012,7 +2088,7 @@ function renderNewProgramModal(){
    </div></div>`;
  closeNewProgramModal();
  const app=document.getElementById('app');if(app)app.insertAdjacentHTML('beforeend',html);
- if(window.lucide&&lucide.createIcons)lucide.createIcons();
+ paintIcons();
 }
 function newProgramContinue(){
  const f=S.newProg;if(!f)return;
@@ -2066,9 +2142,9 @@ function renderAddExerciseModal(){
      <div class="pd-field"><label>Exercise name</label>
       <input class="np-name-input" value="${esc(f.name)}" placeholder="e.g. Landmine press" oninput="S.newEx.name=this.value"></div>
      <div class="pd-field"><label>Muscle group</label><div class="pm-select"><select onchange="S.newEx.group=this.value">${groupOpts}</select></div></div>
-     <div class="pd-field"><label>Description <span style="color:var(--muted);font-weight:600">(optional)</span></label>
+     <div class="pd-field"><label>Description <span class="opt-note">(optional)</span></label>
       <input class="np-name-input" value="${esc(f.category)}" placeholder="e.g. Upper body · Dumbbell" oninput="S.newEx.category=this.value"></div>
-     <div class="pd-field"><label>Default target <span style="color:var(--muted);font-weight:600">(optional)</span></label>
+     <div class="pd-field"><label>Default target <span class="opt-note">(optional)</span></label>
       <input class="np-name-input" value="${esc(f.target)}" placeholder="e.g. 3×10" oninput="S.newEx.target=this.value"></div>
      <button class="bigbtn" onclick="saveNewExercise()">Add to library</button>
     </div>
@@ -2076,7 +2152,7 @@ function renderAddExerciseModal(){
    </div></div>`;
  closeAddExerciseModal();
  const app=document.getElementById('app');if(app)app.insertAdjacentHTML('beforeend',html);
- if(window.lucide&&lucide.createIcons)lucide.createIcons();
+ paintIcons();
 }
 function saveNewExercise(){
  const f=S.newEx;if(!f)return;
@@ -2095,7 +2171,7 @@ function saveNewExercise(){
 // so adj()/removeEx() keep working unchanged even though cards are grouped by day + program.
 function progExCard(c,ex){const i=c.exercises.indexOf(ex),wk=S.week;
  const log=getLog(ex,wk),tr=trend(ex,wk),tm={up:['↑ Up','gbg'],down:['↓ Down','abg'],flat:['→ Same','']}[tr];const rep=isRepBased(ex);
- return `<div class="ex-card"><div class="ex-top"><div><div class="ex-name">${ex.name}${ex.future?`<span class="ex-future">⏳ from ${ex.effLabel}</span>`:''}</div><div class="ex-target">Target ${ex.target}</div></div><div style="display:flex;align-items:center;gap:8px"><div class="ex-trend ${tm[1]}">${tm[0]}</div><button class="ex-remove" onclick="removeEx(${i})" aria-label="Remove">✕</button></div></div>
+ return `<div class="ex-card"><div class="ex-top"><div><div class="ex-name">${ex.name}${ex.future?`<span class="ex-future">⏳ from ${ex.effLabel}</span>`:''}</div><div class="ex-target">Target ${ex.target}</div></div><div class="row-center"><div class="ex-trend ${tm[1]}">${tm[0]}</div><button class="ex-remove" onclick="removeEx(${i})" aria-label="Remove">✕</button></div></div>
    <div class="stepper-row">
     <div class="stepper"><div class="lbl">${rep?'Level/time':'Weight'}</div><div class="ctl"><button class="stp-btn" onclick="adj(${i},'w',-2.5)">−</button><div class="stp-val" id="w-${i}">${log.w}${rep?'':'<small> kg</small>'}</div><button class="stp-btn" onclick="adj(${i},'w',2.5)">+</button></div></div>
     <div class="stepper"><div class="lbl">Reps</div><div class="ctl"><button class="stp-btn" onclick="adj(${i},'r',-1)">−</button><div class="stp-val" id="r-${i}">${log.r}</div><button class="stp-btn" onclick="adj(${i},'r',1)">+</button></div></div>
@@ -2113,22 +2189,22 @@ function tabProgram(){const c=cur();
  if(!S.week||S.week<1||S.week>weeks)S.week=curWk;       // clamp the shared week selector to this client's block
  const wk=S.week,r=rev(c.id);
  if(S.reorder)return `<div class="fadein">
-  <div style="padding:14px 18px 4px"><div style="font-weight:700;font-size:17px">Reorder exercises</div><div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:2px">${c.name.split(' ')[0]}'s program · ${c.exercises.length} exercise${c.exercises.length!==1?'s':''}</div></div>
+  <div class="scr-head"><div class="scr-head-t">Reorder exercises</div><div class="scr-head-s">${c.name.split(' ')[0]}'s program · ${c.exercises.length} exercise${c.exercises.length!==1?'s':''}</div></div>
   <div class="reord-banner">Press the ⠿ handle and drag an exercise up or down. This order applies across all ${weeks} weeks.</div>
   <div id="reordList">${c.exercises.map(ex=>`<div class="reord-row">
     <div class="reord-main"><div class="reord-name">${ex.name}${ex.future?` <span class="reord-future">⏳ from ${ex.effLabel}</span>`:''}</div><div class="reord-target">${ex.day&&ex.prog?`${ex.day} · Program ${ex.prog} · `:''}Target ${ex.target}</div></div>
     <div class="reord-grip" aria-label="Drag to reorder">⠿</div>
    </div>`).join('')}</div>
   <div class="bottom-cta"><button class="bigbtn" onclick="toggleReorder();toast('Exercise order saved')">✓  Done</button></div>
-  <div style="height:8px"></div></div>`;
+  <div class="sp8"></div></div>`;
  const banner=r.due&&c.status==='Active'?`<div class="review-banner"><span class="rb-ic">🔔</span><div class="rb-tx"><b>Time for this week's review</b>Last updated ${r.ago}. Update or confirm ${c.name.split(' ')[0]}'s modules.</div><button class="review-pill" onclick="markReviewed(${c.id});toast('Marked reviewed');render()">Done</button></div>`:'';
  const head=`${banner}<div class="block prog-head">
    <div class="ov-h"><div class="ov-h-t">${esc(programDisplayName(c))}</div><span class="ov-h-tag">Week ${wk} of ${weeks}</span></div>
    <div class="tab-cap">${weeks}-week block · ${days.length?days.join(' / '):'no training days set'} · reviewed ${r.ago}</div>
-   <div class="grid-toggle" style="margin:14px 0 0"><div class="gt ${S.gridMode==='cards'?'on':''}" onclick="S.gridMode='cards';render()">Plan by week</div><div class="gt ${S.gridMode==='grid'?'on':''}" onclick="S.gridMode='grid';render()">Full ${weeks}-week grid</div></div>
+   <div class="grid-toggle"><div class="gt ${S.gridMode==='cards'?'on':''}" onclick="S.gridMode='cards';render()">Plan by week</div><div class="gt ${S.gridMode==='grid'?'on':''}" onclick="S.gridMode='grid';render()">Full ${weeks}-week grid</div></div>
   </div>`;
  const weekBtns=Array.from({length:weeks},(_,idx)=>{const w=idx+1;let cls=w<curWk?'done':w===curWk?'current':'plan';if(w===wk)cls='cur';return `<button class="wk ${cls}" onclick="S.week=${w};render()"><small>Wk</small>${w}</button>`}).join('');
- if(S.gridMode==='grid')return `<div class="fadein">${head}<div class="weeks">${weekBtns}</div>${fullGrid()}<button class="ex-reorder-btn" onclick="toggleReorder()">↕  Reorder exercises</button><div style="height:18px"></div></div>`;
+ if(S.gridMode==='grid')return `<div class="fadein">${head}<div class="weeks">${weekBtns}</div>${fullGrid()}<button class="ex-reorder-btn" onclick="toggleReorder()">↕  Reorder exercises</button><div class="sp18"></div></div>`;
  // No training days yet (paused / pre-schedule): fall back to a flat list so the tab still renders.
  if(!days.length){const flat=c.exercises.map(ex=>progExCard(c,ex)).join('');
   return `<div class="fadein">${head}<div class="weeks">${weekBtns}</div><div class="wkbanner">Week ${wk}${WD[wk]?' · '+WD[wk]:''} — set a schedule to plan by day</div>${flat}
@@ -2150,11 +2226,11 @@ function removeEx(i){const c=cur();if(c.exercises.length<=1){toast('Add another 
 function toggleReorder(){S.reorder=!S.reorder;render();sc()}
 function fullGrid(){const c=cur();const weeks=(c.program&&c.program.weeks)||6,curWk=currentWeekFor(c);
  const wkArr=Array.from({length:weeks},(_,i)=>i+1);
- const rows=c.exercises.map(ex=>{const cells=wkArr.map(w=>{const l=ex.logs[w];const now=w===curWk?'nowcol':'';const plan=w>curWk;return `<td class="${now}">${l?`<span class="wt" style="${plan?'color:var(--muted)':''}">${l.w}</span><div class="rp">${l.r}r</div>`:'<span class="rp">—</span>'}</td>`}).join('');
+ const rows=c.exercises.map(ex=>{const cells=wkArr.map(w=>{const l=ex.logs[w];const now=w===curWk?'nowcol':'';const plan=w>curWk;return `<td class="${now}">${l?`<span class="wt${plan?' plan':''}">${l.w}</span><div class="rp">${l.r}r</div>`:'<span class="rp">—</span>'}</td>`}).join('');
   const tag=ex.day&&ex.prog?`<span class="grid-tag">${ex.day}·${ex.prog}</span>`:'';
   return `<tr><td class="ex">${ex.name}${tag}</td>${cells}</tr>`}).join('');
  const heads=wkArr.map(w=>`<th class="${w===curWk?'nowcol':''}">W${w}</th>`).join('');
- return `<div class="fullgrid"><table><thead><tr><th style="text-align:left;padding-left:10px">Exercise</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`;
+ return `<div class="fullgrid"><table><thead><tr><th class="ex-h">Exercise</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function adj(i,k,d){const ex=cur().exercises[i],log=getLog(ex,S.week);log[k]=Math.max(0,Math.round((log[k]+d)*10)/10);const el=document.getElementById(k+'-'+i);if(k==='w')el.innerHTML=log.w+(isRepBased(ex)?'':'<small> kg</small>');else el.innerHTML=log.r}
 
@@ -2177,8 +2253,8 @@ function tabSessions(){const c=cur();
   cal+=`<div class="cal-d ${st}">${d}</div>`;}
  return `<div class="fadein">
   <div class="ov-stats">
-   <div class="ov-stat"><div class="ov-stat-ic" style="background:var(--accent-soft)"><i data-lucide="calendar"></i></div><div class="ov-stat-v">${c.sessions}</div><div class="ov-stat-l">Total Sessions</div></div>
-   <div class="ov-stat"><div class="ov-stat-ic" style="background:var(--accent-soft)"><i data-lucide="trending-up"></i></div><div class="ov-stat-v">${thisMonth}</div><div class="ov-stat-l">This Month</div></div>
+   <div class="ov-stat"><div class="ov-stat-ic bg-accent-soft"><i data-lucide="calendar"></i></div><div class="ov-stat-v">${c.sessions}</div><div class="ov-stat-l">Total Sessions</div></div>
+   <div class="ov-stat"><div class="ov-stat-ic bg-accent-soft"><i data-lucide="trending-up"></i></div><div class="ov-stat-v">${thisMonth}</div><div class="ov-stat-l">This Month</div></div>
    <div class="ov-stat"><div class="ov-stat-ring">${ovRing(pct)}</div><div class="ov-stat-v">${pct}%</div><div class="ov-stat-l">Program</div></div>
   </div>
   <div class="block">
@@ -2266,12 +2342,12 @@ function setProgEx(name){S.progEx=name;render();}
 // tiny group/ratio sparkline; 1 point → a single dot, 0 points → empty box
 function miniSparkline(vals,stroke){
  stroke=stroke||'var(--accent)';
- if(!vals||!vals.length)return '<svg viewBox="0 0 100 30" style="width:100%;height:30px;display:block"></svg>';
- if(vals.length===1)return `<svg viewBox="0 0 100 30" style="width:100%;height:30px;display:block"><circle cx="50" cy="15" r="3" fill="${stroke}"/></svg>`;
+ if(!vals||!vals.length)return '<svg viewBox="0 0 100 30" class="spark-svg"></svg>';
+ if(vals.length===1)return `<svg viewBox="0 0 100 30" class="spark-svg"><circle cx="50" cy="15" r="3" fill="${stroke}"/></svg>`;
  const w=100,h=30,pad=4,min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
  const pts=vals.map((v,i)=>[pad+i*(w-2*pad)/(vals.length-1),h-pad-((v-min)/rng)*(h-2*pad)]);
  const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
- return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:30px;display:block"><path d="${path}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+ return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="spark-svg"><path d="${path}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
 }
 // the exercise drill-down chart: solid accent e1RM line + dashed dim actual-weight line, start/latest e1RM labels
 function progressionChart(pts){
@@ -2289,7 +2365,7 @@ function progressionChart(pts){
  const xl=pts.map((p,i)=>`<text x="${X(i).toFixed(1)}" y="${h-8}" font-size="9" fill="var(--muted)" text-anchor="middle">W${p.week}</text>`).join('');
  const startLbl=`<text x="${padX}" y="${(Y(e1[0])-8).toFixed(1)}" font-size="10" font-weight="700" fill="var(--muted)">${e1[0]}</text>`;
  const endLbl=`<text x="${(w-padX).toFixed(1)}" y="${(Y(e1[e1.length-1])-8).toFixed(1)}" font-size="11" font-weight="700" fill="var(--accent)" text-anchor="end">${e1[e1.length-1]}</text>`;
- return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;display:block">${grid}${wtLine}${e1Line}${dots}${xl}${startLbl}${endLbl}</svg>`;
+ return `<svg viewBox="0 0 ${w} ${h}" class="chart-svg">${grid}${wtLine}${e1Line}${dots}${xl}${startLbl}${endLbl}</svg>`;
 }
 // summary stat tiles + muscle-group mini-grid — shared by the preview and the full drill-in
 function progSummaryTiles(c){
@@ -2309,7 +2385,7 @@ function progMuscleGrid(c){
  const groups=muscleGroupProgress(c);if(!groups.length)return '';
  return `<div class="pg-mg-grid">${groups.map(g=>{const col=muscleColor(g.group);
    const gain=g.gainPct==null?'<span class="pg-mg-gain flat">—</span>':`<span class="pg-mg-gain ${g.gainPct>0?'pos':'flat'}">${g.gainPct>0?'↑':(g.gainPct<0?'↓':'')}${Math.abs(g.gainPct)}%</span>`;
-   return `<div class="pg-mg"><div class="pg-mg-top"><span class="pg-mg-tag" style="color:${col.c};background:${col.b}">${esc(g.group)}</span>${gain}</div><div class="pg-mg-spark">${miniSparkline(g.sparkline,col.c)}</div></div>`;
+   return `<div class="pg-mg"><div class="pg-mg-top"><span class="pg-mg-tag tint-cat" style="--c-fg:${col.c};--c-bg:${col.b}">${esc(g.group)}</span>${gain}</div><div class="pg-mg-spark">${miniSparkline(g.sparkline,col.c)}</div></div>`;
   }).join('')}</div>`;
 }
 // strength-to-bodyweight rows for the compound lifts that have bodyweight + ≥2 points
@@ -2338,22 +2414,22 @@ function tabProgress(c){c=c||cur();
  // exercise selector chips, grouped (sorted) by muscle group, each with its group-colour dot
  const chips=exList.slice().sort((a,b)=>(a.g||'~').localeCompare(b.g||'~')||a.name.localeCompare(b.name)).map(e=>{
    const col=muscleColor(e.g),on=e.name===selName;
-   return `<button class="pg-exchip ${on?'on':''}" onclick="setProgEx('${e.name.replace(/'/g,"\\'")}')"><i class="pg-exchip-dot" style="background:${col.c}"></i>${esc(e.name)}</button>`;
+   return `<button class="pg-exchip ${on?'on':''}" onclick="setProgEx('${e.name.replace(/'/g,"\\'")}')"><i class="pg-exchip-dot swatch" style="--c-bg:${col.c}"></i>${esc(e.name)}</button>`;
   }).join('');
  return `<div class="fadein">
   <div class="tab-cap">${esc(c.goals||'')}</div>
   ${progSummaryTiles(c)}
-  ${muscleGroupProgress(c).length?`<div class="ds-sec-header" style="padding-top:18px"><div class="ds-sec-title" style="font-size:15px">Muscle-group progress</div></div>${progMuscleGrid(c)}`:''}
+  ${muscleGroupProgress(c).length?`<div class="ds-sec-header gap"><div class="ds-sec-title">Muscle-group progress</div></div>${progMuscleGrid(c)}`:''}
   <div class="block"><div class="ov-h"><div class="ov-h-t">Exercise progression</div></div>
    <div class="pg-exsel">${chips}</div>
-   <div class="chart-wrap" style="padding:0">${progressionChart(pts)}</div>
+   <div class="chart-wrap flush">${progressionChart(pts)}</div>
    ${pts.length>1?`<div class="pg-legend"><span class="pg-leg"><i class="pg-leg-l"></i>Est. 1RM</span><span class="pg-leg"><i class="pg-leg-l dash"></i>Weight lifted</span></div>`:''}
-   <div class="tab-cap" style="text-align:center;padding-top:8px">${esc(selEx.name)}${selEx.target?' · target '+esc(selEx.target):''}</div>
+   <div class="tab-cap center-pt">${esc(selEx.name)}${selEx.target?' · target '+esc(selEx.target):''}</div>
   </div>
   <div class="block"><div class="ov-h"><div class="ov-h-t">PR timeline</div></div>
    ${prs.length?prs.map(p=>{const col=muscleColor(p.g);
      return `<div class="pg-pr"><div class="pg-pr-ic">🏆</div>
-       <div class="pg-pr-main"><div class="pg-pr-name">${esc(p.exName)}${p.g?`<span class="pg-mg-tag" style="color:${col.c};background:${col.b}">${esc(p.g)}</span>`:''}</div>
+       <div class="pg-pr-main"><div class="pg-pr-name">${esc(p.exName)}${p.g?`<span class="pg-mg-tag tint-cat" style="--c-fg:${col.c};--c-bg:${col.b}">${esc(p.g)}</span>`:''}</div>
         <div class="pg-pr-sub">${p.date?fmtPayDate(p.date)+' · ':''}Week ${p.week}</div></div>
        <div class="pg-pr-wt">${p.weight}<small> kg</small></div></div>`;}).join('')
     :`<div class="pg-empty">No PRs logged yet — they'll appear as weights climb.</div>`}
@@ -2361,34 +2437,34 @@ function tabProgress(c){c=c||cur();
   ${keys.length?`<div class="block"><div class="ov-h"><div class="ov-h-t">Body measurements</div></div>
    <div class="measure-pick">${keys.map(k=>`<button class="mp ${mk===k?'on':''}" onclick="S.measure='${k}';render()">${k}</button>`).join('')}</div>
    <div class="chart-wrap">${lineChart(mdata)}</div>
-   ${mdata.length>1?`<div class="tab-cap" style="text-align:center">${mk}: ${mdata[0]} → ${mdata[mdata.length-1]}</div>`:''}
+   ${mdata.length>1?`<div class="tab-cap center">${mk}: ${mdata[0]} → ${mdata[mdata.length-1]}</div>`:''}
    ${sbw.length?`<div class="pg-sbw"><div class="pg-sbw-h">Strength-to-bodyweight</div>${sbw.map(r=>`<div class="pg-sbw-row"><div class="pg-sbw-main"><div class="pg-sbw-name">${esc(r.name)}</div><div class="pg-sbw-spark">${miniSparkline(r.series)}</div></div><div class="pg-sbw-v">${r.first.toFixed(1)}× → <b>${r.last.toFixed(1)}×</b></div></div>`).join('')}</div>`:''}
   </div>`:''}
-  <div class="report-row" onclick="openReport(cur().id)"><div class="ac-ic abg" style="width:42px;height:42px"><i data-lucide="chart-column"></i></div><div class="ac-main"><div class="ac-title">Program completion report</div><div class="ac-sub">Generate when block ends</div></div><div class="cr-chev">›</div></div>
-  <div style="height:14px"></div></div>`;
+  <div class="report-row" onclick="openReport(cur().id)"><div class="ac-ic abg ic-42"><i data-lucide="chart-column"></i></div><div class="ac-main"><div class="ac-title">Program completion report</div><div class="ac-sub">Generate when block ends</div></div><div class="cr-chev">›</div></div>
+  <div class="sp14"></div></div>`;
 }
 function lineChart(data){if(!data.length)return'';const w=320,h=130,pad=24;const min=Math.min(...data),max=Math.max(...data),rng=(max-min)||1;
  const pts=data.map((v,i)=>{const x=pad+(i*(w-2*pad)/(data.length-1||1));const y=h-pad-((v-min)/rng)*(h-2*pad);return[x,y]});
  const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
  const dots=pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="var(--accent)"/>`).join('');
  const labels=data.map((v,i)=>`<text x="${pts[i][0].toFixed(1)}" y="${h-6}" font-size="9" fill="var(--muted)" text-anchor="middle">W${i+1}</text>`).join('');
- return `<svg viewBox="0 0 ${w} ${h}" style="width:100%"><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${labels}<text x="${pad}" y="14" font-size="10" font-weight="700" fill="var(--ink)">${data[0]}</text><text x="${w-pad}" y="14" font-size="10" font-weight="700" fill="var(--accent)" text-anchor="end">${data[data.length-1]}</text></svg>`;
+ return `<svg viewBox="0 0 ${w} ${h}" class="chart-w"><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${labels}<text x="${pad}" y="14" font-size="10" font-weight="700" fill="var(--ink)">${data[0]}</text><text x="${w-pad}" y="14" font-size="10" font-weight="700" fill="var(--accent)" text-anchor="end">${data[data.length-1]}</text></svg>`;
 }
 
 function tabMedia(){const c=cur();
- const cards=c.photos.map(p=>{const col=p.c==='before'?'var(--muted)':'var(--accent)';return `<div class="media-card"><div class="media-img" style="background:linear-gradient(160deg,${col},${p.c==='before'?'#9b988f':'var(--accent-dark)'})">${p.t}</div><div class="media-cap">${p.c==='before'?'Before':'Progress'}<small>${p.d}</small></div></div>`}).join('');
+ const cards=c.photos.map(p=>{const col=p.c==='before'?'var(--muted)':'var(--accent)';return `<div class="media-card"><div class="media-img swatch" style="--c-bg:linear-gradient(160deg,${col},${p.c==='before'?'#9b988f':'var(--accent-dark)'})">${p.t}</div><div class="media-cap">${p.c==='before'?'Before':'Progress'}<small>${p.d}</small></div></div>`}).join('');
  return `<div class="fadein">
   <div class="block">
    <div class="ov-h"><div class="ov-h-t">Progress media</div><button class="ov-h-act" onclick="toast('Upload photo or video')">+ Add</button></div>
-   <div class="tab-cap" style="padding:0 0 12px">Before / after photos &amp; videos. Stored privately per client.</div>
+   <div class="tab-cap pb12">Before / after photos &amp; videos. Stored privately per client.</div>
    <div class="media-grid">${cards}<div class="upload-tile" onclick="toast('Upload photo or video')"><i data-lucide="image-plus"></i>Add media</div></div>
   </div>
-  <div style="height:14px"></div></div>`;
+  <div class="sp14"></div></div>`;
 }
 function togglePause(){const c=cur();c.status=c.status==='Active'?'Paused':'Active';render();toast(c.name.split(' ')[0]+' is now '+c.status+(c.status==='Paused'?' (file saved)':''))}
 /* ----- client header kebab menu (Edit info · Change status) ----- */
 function closeClientMenu(){const m=document.getElementById('clientMenu');if(m)m.remove();}
-function mountClientMenu(html){closeClientMenu();const app=document.getElementById('app');if(app)app.insertAdjacentHTML('beforeend',html);if(window.lucide&&lucide.createIcons)lucide.createIcons();}
+function mountClientMenu(html){closeClientMenu();const app=document.getElementById('app');if(app)app.insertAdjacentHTML('beforeend',html);paintIcons();}
 function openClientMenu(id){
  const c=clients.find(x=>x.id===id);if(!c)return;
  mountClientMenu(`<div class="modal-overlay" id="clientMenu" onclick="if(event.target===this)closeClientMenu()">
@@ -2396,9 +2472,9 @@ function openClientMenu(id){
     <div class="modal-handle"></div>
     <div class="modal-title">${esc(c.name)}</div>
     <div class="modal-opts">
-     <button class="modal-opt" onclick="clientMenuEdit(${id})"><div class="mo-ic" style="background:var(--blue-bg);color:var(--blue)"><i data-lucide="pencil"></i></div>Edit info</button>
-     <button class="modal-opt" onclick="openCoachMenu(${id})"><div class="mo-ic" style="background:var(--green-bg);color:var(--green)"><i data-lucide="users"></i></div>Change coach</button>
-     <button class="modal-opt" onclick="openStatusMenu(${id})"><div class="mo-ic" style="background:var(--amber-bg);color:var(--amber)"><i data-lucide="repeat"></i></div>Change status</button>
+     <button class="modal-opt" onclick="clientMenuEdit(${id})"><div class="mo-ic tint-blue"><i data-lucide="pencil"></i></div>Edit info</button>
+     <button class="modal-opt" onclick="openCoachMenu(${id})"><div class="mo-ic tint-green"><i data-lucide="users"></i></div>Change coach</button>
+     <button class="modal-opt" onclick="openStatusMenu(${id})"><div class="mo-ic tint-amber"><i data-lucide="repeat"></i></div>Change status</button>
     </div>
     <button class="modal-cancel" onclick="closeClientMenu()">Cancel</button>
    </div></div>`);
@@ -2441,7 +2517,7 @@ function vEditClient(){
  const coachOpts=['',...coaches.map(c=>c.name)].map(n=>`<option value="${esc(n)}" ${(d.coach||'')===n?'selected':''}>${n?esc(n):'Not assigned'}</option>`).join('');
  return `<div class="fadein"><div class="bar solid"><div class="bar-title">Edit client</div><button class="iconbtn bar-x" onclick="cancelEditClient()" aria-label="Cancel"><i data-lucide="x"></i></button></div>
   <div class="ep-photo">
-   <div class="ep-ava" style="background:${cat.b};color:${cat.c}">${d.photo?`<img src="${esc(d.photo)}" alt="Client photo">`:initials(d.name||'?')}</div>
+   <div class="ep-ava tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${d.photo?`<img src="${esc(d.photo)}" alt="Client photo">`:initials(d.name||'?')}</div>
    <input id="ec-file" type="file" accept="image/*" hidden onchange="onClientPhoto(event)">
    <div class="ep-photo-acts">
     <button class="ep-photo-btn" onclick="document.getElementById('ec-file').click()">${d.photo?'Change photo':'Add photo'}</button>
@@ -2459,7 +2535,7 @@ function vEditClient(){
 }
 function openStatusMenu(id){
  const c=clients.find(x=>x.id===id);if(!c)return;
- const opt=(st,ic,bg,col)=>`<button class="modal-opt ${c.status===st?'cur':''}" onclick="setClientStatus(${id},'${st}')"><div class="mo-ic" style="background:${bg};color:${col}"><i data-lucide="${ic}"></i></div>${st}<span class="mo-cur">current</span></button>`;
+ const opt=(st,ic,bg,col)=>`<button class="modal-opt ${c.status===st?'cur':''}" onclick="setClientStatus(${id},'${st}')"><div class="mo-ic tint-cat" style="--c-bg:${bg};--c-fg:${col}"><i data-lucide="${ic}"></i></div>${st}<span class="mo-cur">current</span></button>`;
  mountClientMenu(`<div class="modal-overlay" id="clientMenu" onclick="if(event.target===this)closeClientMenu()">
    <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -2481,7 +2557,7 @@ function openCoachMenu(id){
  const cur=c.coach||'';
  const row=(name)=>{const co=name?coaches.find(x=>x.name===name):null;const on=cur===name;
   return `<button class="modal-opt ${on?'cur':''}" onclick="setClientCoach(${id},'${name}')">
-    <div class="mo-ic" style="background:var(--green-bg);color:var(--green);overflow:hidden">${co&&co.photo?`<img src="${co.photo}" alt="${esc(name)}" style="width:100%;height:100%;object-fit:cover">`:`<i data-lucide="${name?'user':'user-x'}"></i>`}</div>${name||'Not assigned'}${on?'<span class="mo-cur">current</span>':''}</button>`;};
+    <div class="mo-ic tint-green">${co&&co.photo?`<img src="${co.photo}" alt="${esc(name)}" class="cover-img">`:`<i data-lucide="${name?'user':'user-x'}"></i>`}</div>${name||'Not assigned'}${on?'<span class="mo-cur">current</span>':''}</button>`;};
  mountClientMenu(`<div class="modal-overlay" id="clientMenu" onclick="if(event.target===this)closeClientMenu()">
    <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -2528,7 +2604,7 @@ function histSeries(c,key,count,scale){
  return pts;
 }
 function trendChart(vals,labels){
- if(vals.length<2)return `<div class="empty" style="padding:26px 10px"><div class="em">📉</div><p>Not enough history for this view yet.</p></div>`;
+ if(vals.length<2)return `<div class="empty pad-sm"><div class="em">📉</div><p>Not enough history for this view yet.</p></div>`;
  const w=320,h=170,padX=28,padT=24,padB=30;
  const min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
  const X=i=>padX+i*(w-2*padX)/(vals.length-1);
@@ -2539,7 +2615,7 @@ function trendChart(vals,labels){
  const step=Math.ceil(labels.length/6);
  const xl=labels.map((l,i)=>(i%step===0||i===labels.length-1)?`<text x="${X(i).toFixed(1)}" y="${h-9}" font-size="9" fill="var(--muted)" text-anchor="middle">${l}</text>`:'').join('');
  const dots=pts.map((p,i)=>{const last=i===pts.length-1;return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${last?4.5:3}" fill="${last?'var(--accent)':'#fff'}" stroke="var(--accent)" stroke-width="2"/>`}).join('');
- return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;display:block">
+ return `<svg viewBox="0 0 ${w} ${h}" class="chart-svg">
   <defs><linearGradient id="tgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.20"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
   <path d="${area}" fill="url(#tgrad)"/>
   <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -2754,6 +2830,54 @@ function removeExFromProgram(id,progIdx,name){
  if(!st.programs.some(pp=>pp.exercises.includes(name)))dropSessionExercise(c,name);
  render();toast('Removed '+name+' from '+p.label);
 }
+/* ---- drag-to-reorder exercises within a program (pointer-based, touch + mouse) ----
+   The grip handle starts a drag; the card follows the finger and swaps past neighbours' midpoints (shifting the
+   baseline so it stays under the finger). On release the program's exercise order is read back from the DOM. */
+let exDrag=null;
+function exCardOuterH(el){const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.height+parseFloat(s.marginTop)+parseFloat(s.marginBottom);}
+function exDragStart(e){
+ const handle=e.currentTarget,card=handle.closest('.ex-card'),pgrp=card&&card.closest('.pgrp');
+ if(!card||!pgrp)return;
+ e.preventDefault();
+ exDrag={card,pgrp,pidx:+card.dataset.pidx,y0:e.clientY};
+ try{handle.setPointerCapture(e.pointerId);}catch(_){}
+ card.classList.add('ex-dragging');document.body.classList.add('ex-drag-on');
+ handle.addEventListener('pointermove',exDragMove);
+ handle.addEventListener('pointerup',exDragEnd);
+ handle.addEventListener('pointercancel',exDragEnd);
+}
+function exDragMove(e){
+ if(!exDrag)return;
+ const {card,pgrp}=exDrag;
+ card.style.transform='translateY('+(e.clientY-exDrag.y0)+'px)';
+ const cr=card.getBoundingClientRect(),mid=cr.top+cr.height/2;
+ const prev=card.previousElementSibling;
+ if(prev&&prev.classList.contains('ex-card')){const pr=prev.getBoundingClientRect();
+  if(mid<pr.top+pr.height/2){const h=exCardOuterH(prev);pgrp.insertBefore(card,prev);exDrag.y0-=h;card.style.transform='translateY('+(e.clientY-exDrag.y0)+'px)';return;}}
+ const next=card.nextElementSibling;
+ if(next&&next.classList.contains('ex-card')){const nr=next.getBoundingClientRect();
+  if(mid>nr.top+nr.height/2){const h=exCardOuterH(next);pgrp.insertBefore(next,card);exDrag.y0+=h;card.style.transform='translateY('+(e.clientY-exDrag.y0)+'px)';return;}}
+}
+function exDragEnd(e){
+ if(!exDrag)return;
+ const {card,pgrp,pidx}=exDrag,handle=e.currentTarget;
+ card.style.transform='';card.classList.remove('ex-dragging');document.body.classList.remove('ex-drag-on');
+ try{handle.releasePointerCapture(e.pointerId);}catch(_){}
+ handle.removeEventListener('pointermove',exDragMove);
+ handle.removeEventListener('pointerup',exDragEnd);
+ handle.removeEventListener('pointercancel',exDragEnd);
+ const order=[].slice.call(pgrp.querySelectorAll('.ex-card')).map(el=>el.dataset.ex);
+ exDrag=null;
+ const st=getSession(S.clientId);if(!st||!st.programs[pidx])return;
+ const arr=st.programs[pidx].exercises;
+ const changed=arr.length!==order.length||arr.some((n,i)=>n!==order[i]);
+ st.programs[pidx].exercises=order;
+ if(changed)render();
+}
+function wireExDrag(){
+ const root=document.getElementById('screen');if(!root)return;
+ [].forEach.call(root.querySelectorAll('.ex-drag'),function(h){h.addEventListener('pointerdown',exDragStart);});
+}
 // remove a circuit; its exercises move to a neighbouring program so nothing is lost. Keeps ≥1 program.
 function removeProgram(id,idx){const st=getSession(id),c=clients.find(x=>x.id===id);if(!st||!c)return;
  if(st.programs.length<=1){toast('Keep at least one program');return;}
@@ -2782,8 +2906,67 @@ function startCircuitSession(id){
  render();sc();toast('Session started — '+st.programs[st.currentProgramIdx].label);
 }
 
+/* ---- per-set weight/reps logging ----
+   The active exercise's CURRENT set shows an editable WEIGHT/REP card (see setCardHTML). Coaches can adjust
+   the load/reps for that individual set before confirming it. Per-set overrides live in prog.setLogs keyed by
+   "round:name"; until a set is edited it simply shows the week's prescribed load (exWeightFor/exRepsFor). */
+let setEditKey=null;   // "round:name" of the set whose card is expanded for editing, or null (collapsed)
+function setLogKey(round,name){return round+':'+name;}
+// the weight/reps to show for one set — a per-set override if present; otherwise the load last used
+// for this exercise earlier in this session (carry it forward), falling back to the week's prescription
+function setLogFor(c,prog,round,name){
+ const k=setLogKey(round,name);
+ if(prog.setLogs&&prog.setLogs[k])return prog.setLogs[k];
+ // carry forward the most recent earlier set the coach actually logged this session
+ if(prog.setLogs){for(let r=round-1;r>=1;r--){const prev=prog.setLogs[setLogKey(r,name)];if(prev)return {w:prev.w,r:prev.r};}}
+ return {w:exWeightFor(c,name),r:exRepsFor(c,name)};
+}
+// ensure a mutable per-set log exists (seeded from the prescription) before a stepper edits it
+function ensureSetLog(c,prog,round,name){
+ prog.setLogs=prog.setLogs||{};const k=setLogKey(round,name);
+ if(!prog.setLogs[k]){const d=setLogFor(c,prog,round,name);prog.setLogs[k]={w:d.w,r:d.r};}
+ return prog.setLogs[k];
+}
+// the active program + its current round (the card only ever shows for the active program's current set)
+function activeSetCtx(id){const st=getSession(id);if(!st||!st.splitDone)return null;
+ const prog=st.programs[st.currentProgramIdx];if(!prog)return null;return {st,prog,round:currentRound(prog)};}
+function toggleSetEdit(id,name){const ctx=activeSetCtx(id);if(!ctx)return;
+ const k=setLogKey(ctx.round,name);setEditKey=(setEditKey===k)?null:k;render();}
+function bumpSetWeight(id,name,delta){const c=clients.find(x=>x.id===id),ctx=activeSetCtx(id);if(!c||!ctx)return;
+ const l=ensureSetLog(c,ctx.prog,ctx.round,name);l.w=Math.max(0,Math.round(((+l.w||0)+delta*2.5)*10)/10);render();}
+function bumpSetReps(id,name,delta){const c=clients.find(x=>x.id===id),ctx=activeSetCtx(id);if(!c||!ctx)return;
+ const l=ensureSetLog(c,ctx.prog,ctx.round,name);l.r=Math.max(1,(+l.r||0)+delta);render();}
+// ✓ — apply the edited weight/reps (already saved live by the steppers) and collapse the editor. This does
+// NOT complete the set; the set is marked done separately by tapping its row (toggleCircuitEx).
+function confirmSet(id,name){setEditKey=null;render();}
+// the WEIGHT/REP card under the active exercise — collapsed (values + edit pencil) or expanded (steppers + ✕/✓)
+function setCardHTML(c,prog,round,name){
+ const rep=isRepBased(sessExMeta(c,name)),unit=rep?'':' kg';
+ const l=setLogFor(c,prog,round,name);
+ const wDisp=Number.isInteger(+l.w)?l.w:(+l.w).toFixed(1);
+ const lbl=rep?'Level':'Weight';
+ if(setEditKey!==setLogKey(round,name)){
+  return `<div class="pgm-setcard">
+    <div class="psc-pill"><span class="psc-lbl">Rep</span><span class="psc-val">${l.r}</span></div>
+    <div class="psc-pill"><span class="psc-lbl">${lbl}</span><span class="psc-val">${wDisp}${unit}</span></div>
+    <button class="psc-edit" onclick="event.stopPropagation();toggleSetEdit(${c.id},'${jsq(name)}')" aria-label="Edit set load"><i data-lucide="pencil"></i></button>
+   </div>`;
+ }
+ return `<div class="pgm-setcard editing">
+   <div class="psc-step"><div class="psc-step-lbl">Rep</div>
+     <div class="psc-step-ctl"><button class="psc-stp" onclick="bumpSetReps(${c.id},'${jsq(name)}',-1)" aria-label="Fewer reps">−</button><span class="psc-step-val">${l.r}</span><button class="psc-stp" onclick="bumpSetReps(${c.id},'${jsq(name)}',1)" aria-label="More reps">+</button></div></div>
+   <div class="psc-step"><div class="psc-step-lbl">${lbl}</div>
+     <div class="psc-step-ctl"><button class="psc-stp" onclick="bumpSetWeight(${c.id},'${jsq(name)}',-1)" aria-label="Less">−</button><span class="psc-step-val">${wDisp}${unit}</span><button class="psc-stp" onclick="bumpSetWeight(${c.id},'${jsq(name)}',1)" aria-label="More">+</button></div></div>
+   <div class="psc-acts">
+     <button class="psc-x" onclick="toggleSetEdit(${c.id},'${jsq(name)}')" aria-label="Cancel"><i data-lucide="x"></i></button>
+     <button class="psc-ok" onclick="confirmSet(${c.id},'${jsq(name)}')" aria-label="Save set"><i data-lucide="check"></i></button>
+   </div>
+  </div>`;
+}
+
 /* ---- workout actions ---- */
 function toggleCircuitEx(id,exName){
+ setEditKey=null;
  const st=getSession(id);if(!st||!st.splitDone)return;
  if(attStatus[id]!=='present')return;
  if(sessionComplete(st))return;
@@ -2835,19 +3018,18 @@ function finishCircuitSession(id,early){
 
 /* ---- session-options menu (⋯) ---- */
 function closeSessMenu(){const m=document.getElementById('sessMenu');if(m)m.remove();}
-function mountSessMenu(html){closeSessMenu();const app=document.getElementById('app');if(app)app.insertAdjacentHTML('beforeend',html);if(window.lucide&&lucide.createIcons)lucide.createIcons();}
+function mountSessMenu(html){closeSessMenu();const app=document.getElementById('app');if(app)app.insertAdjacentHTML('beforeend',html);paintIcons();}
 // phase-aware: BEFORE start (no live workout) the menu lets the coach modify today's exercises; DURING an
 // active workout it also offers Edit split + End session early. No "reset" option: a session, once run,
 // isn't thrown away (a fresh reload re-seeds anyway).
 function openSessMenu(id){
  const st=getSession(id);
  const inWorkout=!!st&&st.splitDone&&!sessionComplete(st);
- // "Modify exercises" — opens the library in session-only mode to add/remove today's exercises
- const modify=`<button class="modal-opt" onclick="closeSessMenu();buildSessionProgram(${id})"><div class="mo-ic" style="background:var(--accent-soft);color:var(--accent)"><i data-lucide="dumbbell"></i></div>Add or remove exercises<span class="mo-cur"></span></button>`;
- let opts=modify;
+ // "Mark as not present" — opens the attendance chooser (Present / Absent / Cancelled)
+ let opts=`<button class="modal-opt" onclick="closeSessMenu();showAttModal()"><div class="mo-ic tint-amber"><i data-lucide="calendar"></i></div>Mark as not present<span class="mo-cur"></span></button>`;
  if(inWorkout){
-  opts+=`<button class="modal-opt" onclick="editSplit(${id})"><div class="mo-ic" style="background:var(--blue-bg);color:var(--blue)"><i data-lucide="pencil"></i></div>Edit programs &amp; rounds<span class="mo-cur"></span></button>`
-   +`<button class="modal-opt" onclick="endSessionEarly(${id})"><div class="mo-ic" style="background:var(--amber-bg);color:var(--amber)"><i data-lucide="flag"></i></div>End session early<span class="mo-cur"></span></button>`;
+  opts+=`<button class="modal-opt" onclick="editSplit(${id})"><div class="mo-ic tint-blue"><i data-lucide="pencil"></i></div>Edit programs &amp; rounds<span class="mo-cur"></span></button>`
+   +`<button class="modal-opt" onclick="endSessionEarly(${id})"><div class="mo-ic tint-amber"><i data-lucide="flag"></i></div>End session early<span class="mo-cur"></span></button>`;
  }
  mountSessMenu(`<div class="modal-overlay" id="sessMenu" onclick="if(event.target===this)closeSessMenu()">
    <div class="modal-sheet"><div class="modal-handle"></div>
@@ -2867,7 +3049,7 @@ function endSessionEarly(id){closeSessMenu();if(!confirm('End the session now? I
 // `chip` is the right-hand attendance cluster (empty before attendance is marked).
 function sessHeader(c,chip){const cat=CATS[c.cat];
  return `<div class="sx-head2">
-   <div class="dava sxh-ava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
+   <div class="dava sxh-ava tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${initials(c.name)}</div>
    <div class="sxh-id"><div class="sxh-name">${esc(c.name)}</div><div class="sxh-sub">${sessionDayFor(c)?sessionDayFor(c)+' · Week '+currentWeekFor(c)+' · ':''}${esc(c.time||'—')} · ${esc(c.coach||'—')}</div></div>
    ${chip?`<div class="sxh-att">${chip}</div>`:''}
   </div>`;}
@@ -2920,7 +3102,7 @@ function vSession(){const c=cur(),cat=CATS[c.cat],wk=4;
     <div class="sx-closed-t">Session ${status}</div>
     <div class="sx-closed-s">No workout to log for today. ${status==='absent'?'Marked as a missed session.':'This session was cancelled.'}</div>
     <button class="sx-undo" onclick="attStatus[${c.id}]=undefined;attTime[${c.id}]=undefined;sessDone[${c.id}]=undefined;render()">Undo</button></div>
-   <div style="height:20px"></div></div>`;
+   <div class="sp20"></div></div>`;
  }
 
  // a session state always exists from here on, so the program-first builder has somewhere to write.
@@ -2956,53 +3138,42 @@ function cwSecHead(p,colorCls,status,dots,active,done){
 function exReps(t){if(!t)return '';const m=String(t).match(/[×x]\s*(.+)$/);const r=(m?m[1]:String(t)).trim();return /^\d+$/.test(r)?r+' reps':r;}
 // one program card (per the Create Program design): orange title + No. of Sets stepper, then its exercises
 // (each with reps + ✕), then a footer row of "＋ Add exercises" (scoped to THIS program) and "Remove".
+// one session exercise — same card as the Program tab's Plan-by-week view (ex-card + Weight/Reps steppers),
+// but wired to the session (bumpWeight/bumpReps edit this week's logs, exactly like the program steppers).
+function sessExCard(c,pIdx,name){
+ const meta=sessExMeta(c,name),rep=isRepBased(meta);
+ const reps=exRepsFor(c,name);
+ const w=exWeightFor(c,name),wDisp=Number.isInteger(w)?w:w.toFixed(1);
+ const target=meta.target?`Target ${esc(meta.target)}`:(meta.g?esc(meta.g):'');
+ // drag-to-reorder: the grip handle starts a pointer drag (wireExDrag); data attrs identify the card on drop
+ return `<div class="ex-card" data-pidx="${pIdx}" data-ex="${esc(name)}"><div class="ex-top">
+    <button class="ex-drag" aria-label="Drag to reorder ${esc(name)}">⠿</button>
+    <div class="ex-head"><div class="ex-name">${esc(name)}</div>${target?`<div class="ex-target">${target}</div>`:''}</div>
+    <button class="ex-remove" onclick="removeExFromProgram(${c.id},${pIdx},'${jsq(name)}')" aria-label="Remove ${esc(name)} from ${esc(st_label(c,pIdx))}">✕</button></div>
+   <div class="stepper-row">
+    <div class="stepper"><div class="lbl">${rep?'Level/time':'Weight'}</div><div class="ctl"><button class="stp-btn" onclick="bumpWeight(${c.id},${pIdx},'${jsq(name)}',-1)" aria-label="Less">−</button><div class="stp-val">${wDisp}${rep?'':'<small> kg</small>'}</div><button class="stp-btn" onclick="bumpWeight(${c.id},${pIdx},'${jsq(name)}',1)" aria-label="More">+</button></div></div>
+    <div class="stepper"><div class="lbl">Reps</div><div class="ctl"><button class="stp-btn" onclick="bumpReps(${c.id},${pIdx},'${jsq(name)}',-1)" aria-label="Fewer reps">−</button><div class="stp-val">${reps}</div><button class="stp-btn" onclick="bumpReps(${c.id},${pIdx},'${jsq(name)}',1)" aria-label="More reps">+</button></div></div>
+   </div></div>`;
+}
+function st_label(c,pIdx){const st=getSession(c.id);return (st&&st.programs[pIdx]&&st.programs[pIdx].label)||progLabel(pIdx);}
+// one program group, styled like the Program tab (pgrp group + ex-cards) plus the session's "No. of Sets" control.
 function builderSection(c,st,pIdx){
- const p=st.programs[pIdx],nP=st.programs.length;
- const rows=p.exercises.length?p.exercises.map(name=>{
-   const meta=sessExMeta(c,name);
-   const sub=meta.g||exReps(meta.target);   // muscle group as the subtitle (Figma), falling back to the target
-   // per-exercise REPS stepper (min 1, step 1) and WEIGHTS stepper (min 0, 2.5kg steps)
-   const reps=exRepsFor(c,name);
-   const w=exWeightFor(c,name),wDisp=Number.isInteger(w)?w:w.toFixed(1);
-   const repsField=`<div class="pb-wt"><span class="pb-wt-lbl">Reps</span>
-       <div class="pb-wt-stepper">
-         <button class="pb-wt-btn ${reps<=1?'dim':''}" onclick="bumpReps(${c.id},${pIdx},'${jsq(name)}',-1)" aria-label="Fewer reps"><i data-lucide="minus-circle"></i></button>
-         <span class="pb-wt-val">${reps}</span>
-         <button class="pb-wt-btn" onclick="bumpReps(${c.id},${pIdx},'${jsq(name)}',1)" aria-label="More reps"><i data-lucide="plus-circle"></i></button>
-       </div></div>`;
-   const weights=`<div class="pb-wt"><span class="pb-wt-lbl">Weights</span>
-       <div class="pb-wt-stepper">
-         <button class="pb-wt-btn ${w<=0?'dim':''}" onclick="bumpWeight(${c.id},${pIdx},'${jsq(name)}',-1)" aria-label="Less weight"><i data-lucide="minus-circle"></i></button>
-         <span class="pb-wt-val">${wDisp}</span>
-         <button class="pb-wt-btn" onclick="bumpWeight(${c.id},${pIdx},'${jsq(name)}',1)" aria-label="More weight"><i data-lucide="plus-circle"></i></button>
-       </div></div>`;
-   return `<div class="pb-ex"><div class="pb-ex-main"><span class="pb-ex-name">${esc(name)}</span>${sub?`<span class="pb-ex-sub">${esc(sub)}</span>`:''}</div>
-     ${repsField}${weights}
-     <button class="pb-ex-x" onclick="removeExFromProgram(${c.id},${pIdx},'${jsq(name)}')" aria-label="Remove ${esc(name)} from ${esc(p.label)}"><i data-lucide="x"></i></button></div>`;
-  }).join('')
-  :`<div class="pb-empty">No exercises yet — tap “Add exercises” to choose some for ${esc(p.label)}.</div>`;
- const removeProg=nP>1?`<button class="pb-remove" onclick="removeProgram(${c.id},${pIdx})">Remove</button>`:'<span></span>';
- return `<div class="pb-card">
-   <div class="pb-head">
-     <div class="pb-title">${esc(p.label)}</div>
-     <div class="pb-sets"><span class="pb-sets-lbl">No. of Sets</span>
-       <div class="pb-stepper">
-         <button class="pb-step" onclick="bumpSets(${c.id},${pIdx},-1)" aria-label="Fewer sets">−</button>
-         <span class="pb-stepval">${p.sets}</span>
-         <button class="pb-step" onclick="bumpSets(${c.id},${pIdx},1)" aria-label="More sets">+</button>
-       </div>
-     </div>
-   </div>
-   ${rows}
-   <div class="pb-foot">
-     <button class="pb-addex" onclick="addExercisesToProgram(${c.id},${pIdx})">＋ Add exercises</button>
-     ${removeProg}
-   </div>
- </div>`;
+ const p=st.programs[pIdx],nP=st.programs.length,letter=progLetter(pIdx).toLowerCase();
+ const cards=p.exercises.length?p.exercises.map(name=>sessExCard(c,pIdx,name)).join('')
+   :`<div class="slot-empty">No exercises in ${esc(p.label)} yet — tap “Add exercise” below.</div>`;
+ const removeProg=nP>1?`<button class="pb-remove" onclick="removeProgram(${c.id},${pIdx})">Remove ${esc(p.label)}</button>`:'';
+ return `<div class="pgrp pgrp-${letter}">
+   <div class="pgrp-head"><span class="pgrp-dot"></span><span class="pgrp-name">${esc(p.label)}</span><span class="pgrp-count">${p.exercises.length} exercise${p.exercises.length!==1?'s':''}</span></div>
+   <div class="pgrp-sets"><span class="pb-sets-lbl">No. of Sets</span>
+     <div class="pb-stepper"><button class="pb-step" onclick="bumpSets(${c.id},${pIdx},-1)" aria-label="Fewer sets">−</button><span class="pb-stepval">${p.sets}</span><button class="pb-step" onclick="bumpSets(${c.id},${pIdx},1)" aria-label="More sets">+</button></div></div>
+   ${cards}
+   <button class="slot-add" onclick="addExercisesToProgram(${c.id},${pIdx})">＋ Add exercise to ${esc(p.label)}</button>
+   ${removeProg}
+  </div>`;
 }
 // all program cards, or an empty prompt inviting the first "Add program" tap
 function builderSections(c,st){
- if(!st.programs.length)return `<div class="pb-empty" style="margin:14px 18px">No programs yet. Tap “Add program” below to create Program A, then add exercises to it.</div>`;
+ if(!st.programs.length)return `<div class="pb-empty inset">No programs yet. Tap “Add program” below to create Program A, then add exercises to it.</div>`;
  return st.programs.map((p,i)=>builderSection(c,st,i)).join('');
 }
 function builderAddProgramBtn(c,st){
@@ -3032,14 +3203,14 @@ function splitScreen(c,st){
 // with the programs just built; "Cancel" backs out. Absent/cancelled live behind "Not present?".
 function sessCard(c,chip){const cat=CATS[c.cat];
  return `<div class="se-card">
-   <div class="dava se-ava" style="background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
+   <div class="dava se-ava tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${initials(c.name)}</div>
    <div class="se-id"><div class="se-name-row"><span class="se-name">${esc(c.name)}</span>${chip||''}</div><div class="se-meta">${sessionDayFor(c)?sessionDayFor(c)+' · Week '+currentWeekFor(c)+' · ':''}${esc(c.time||'—')} · ${esc(c.coach||'—')}</div></div>
   </div>`;}
 // live-session present pill (maroon) + a ⋯ that opens session options — sits in the session card's name row
 function sessLiveChip(c){const ts=attTime[c.id]?` · ${attTime[c.id]}`:'';
- return `<div class="se-present"><span class="se-present-tx">✓ Present${ts}</span><button class="se-present-dots" onclick="openSessMenu(${c.id})" aria-label="Session options"><i data-lucide="more-vertical"></i></button></div>`;}
+ return `<div class="se-present"><span class="se-present-tx">✓ Present${ts}</span></div>`;}
 // "Modify this session" footer — pencil tile + label, opens the library in session-only mode
-function sessModifyBar(id){return `<button class="sess-modify2" onclick="buildSessionProgram(${id})"><span class="sm2-ic"><i data-lucide="pencil"></i></span>Modify this session</button>`;}
+function sessModifyBar(id){return `<button class="sess-modify2" onclick="editSplit(${id})"><span class="sm2-ic"><i data-lucide="pencil"></i></span>Modify this session</button>`;}
 // which clients are currently in the editable program builder (vs. the read-only Today's Session preview)
 let progEditing={};
 function editProgram(id){progEditing[id]=true;render();sc();}
@@ -3064,7 +3235,7 @@ function preStartBuilder(c,st){
    <div class="se-or">OR</div>
    <button class="se-notpresent" onclick="navTo('attMore',${c.id})"><i data-lucide="calendar"></i> Mark as not present</button>
   </div>
-  <div style="height:8px"></div></div>`;
+  <div class="sp8"></div></div>`;
  // EDIT — the editable program builder (reached via "Create / Modify program"); ✓ Done returns to the preview
  if(progEditing[c.id])return `<div class="fadein">
   <div class="bar solid"><button class="iconbtn" onclick="exitProgramEdit(${c.id})" aria-label="Done">‹</button><div class="bar-title">Create Program</div></div>
@@ -3078,10 +3249,10 @@ function preStartBuilder(c,st){
   <div class="bar solid"><button class="iconbtn" onclick="goBack()" aria-label="Back">‹</button><div class="bar-title">Today's Session</div><button class="iconbtn" onclick="openSessMenu(${c.id})" aria-label="Session options"><i data-lucide="settings"></i></button></div>
   ${sessCard(c)}
   ${slideToStart('Slide to mark present & start')}
-  <div class="slide-more" style="margin-top:6px"><button onclick="navTo('attMore',${c.id})">Not present? More options</button></div>
+  <div class="slide-more mt6"><button onclick="navTo('attMore',${c.id})">Not present? More options</button></div>
   ${sections?`<div class="sx-prelock-hint"><i data-lucide="lock"></i>Slide to mark present to start</div><div class="sx-prelock">${sections}</div>`:''}
   <button class="sess-modify2" onclick="editProgram(${c.id})"><span class="sm2-ic"><i data-lucide="pencil"></i></span>Create / modify program</button>
-  <div style="height:8px"></div></div>`;
+  <div class="sp8"></div></div>`;
 }
 // PART 2 — round-by-round circuit; BOTH programs stay on screen as per-set grids (active one interactive)
 function circuitWorkout(c,st){
@@ -3089,16 +3260,21 @@ function circuitWorkout(c,st){
  // defensively hop past an already-complete program (e.g. after an edit) to the next live one
  if(programComplete(prog)&&!sessionComplete(st)&&advanceProgram(st))prog=st.programs[st.currentProgramIdx];
  const activeIdx=st.currentProgramIdx;
- const sections=st.programs.map((p,pIdx)=>p.exercises.length?programBlock(c,p,pIdx,activeIdx):'').join('');
+ // live circuit: keep the active program open and fold the yet-to-start / completed ones to a tidy header
+ const sections=st.programs.map((p,pIdx)=>p.exercises.length?programBlock(c,p,pIdx,activeIdx,true):'').join('');
  return `<div class="fadein">
   <div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title">Today's Session</div><button class="iconbtn" onclick="openSessMenu(${c.id})" aria-label="Session options"><i data-lucide="settings"></i></button></div>
   ${sessCard(c,sessLiveChip(c))}
   ${sections}
   ${sessModifyBar(c.id)}
-  <div style="height:24px"></div></div>`;
+  <div class="sp24"></div></div>`;
 }
-// one program block — a per-set grid (started) or a simple exercise list (yet to start)
-function programBlock(c,p,pIdx,activeIdx){
+// which folded (idle/completed) programs the coach has manually re-opened during a live session — keyed "id:pIdx"
+let progExpanded={};
+function toggleProgExpand(id,pIdx){const k=id+':'+pIdx;progExpanded[k]=!progExpanded[k];render();}
+// one program block — a per-set grid (started) or a simple exercise list (yet to start). When `collapsible`
+// (live session), the yet-to-start / completed programs fold to a header-only summary, tappable to expand.
+function programBlock(c,p,pIdx,activeIdx,collapsible){
  const done=programComplete(p);
  const active=pIdx===activeIdx&&!done;
  const idle=!done&&!active;                       // not yet reached in the circuit
@@ -3109,13 +3285,25 @@ function programBlock(c,p,pIdx,activeIdx){
    :active?`<span class="pgm-pill live">Inprogress</span>`
    :`<span class="pgm-pill idle">Yet to start</span>`;
  const setsLbl=done?`${p.sets}/${p.sets} sets`:active?`${curR}/${p.sets} sets`:'';
+ // idle / completed programs can be folded away to reduce clutter while the active one stays open
+ const foldable=collapsible&&!active;
+ const collapsed=foldable&&!progExpanded[c.id+':'+pIdx];
+ const chev=foldable?`<i class="pgm-chev${collapsed?'':' up'}" data-lucide="chevron-down"></i>`:'';
+ const headClick=foldable?` onclick="toggleProgExpand(${c.id},${pIdx})"`:'';
+ const head=`<div class="pgm-head"${headClick}><div class="pgm-title-wrap"><span class="pgm-title">${esc(p.label)}</span>${pill}</div><span class="pgm-head-right">${setsLbl?`<span class="pgm-sets">${setsLbl}</span>`:''}${chev}</span></div>`;
+ if(collapsed)return `<div class="pgm-card ${state} mini">${head}</div>`;
  const grid=done||active;                          // started programs show the SET columns
  const colsHead=grid?`<span class="pgm-setcols">${Array.from({length:p.sets},(_,i)=>`<span>Set ${i+1}</span>`).join('')}</span>`:'';
  const rows=p.exercises.map(name=>{
   const ex=sessExMeta(c,name);
   const reps=exReps(ex.target)||'—';
   if(idle)return `<div class="pgm-ex idle"><div class="pgm-ex-main"><div class="pgm-ex-name">${esc(name)}</div><div class="pgm-ex-sub"><span>${esc(reps)}</span></div></div></div>`;
-  const w=exWeightFor(c,name);const wLbl=w>0?`${Number.isInteger(w)?w:w.toFixed(1)}kg weights`:'No weights';
+  // subtitle weight + reps track the load actually in use this session (match the WEIGHT/REP card),
+  // not just the prescription — so the subline can't contradict an edited card value
+  const w=+setLogFor(c,p,active?curR:0,name).w||0;const wLbl=w>0?`${Number.isInteger(w)?w:w.toFixed(1)}kg weights`:'No weights';
+  let liveR=null;
+  if(p.setLogs){for(let r=(active?curR:0);r>=1;r--){const sl=p.setLogs[setLogKey(r,name)];if(sl){liveR=sl.r;break;}}}
+  const repsLbl=liveR!=null?`${liveR} reps`:reps;
   const isCur=active&&name===nextName;
   const cells=Array.from({length:p.sets},(_,i)=>{
    const r=i+1,cellDone=!!p.progress[r+':'+name];
@@ -3125,14 +3313,22 @@ function programBlock(c,p,pIdx,activeIdx){
      :`<span class="pgm-set"></span>`;
    return `<span class="pgm-cell">${inner}</span>`;
   }).join('');
-  const click=active?` onclick="toggleCircuitEx(${c.id},'${jsq(name)}')"`:'';
-  return `<div class="pgm-ex${isCur?' cur':''}${active?' tap':''}"${click}>
-    <div class="pgm-ex-main"><div class="pgm-ex-name">${esc(name)}</div>
-      <div class="pgm-ex-sub"><span>${esc(reps)}</span><i class="pgm-dot"></i><span>${esc(wLbl)}</span></div></div>
-    <div class="pgm-cells">${cells}</div></div>`;
+  // ONLY the current exercise of the active program is interactive — tapping any
+  // other (non-active) exercise card does nothing, has no tap affordance.
+  const click=isCur?` onclick="toggleCircuitEx(${c.id},'${jsq(name)}')"`:'';
+  const rowInner=`<div class="pgm-ex-main"><div class="pgm-ex-name">${esc(name)}</div>
+      <div class="pgm-ex-sub"><span>${esc(repsLbl)}</span><i class="pgm-dot"></i><span>${esc(wLbl)}</span></div></div>
+    <div class="pgm-cells">${cells}</div>`;
+  // the current set of the active exercise gets an editable WEIGHT/REP card stacked under its row. The whole
+  // card completes the set on tap (except the edit pencil); while editing, tapping it does nothing.
+  if(isCur){
+   const editing=setEditKey===setLogKey(curR,name);
+   return `<div class="pgm-cur-card${editing?'':' tap'}"${editing?'':click}><div class="pgm-ex bare">${rowInner}</div>${setCardHTML(c,p,curR,name)}</div>`;
+  }
+  return `<div class="pgm-ex">${rowInner}</div>`;
  }).join('');
- return `<div class="pgm-card ${state}">
-   <div class="pgm-head"><div class="pgm-title-wrap"><span class="pgm-title">${esc(p.label)}</span>${pill}</div>${setsLbl?`<span class="pgm-sets">${setsLbl}</span>`:''}</div>
+ return `<div class="pgm-card ${state}${foldable?' foldable':''}">
+   ${head}
    <div class="pgm-cols"><span class="pgm-cols-lbl">Exercises</span>${colsHead}</div>
    <div class="pgm-rows">${rows}</div>
   </div>`;
@@ -3150,7 +3346,7 @@ function sessCompleteView(c){
   <div class="sx-complete2"><div class="scx-row"><span class="scx-ic"><i data-lucide="check"></i></span><span class="scx-t">Session Completed</span></div><span class="scx-s">All done for today.</span></div>
   ${sections}
   <button class="sess-modify2 sess-history" onclick="openClient(${c.id});openClientSection('sessions')"><span class="sm2-ic"><i data-lucide="clock"></i></span>View session history<i data-lucide="chevron-right" class="sm2-chev"></i></button>
-  <div style="height:24px"></div></div>`;
+  <div class="sp24"></div></div>`;
 }
 
 /* ============ ATTENDANCE MODAL ============ */
@@ -3166,7 +3362,7 @@ function showAttModal(){
    <div class="modal-handle"></div>
    <div class="modal-title">Change attendance</div>
    <div class="modal-opts">${opts.map(o=>`<button class="modal-opt ${status===o.key?'cur':''}" onclick="changeAtt('${o.key}')">
-    <div class="mo-ic" style="background:${o.bg}">${o.ic}</div>${o.label}<span class="mo-cur">current</span></button>`).join('')}</div>
+    <div class="mo-ic swatch" style="--c-bg:${o.bg}">${o.ic}</div>${o.label}<span class="mo-cur">current</span></button>`).join('')}</div>
    <button class="modal-cancel" onclick="closeAttModal()">Cancel</button>
   </div></div>`;
  document.getElementById('app').insertAdjacentHTML('beforeend',html);
@@ -3186,11 +3382,11 @@ function changeAtt(newStatus){
 /* ============ ATTENDANCE — MORE (absent / cancelled) ============ */
 function vAttMore(){const c=cur();
  return `<div class="fadein"><div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title">Mark attendance</div></div>
-  <div class="att-date" style="text-align:center;padding:22px 18px 14px"><div style="font-size:20px;font-weight:700">${c.name}</div><div style="color:var(--muted);font-size:13px;font-weight:600;margin-top:2px">Today · Mon 19 May · ${c.time}</div></div>
-  <button class="att-opt2 ap" onclick="setAttendance(${c.id},'present');navTo('session',${c.id})"><div class="em" style="background:var(--green-bg)"><i data-lucide="check"></i></div>Present</button>
-  <button class="att-opt2 aa" onclick="setAttendance(${c.id},'absent')"><div class="em" style="background:var(--red-bg)"><i data-lucide="x"></i></div>Absent</button>
-  <button class="att-opt2 ac2" onclick="setAttendance(${c.id},'cancelled')"><div class="em" style="background:var(--amber-bg)"><i data-lucide="ban"></i></div>Cancelled</button>
-  <div style="height:20px"></div></div>`;
+  <div class="att-date"><div class="att-date-name">${c.name}</div><div class="att-date-sub">Today · Mon 19 May · ${c.time}</div></div>
+  <button class="att-opt2 ap" onclick="setAttendance(${c.id},'present');navTo('session',${c.id})"><div class="em bg-green"><i data-lucide="check"></i></div>Present</button>
+  <button class="att-opt2 aa" onclick="setAttendance(${c.id},'absent')"><div class="em bg-red"><i data-lucide="x"></i></div>Absent</button>
+  <button class="att-opt2 ac2" onclick="setAttendance(${c.id},'cancelled')"><div class="em bg-amber"><i data-lucide="ban"></i></div>Cancelled</button>
+  <div class="sp20"></div></div>`;
 }
 
 /* ============ ONBOARDING ============ */
@@ -3203,7 +3399,7 @@ function phoneOk(pd,dial){return dial==='+91'?pd.length===10:(pd.length>=6&&pd.l
 function phoneNeed(dial){return dial==='+91'?'10':'6–15'}
 function phoneHintHTML(){const pd=(onForm.phone||'').replace(/\D/g,'');const dial=onForm.dial||'+91';const has=pd.length>0,ok=phoneOk(pd,dial);
  const col=!has?'var(--muted)':(ok?'var(--green)':'var(--red)');const txt=!has?'':(ok?'✓ '+pd.length+' digits':pd.length+' / '+phoneNeed(dial)+' digits');
- return `<div id="o-phone-hint" style="font-size:12px;font-weight:700;margin-top:6px;min-height:15px;color:${col}">${txt}</div>`}
+ return `<div id="o-phone-hint" class="input-hint" style="--c-fg:${col}">${txt}</div>`}
 function checkPhone(){const inp=document.getElementById('o-phone');if(!inp)return;onForm.phone=inp.value;
  const pd=inp.value.replace(/\D/g,'');const dial=onForm.dial||'+91';const has=pd.length>0,ok=phoneOk(pd,dial);
  inp.style.borderColor=has&&!ok?'var(--red)':'';
@@ -3212,7 +3408,7 @@ function checkPhone(){const inp=document.getElementById('o-phone');if(!inp)retur
 function emailOk(em){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)}
 function emailHintHTML(){const em=(onForm.email||'').trim();const has=em.length>0,ok=emailOk(em);
  const col=!has?'var(--muted)':(ok?'var(--green)':'var(--red)');const txt=!has?'':(ok?'✓ Looks good':'Enter a valid email');
- return `<div id="o-email-hint" style="font-size:12px;font-weight:700;margin-top:6px;min-height:15px;color:${col}">${txt}</div>`}
+ return `<div id="o-email-hint" class="input-hint" style="--c-fg:${col}">${txt}</div>`}
 function checkEmail(){const inp=document.getElementById('o-email');if(!inp)return;onForm.email=inp.value;
  const em=inp.value.trim();const has=em.length>0,ok=emailOk(em);
  inp.style.borderColor=has&&!ok?'var(--red)':'';
@@ -3241,7 +3437,7 @@ function wireTimeWheels(){['h','m','ap'].forEach(function(id){const col=document
   clearTimeout(tm);tm=setTimeout(function(){setTimePart(id,items[idx].dataset.v)},80)}})}
 /* ── Staged add flows ── A: basics + questionnaire · B: assessment · C: schedule + coach ── */
 // Flow A — from the Clients "+" FAB. Fresh draft; no client exists yet.
-function openAddClient(){onForm={dial:'+91',ratings:{},assessPaid:false,progWeeks:4,progPaid:false};S.clientId=null;S.onCat='General wellness';S.onAbility='Abled';S.onDays=['Mon','Wed','Fri'];S.onTime='5:30 PM';S.onCoach=(coaches.find(c=>c.role==='Main trainer')||coaches[0]).name;S.onMsg=0;navTo('addClient')}
+function openAddClient(){onForm={dial:'+91',ratings:{},assessPaid:false,progWeeks:4,progPaid:false};S.clientId=null;S.onCat='General wellness';S.onAbility='Abled';S.onDays=['Mon','Wed','Fri'];S.onTime='5:30 PM';S.onCoach=(coaches.find(c=>c.main)||coaches[0]).name;S.onMsg=0;navTo('addClient')}
 // Flow B — from a pending client's overview. Seed the draft from the client so the assessment preview shows their details.
 function openAddAssessment(id){const c=clients.find(x=>x.id===id);if(!c)return;
  const ph=(c.phone||'').trim();let dial='+91',raw=ph;const m=ph.match(/^(\+\d+)\s+(.*)$/);if(m){dial=m[1];raw=m[2];}
@@ -3258,7 +3454,7 @@ function openAddSchedule(id){const c=clients.find(x=>x.id===id);if(!c)return;
  S.clientId=id;S.onCat=c.cat;S.onAbility=c.ability||'Abled';
  S.onDays=(c.days&&c.days!=='—')?c.days.split(',').map(s=>s.trim()).filter(Boolean):['Mon','Wed','Fri'];
  S.onTime=(c.time&&c.time!=='—')?c.time:'5:30 PM';
- S.onCoach=c.coach||(coaches.find(co=>co.role==='Main trainer')||coaches[0]).name;
+ S.onCoach=c.coach||(coaches.find(co=>co.main)||coaches[0]).name;
  navTo('addSchedule',id);}
 // Flow C (step 3) — welcome note, the final onboarding step. Pre-fill the summary from the assessment notes.
 function openAddWelcome(id){const c=clients.find(x=>x.id===id);if(!c)return;
@@ -3288,7 +3484,7 @@ function draftFn(){const c=cur();const n=(c?c.name:onForm.name)||'';return n.tri
 function stepDetails(){return `<div class="step-title">Client details</div><div class="step-sub">The basics to set them up.</div>
   <div class="field"><label>Full name</label><input id="o-name" placeholder="e.g. Rahul Sharma" autocomplete="off" value="${esc(onForm.name||'')}" oninput="onForm.name=this.value"></div>
   <div class="field"><label>Age</label><input id="o-age" type="number" inputmode="numeric" placeholder="e.g. 30" value="${esc(onForm.age||'')}" oninput="onForm.age=this.value"></div>
-  <div class="field"><label>Phone</label><div style="display:flex;gap:8px;align-items:stretch"><div class="selectwrap" style="flex:0 0 112px"><select onchange="onForm.dial=this.value;checkPhone()">${COUNTRIES.map(co=>`<option value="${co.d}" ${(onForm.dial||'+91')===co.d?'selected':''}>${co.f} ${co.d}</option>`).join('')}</select></div><input id="o-phone" inputmode="tel" placeholder="98765 43210" value="${esc(onForm.phone||'')}" oninput="checkPhone()" style="flex:1;width:auto"></div>${phoneHintHTML()}</div>
+  <div class="field"><label>Phone</label><div class="phone-row"><div class="selectwrap dial"><select onchange="onForm.dial=this.value;checkPhone()">${COUNTRIES.map(co=>`<option value="${co.d}" ${(onForm.dial||'+91')===co.d?'selected':''}>${co.f} ${co.d}</option>`).join('')}</select></div><input id="o-phone" inputmode="tel" placeholder="98765 43210" value="${esc(onForm.phone||'')}" oninput="checkPhone()" class="phone-input"></div>${phoneHintHTML()}</div>
   <div class="field"><label>Email</label><input id="o-email" type="email" inputmode="email" autocomplete="off" placeholder="e.g. rahul@email.com" value="${esc(onForm.email||'')}" oninput="checkEmail()">${emailHintHTML()}</div>
   <div class="field"><label>Category</label><div class="chips">${Object.keys(CATS).map(c=>`<button class="cat-chip ${S.onCat===c?'sel':''}" data-cat="${c}" onclick="selOnCat('${c}')">${CATS[c].ic} ${c}</button>`).join('')}</div></div>
   ${S.onCat==='Sports specific'?`<div class="field"><label>Ability</label><div class="seg"><button class="${S.onAbility==='Abled'?'on':''}" onclick="S.onAbility='Abled';render()">Abled</button><button class="${S.onAbility==='Disabled'?'on':''}" onclick="S.onAbility='Disabled';render()">Disabled</button></div></div>`:''}`;}
@@ -3566,18 +3762,14 @@ function docLong(){return new Date().toLocaleDateString('en-GB',{day:'numeric',m
 function gymContact(){return `<span>📍 ${GYM.name}</span><span>📞 ${GYM.phone}</span><span>✉️ ${GYM.email}</span><span>🌐 ${GYM.web}</span>`}
 function payTag(paid){return paid?'<span class="rd-paid">✓ Paid</span>':'<span class="rd-due">Pending</span>'}
 // baseline-measurement icons (from assets/icons) — inlined with currentColor so they tint red and export to PDF
-const MEAS_ICONS={
- weight:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M12 9l2-2"/><circle cx="12" cy="9" r="3"/></svg>',
- height:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M8 6h8"/><path d="M8 18h8"/><path d="M10 4l2-2 2 2"/><path d="M10 20l2 2 2-2"/></svg>',
- waist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.97873C5 11.095 6.79086 12 9 12V9.97873C9 8.98454 9 8.48745 8.60252 8.18419C8.20504 7.88092 7.811 7.99435 7.02292 8.22121C5.81469 8.56902 5 9.2258 5 9.97873Z"/><path d="M16 8.5C16 10.433 12.866 12 9 12C5.13401 12 2 10.433 2 8.5C2 6.567 5.13401 5 9 5C12.866 5 16 6.567 16 8.5Z"/><path d="M2 9V15.6667C2 17.5076 5.13401 19 9 19H20C20.9428 19 21.4142 19 21.7071 18.7071C22 18.4142 22 17.9428 22 17V14C22 13.0572 22 12.5858 21.7071 12.2929C21.4142 12 20.9428 12 20 12H9"/><path d="M18 19V17M14 19V17M10 19V17M6 18.5V16.5"/></svg>'
-};
+const MEAS_ICONS={weight:'<i data-lucide="weight"></i>',height:'<i data-lucide="height"></i>',waist:'<i data-lucide="waist"></i>'};
 // assessment doc data — from the saved client (viewing a completed one) or the in-progress draft (add flow)
 function assessVM(){
  if(S.assessSrc==='client'){const c=cur()||{};const a=c.assessment||{};
   return {name:c.name||'Client',cat:c.cat,program:PROGRAMS[c.cat]||c.cat,phone:c.phone||'—',
    email:(c.email&&c.email!=='—')?c.email:'',weight:a.weight,height:a.height,waist:a.waist,
    ratings:a.ratings||{},notes:(a.notes||'').trim(),goals:c.goals,medical:c.medical,activity:c.activity,
-   by:coachByName(a.by)||{name:a.by||currentCoach(),role:'Main trainer'},paid:!!c.assessmentPaid};}
+   by:coachByName(a.by)||{name:a.by||currentCoach(),role:'Coach'},paid:!!c.assessmentPaid};}
  return {name:onForm.name||'New client',cat:S.onCat,program:PROGRAMS[S.onCat]||S.onCat,phone:onPhoneFmt(),
   email:(onForm.email||'').trim(),weight:onForm.weight,height:onForm.height,waist:onForm.waist,
   ratings:onForm.ratings||{},notes:(onForm.assessNotes||'').trim(),goals:onForm.goals,medical:onForm.medical,
@@ -3597,7 +3789,7 @@ function assessDocHTML(){
   <div class="rd-head"><img class="rd-logo" src="assets/images/logo.jpg" alt="Elevate Fitness"><div class="rd-head-div"></div>
    <div class="rd-head-tx"><div class="rd-title"><b>FITNESS</b> ASSESSMENT</div><div class="rd-kicker"><span></span>FIRST SESSION<span></span></div><div class="rd-date"><i data-lucide="calendar"></i>${docLong()}</div></div></div>
   <div class="rd-client">
-   <div class="rd-avatar" style="background:${cat.b||'var(--accent-soft)'};color:${cat.c||'var(--accent)'}">${initials(A.name)}</div>
+   <div class="rd-avatar tint-cat" style="--c-bg:${cat.b||'var(--accent-soft)'};--c-fg:${cat.c||'var(--accent)'}">${initials(A.name)}</div>
    <div class="rd-client-m"><div class="rd-cname">${esc(A.name).toUpperCase()}</div>
     <div class="rd-crow"><span class="rd-cic"><i data-lucide="clipboard-list"></i></span>Program: <b>${A.program}</b></div>
     <div class="rd-crow"><span class="rd-cic"><i data-lucide="phone"></i></span>Phone: <b>${A.phone}</b></div>
@@ -3621,7 +3813,7 @@ function vAssessDoc(){return `<div class="fadein"><div class="bar solid"><div cl
   <div class="rdoc-wrap"><div class="rdoc-frame" id="rdocFrame">${assessDocHTML()}</div></div>
   <div class="rdoc-actions"><button class="bigbtn" onclick="shareDocVia('whatsapp')">📲 Send via WhatsApp</button>
    <div class="rdoc-share"><button class="bigbtn ghost" onclick="shareDocVia('email')">✉️ Email</button><button class="bigbtn ghost" onclick="downloadDocPDF()">⬇ PDF</button></div></div>
-  <div style="height:24px"></div></div>`;}
+  <div class="sp24"></div></div>`;}
 // motivational quotes for the welcome letter — chosen deterministically by client.id (never random)
 const WD_QUOTES=[
  'The body achieves what the mind believes.',
@@ -3657,7 +3849,7 @@ function welcomeDocHTML(){const c=cur();if(!c)return '';
   <div class="wd-body">
    <div class="wd-user">
     <div class="wd-user-l">
-     <div class="wd-photo" style="background:${cat.b||'var(--accent-soft)'};color:${cat.c||'var(--accent)'}"><i data-lucide="user"></i><span>${initials(c.name)}</span></div>
+     <div class="wd-photo tint-cat" style="--c-bg:${cat.b||'var(--accent-soft)'};--c-fg:${cat.c||'var(--accent)'}"><i data-lucide="user"></i><span>${initials(c.name)}</span></div>
      <div class="wd-user-info">
       <div class="wd-uname">${esc(c.name)}</div>
       <div class="wd-urow"><i data-lucide="cake"></i>${c.age?esc(c.age)+' yrs':'—'}</div>
@@ -3734,7 +3926,7 @@ function vWelcomeDoc(){const c=cur();
   <div class="rdoc-actions"><button class="bigbtn" onclick="shareDocVia('whatsapp')">📲 Send via WhatsApp</button>
    <div class="rdoc-share"><button class="bigbtn ghost" onclick="shareDocVia('email')">✉️ Email</button><button class="bigbtn ghost" onclick="downloadDocPDF()">⬇ PDF</button></div>
    <button class="ex-reorder-btn" onclick="goBack()">✓ Done — open client profile</button></div>
-  <div style="height:24px"></div></div>`;}
+  <div class="sp24"></div></div>`;}
 // shared PDF/share plumbing for the onboarding docs (reuse the report's #rdoc capture pipeline)
 function slug(s){return String(s||'client').replace(/[^A-Za-z0-9]+/g,'-')}
 function docName(){return S.view==='assessDoc'?(assessVM().name||'client'):((cur()&&cur().name)||onForm.name||'client')}
@@ -3778,26 +3970,26 @@ function vSchedule(){const days=['Mon','Tue','Wed','Thu','Fri','Sat'];
    <button class="sw-arrow" onclick="schedShift(1)" aria-label="Next week">›</button>
   </div>
   <div class="filters">${days.map(d=>`<button class="fchip ${schedDay===d?'on':''}" onclick="schedDay='${d}';render()">${d}</button>`).join('')}</div>
-  <div class="wkbanner" style="padding:8px 18px">${schedDay} ${wk.fmt(dayDate)} · ${list.length} session${list.length!==1?'s':''} — tap a client to open</div>
-  ${list.length?list.map(x=>{const c=x.c,cat=CATS[c.cat];return `<div class="sess-row" style="padding:13px;cursor:pointer" onclick="openClient(${c.id})">
+  <div class="wkbanner pad-h">${schedDay} ${wk.fmt(dayDate)} · ${list.length} session${list.length!==1?'s':''} — tap a client to open</div>
+  ${list.length?list.map(x=>{const c=x.c,cat=CATS[c.cat];return `<div class="sess-row tap" onclick="openClient(${c.id})">
     <span class="sess-time">${esc(x.t)}</span>
-    <div class="ava" style="width:38px;height:38px;font-size:13px;background:${cat?cat.b:'var(--accent-soft)'};color:${cat?cat.c:'var(--accent)'}">${initials(c.name)}</div>
+    <div class="ava sz38 tint-cat" style="--c-bg:${cat?cat.b:'var(--accent-soft)'};--c-fg:${cat?cat.c:'var(--accent)'}">${initials(c.name)}</div>
     <div class="sess-main"><div class="sess-name">${esc(c.name)}</div><div class="sess-sub">${esc(c.cat||'')} · Coach ${esc(c.coach||'Unassigned')}</div></div>
     <div class="cr-chev">›</div></div>`}).join(''):`<div class="empty"><div class="em">📅</div><p>No sessions on ${schedDay}.</p></div>`}
   <div class="bottom-cta"><button class="bigbtn ghost" onclick="toast('Add session')">+ Add session</button></div>
-  <div style="height:80px"></div></div>`;
+  <div class="sp80"></div></div>`;
 }
 
 /* ============ REPORTS ============ */
 function vReports(){
  const pending=clients.filter(c=>c.status==='Active'&&c.scheduleSet);
  return `<div class="fadein">${vTopbar()}<div class="bar"><div class="bar-title">Reports</div></div>
-  <div class="wkbanner" style="padding:10px 18px;font-weight:700;color:var(--ink);font-size:14px">Weekly & completion reports</div>
+  <div class="wkbanner label">Weekly & completion reports</div>
   ${pending.map(c=>{const cat=CATS[c.cat];const done=reports.find(r=>r.clientId===c.id&&r.sent);return `<div class="report-row" onclick="openReport(${c.id})">
-   <div class="ava" style="width:42px;height:42px;font-size:14px;background:${cat.b};color:${cat.c}">${initials(c.name)}</div>
+   <div class="ava sz42 tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${initials(c.name)}</div>
    <div class="ac-main"><div class="ac-title">${c.name}</div><div class="ac-sub">${done?'Week 4 sent · '+done.when:'Week 4 · ready to send'}</div></div>
    <span class="sbadge ${done?'gbg':'abg'}">${done?'Sent':'Send'}</span></div>`}).join('')}
-  <div style="height:80px"></div></div>`;
+  <div class="sp80"></div></div>`;
 }
 const GYM={name:'Elevate Fitness',phone:'+91 98765 43210',email:'info@elevatefitness.com',web:'www.elevatefitness.com'};
 const PROGRAMS={'Sports specific':'Sports Performance','Rehab':'Rehabilitation','General wellness':'General Fitness','Special children':'Adaptive Training'};
@@ -3875,7 +4067,7 @@ function vReport(){const c=cur();
      <input id="rg-t-${i}" class="cmp-goal-t" value="${(go.t||'').replace(/"/g,'&quot;')}" placeholder="Goal ${i+1}">
      <input id="rg-s-${i}" class="cmp-goal-s" value="${(go.s||'').replace(/"/g,'&quot;')}" placeholder="Short description"></div></div>`).join('')}</div>
   <div class="bottom-cta"><button class="bigbtn" onclick="submitReport()">Preview report  ›</button></div>
-  <div style="height:20px"></div></div>`;
+  <div class="sp20"></div></div>`;
 }
 function submitReport(){
  const note=document.getElementById('rg-note');
@@ -3911,7 +4103,7 @@ function reportDocHTML(c){
    </div>
   </div>
   <div class="rd-client">
-   <div class="rd-avatar" style="background:${cat.b||'var(--accent-soft)'};color:${cat.c||'var(--accent)'}">${initials(c.name)}</div>
+   <div class="rd-avatar tint-cat" style="--c-bg:${cat.b||'var(--accent-soft)'};--c-fg:${cat.c||'var(--accent)'}">${initials(c.name)}</div>
    <div class="rd-client-m">
     <div class="rd-cname">${c.name.toUpperCase()}</div>
     <div class="rd-crow"><span class="rd-cic">▸</span>Program: <b>${program}</b></div>
@@ -3963,7 +4155,7 @@ function vReportDoc(){const c=cur();
     <button class="bigbtn ghost" onclick="shareReportVia('whatsapp')">📲 WhatsApp</button>
     <button class="bigbtn ghost" onclick="shareReportVia('email')">✉️ Email</button></div>
   </div>
-  <div style="height:24px"></div></div>`;
+  <div class="sp24"></div></div>`;
 }
 function fitReportDoc(){
  const doc=document.getElementById('rdoc'),frame=document.getElementById('rdocFrame');
@@ -4022,34 +4214,26 @@ function vMore(){
   </div>
   <div class="more-sec">Manage</div>
   <div class="mgroup">
-   <div class="mrow" onclick="navTo('announce')">
-    <div class="mrow-ic" style="background:var(--red-bg);color:var(--red)"><i data-lucide="megaphone"></i></div>
-    <div class="mrow-tx"><div class="mrow-t">Announcements</div><div class="mrow-s">Latest updates and news</div></div>
-    <div class="mrow-chev">›</div></div>
    <div class="mrow" onclick="S.attachTo=null;S.libQ='';S.libGroup='All';navTo('library')">
-    <div class="mrow-ic" style="background:var(--purple-bg);color:var(--purple)"><i data-lucide="dumbbell"></i></div>
+    <div class="mrow-ic tint-purple"><i data-lucide="dumbbell"></i></div>
     <div class="mrow-tx"><div class="mrow-t">Exercise library</div><div class="mrow-s">Browse and manage exercises</div></div>
     <div class="mrow-chev">›</div></div>
    <div class="mrow" onclick="toast('Settings')">
-    <div class="mrow-ic" style="background:var(--blue-bg);color:var(--blue)"><i data-lucide="settings"></i></div>
+    <div class="mrow-ic tint-blue"><i data-lucide="settings"></i></div>
     <div class="mrow-tx"><div class="mrow-t">Settings</div><div class="mrow-s">Preferences and app settings</div></div>
     <div class="mrow-chev">›</div></div>
-   <div class="mrow" onclick="toast('Help & support')">
-    <div class="mrow-ic" style="background:var(--green-bg);color:var(--green)"><i data-lucide="headset"></i></div>
-    <div class="mrow-tx"><div class="mrow-t">Help &amp; support</div><div class="mrow-s">Get help and view FAQs</div></div>
-    <div class="mrow-chev">›</div></div>
    <div class="mrow" onclick="toast('Elevate Fitness · v2.4.1')">
-    <div class="mrow-ic" style="background:var(--amber-bg);color:var(--amber)"><i data-lucide="info"></i></div>
+    <div class="mrow-ic tint-amber"><i data-lucide="info"></i></div>
     <div class="mrow-tx"><div class="mrow-t">About Elevate Fitness</div><div class="mrow-s">Version 2.4.1</div></div>
     <div class="mrow-chev">›</div></div>
   </div>
   <div class="mgroup">
    <div class="mrow danger" onclick="logout()">
-    <div class="mrow-ic" style="background:var(--red-bg);color:var(--red)"><i data-lucide="log-out"></i></div>
+    <div class="mrow-ic tint-red"><i data-lucide="log-out"></i></div>
     <div class="mrow-tx"><div class="mrow-t">Log out</div></div>
     <div class="mrow-chev">›</div></div>
   </div>
-  <div style="height:80px"></div></div>`;
+  <div class="sp80"></div></div>`;
 }
 
 /* ---- edit profile (name / phone / email / photo) ---- */
@@ -4101,10 +4285,10 @@ function vEditProfile(){
 /* ============ ANNOUNCEMENTS ============ */
 function vAnnounce(){return `<div class="fadein"><div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title">Announcements</div></div>
   <div class="bottom-cta"><button class="bigbtn" onclick="navTo('annNew')">📢 New announcement</button></div>
-  <div class="wkbanner" style="padding:4px 18px 8px;font-weight:700;color:var(--ink);font-size:14px">Sent</div>
-  ${announcements.map(a=>`<div class="ann-card"><span class="ann-type" style="background:${a.type==='Holiday'?'var(--amber-bg)':'var(--blue-bg)'};color:${a.type==='Holiday'?'var(--amber)':'var(--blue)'}">${a.type}</span>
+  <div class="wkbanner label-t">Sent</div>
+  ${announcements.map(a=>`<div class="ann-card"><span class="ann-type tint-cat" style="--c-bg:${a.type==='Holiday'?'var(--amber-bg)':'var(--blue-bg)'};--c-fg:${a.type==='Holiday'?'var(--amber)':'var(--blue)'}">${a.type}</span>
    <div class="ann-title">${a.title}</div><div class="ann-msg">${a.msg}</div><div class="ann-meta">📤 ${a.to} · ${a.when}</div></div>`).join('')}
-  <div style="height:20px"></div></div>`;
+  <div class="sp20"></div></div>`;
 }
 let annType='Holiday',annTo='All clients';
 function vAnnNew(){return `<div class="fadein"><div class="bar solid"><button class="iconbtn" onclick="goBack()">‹</button><div class="bar-title">New announcement</div></div>
@@ -4112,7 +4296,7 @@ function vAnnNew(){return `<div class="fadein"><div class="bar solid"><button cl
   <div class="field"><label>Title</label><input id="a-title" placeholder="e.g. Gym closed for Diwali"></div>
   <div class="field"><label>Message</label><textarea id="a-msg" placeholder="Write your message to clients…"></textarea></div>
   <div class="field"><label>Send to</label><div class="chips">${['All clients',...Object.keys(CATS)].map(t=>`<button class="cat-chip ${annTo===t?'sel':''}" onclick="annTo='${t}';render()">${t}</button>`).join('')}</div></div>
-  <div class="preview-phone"><div class="pl">PREVIEW — how clients see it</div><div class="notif-card"><div class="notif-ic">💪</div><div><div style="font-weight:700;font-size:13px" id="pv-t">Your announcement</div><div style="font-size:12px;color:var(--muted);margin-top:2px" id="pv-m">Message preview…</div></div></div></div>
+  <div class="preview-phone"><div class="pl">PREVIEW — how clients see it</div><div class="notif-card"><div class="notif-ic">💪</div><div><div class="pv-title" id="pv-t">Your announcement</div><div class="pv-sub" id="pv-m">Message preview…</div></div></div></div>
   <div class="bottom-cta"><button class="bigbtn" onclick="sendAnn()">Send now</button></div></div>`;
 }
 function sendAnn(){const t=document.getElementById('a-title').value.trim()||'Untitled';const m=document.getElementById('a-msg').value.trim()||'—';announcements.unshift({type:annType,title:t,msg:m,to:annTo,when:'Just now'});navTo('announce');toast('Sent to '+annTo)}
@@ -4145,7 +4329,7 @@ function libRowHTML(e,i){
  const newProg=attach&&S.attachMode==='newProgram';
  const c=attach?clients.find(x=>x.id===S.attachTo):null;
  const mc=muscleColor(e.g);
- const tag=`<span class="lib-mg" style="background:${mc.b};color:${mc.c}">${e.g}</span>`;
+ const tag=`<span class="lib-mg tint-cat" style="--c-bg:${mc.b};--c-fg:${mc.c}">${e.g}</span>`;
  const head=`<div class="lib-main"><div class="lib-name-row"><span class="lib-name">${e.n}</span>${tag}</div>`;
  if(attach){
   const session=S.attachReturn==='session';
@@ -4183,7 +4367,7 @@ function libListHTML(){
   const q=(S.libQ||'').trim();
   const label=q?'+ Add “'+esc(q)+'” to library':'+ Add a new exercise';
   return `<div class="lib-empty">No exercises match your search — not in the library yet?
-   <div style="margin-top:14px"><button class="bigbtn ghost" style="max-width:320px;margin:0 auto" onclick="openAddExercise(${q?"'"+jsq(q)+"'":''})">${label}</button></div></div>`;
+   <div class="mt14"><button class="bigbtn ghost narrow" onclick="openAddExercise(${q?"'"+jsq(q)+"'":''})">${label}</button></div></div>`;
  }
  return list.map(({e,i})=>libRowHTML(e,i)).join('');
 }
@@ -4196,7 +4380,7 @@ function libCountText(){
 function searchLibrary(q){S.libQ=q;
  const el=document.getElementById('libList');if(el)el.innerHTML=libListHTML();
  const ct=document.getElementById('libCount');if(ct)ct.textContent=libCountText();
- if(window.lucide&&lucide.createIcons)lucide.createIcons();}
+ paintIcons();}
 function setLibGroup(g){S.libGroup=g;render();}
 function vLibrary(){
  const attach=S.attachTo!=null;
@@ -4227,11 +4411,11 @@ function vLibrary(){
      <div class="bottom-cta sticky-cta"><button class="bigbtn ${S.picks.length?'':'dim'}" onclick="attachPicked()">${S.picks.length?'Add '+S.picks.length+' · from '+effLabel():'Select exercises to add'}</button></div>`
   : `<div class="bottom-cta sticky-cta"><button class="bigbtn ghost" onclick="openAddExercise()">+ Add new exercise</button></div>`;
  return `<div class="fadein"><div class="bar solid"><button class="iconbtn" ${back}>‹</button><div class="bar-title">${title}</div></div>
-  ${newProg?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick the exercises for ${esc(c.name.split(' ')[0])}'s new program. The current program will be archived to history.</div>`
-   :planSlot?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick exercises for ${esc(slotLbl)}. They become part of the standing plan and show up in this day's session.</div>`
-   :program?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick exercises for ${esc(progLbl)}. The same exercise can also be added to other programs.</div>`
-   :session?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick exercises for today's session only — these won't change ${esc(c.name.split(' ')[0])}'s standing program.</div>`
-   :attach?`<div class="wkbanner" style="padding:8px 18px;font-weight:600">Pick exercises to attach. They run until you change them.</div>`:''}
+  ${newProg?`<div class="wkbanner tight">Pick the exercises for ${esc(c.name.split(' ')[0])}'s new program. The current program will be archived to history.</div>`
+   :planSlot?`<div class="wkbanner tight">Pick exercises for ${esc(slotLbl)}. They become part of the standing plan and show up in this day's session.</div>`
+   :program?`<div class="wkbanner tight">Pick exercises for ${esc(progLbl)}. The same exercise can also be added to other programs.</div>`
+   :session?`<div class="wkbanner tight">Pick exercises for today's session only — these won't change ${esc(c.name.split(' ')[0])}'s standing program.</div>`
+   :attach?`<div class="wkbanner tight">Pick exercises to attach. They run until you change them.</div>`:''}
   <div class="searchwrap"><div class="search-field"><input class="search" placeholder="Search exercises…" value="${esc(S.libQ||'')}" oninput="searchLibrary(this.value)"><span class="search-ic"><i data-lucide="search"></i></span></div></div>
   <div class="filters">${chips}</div>
   <div class="lib-count" id="libCount">${libCountText()}</div>
@@ -4260,7 +4444,7 @@ function vNotifications(){
    <div class="notif-empty-s">No pending reviews or alerts right now.</div></div>`;
  return `<div class="fadein"><div class="bar solid"><button class="iconbtn" onclick="goBack()" aria-label="Close">✕</button><div class="bar-title">Notifications</div></div>
   ${(due.length||ended.length)?payItems+items:empty}
-  <div style="height:20px"></div></div>`;
+  <div class="sp20"></div></div>`;
 }
 
 /* ============ RENDER ============ */
@@ -4296,7 +4480,7 @@ function render(){
  // live preview wiring for announcement
  if(S.view==='annNew'){const ti=document.getElementById('a-title'),mi=document.getElementById('a-msg');if(ti)ti.oninput=()=>{document.getElementById('pv-t').textContent=ti.value||'Your announcement'};if(mi)mi.oninput=()=>{document.getElementById('pv-m').textContent=mi.value||'Message preview…'}}
  // slide-to-confirm wiring + scroll-aware session title (client name appears once scrolled)
- if(S.view==='session'){wireSlide();wireSessionTitle();}
+ if(S.view==='session'){wireSlide();wireSessionTitle();wireExDrag();}
  // scale the A4 document (report / assessment / welcome note) to fit the screen
  if(S.view==='reportDoc'||S.view==='assessDoc'||S.view==='welcomeDoc'){
   fitReportDoc();
@@ -4311,7 +4495,7 @@ function render(){
  if(!S.view&&S.tab==='clients')wireClientLazy();
  if(S.view==='addSchedule')wireTimeWheels();
  // swap any <i data-lucide> placeholders for Lucide outline SVGs (chrome icons)
- if(window.lucide&&lucide.createIcons)lucide.createIcons();
+ paintIcons();
 }
 window.addEventListener('resize',function(){if(S.view==='reportDoc'||S.view==='assessDoc'||S.view==='welcomeDoc')fitReportDoc()});
 function wireSlide(){
@@ -4388,4 +4572,4 @@ function wireReorder(){
  });
 }
 // start at the trainer login screen (authed === false)
-S.tab='home';render();
+Promise.race([ICONS_READY,new Promise(function(r){setTimeout(r,1500);})]).then(function(){S.tab='home';render();});
