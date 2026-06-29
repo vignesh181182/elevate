@@ -618,6 +618,7 @@ svg.ic{display:inline-block;background-color:currentColor;flex-shrink:0}
 }
 /* exercise lib */
 .lib-row{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:0 18px 8px;display:flex;align-items:center;gap:12px}
+.lib-row.tap{cursor:pointer}
 .lib-ic{width:40px;height:40px;border-radius:11px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:var(--text-lg);line-height:1.3}
 .lib-name{font-weight:var(--weight-bold);font-size:var(--text-md)}.lib-cat{font-size:var(--text-sm);color:var(--muted);font-weight:var(--weight-semi)}
 .lib-add{margin-left:auto;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:inherit;font-weight:var(--weight-bold);font-size:var(--text-sm);padding:7px 13px;border-radius:10px;cursor:pointer;flex-shrink:0;line-height:1.4}

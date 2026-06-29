@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Search, Dumbbell } from 'lucide-react';
 import { useAddProgramExercises, useClientExercises, useLibrary } from '../hooks/useData';
 import { useToast } from '../components/Toast';
+import LibraryForm from '../components/LibraryForm';
 import { LIB_GROUPS, muscleColor } from '../lib/muscleColors';
 import type { LibraryExercise } from '../domain/types';
 
@@ -21,6 +22,8 @@ export default function Library() {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('All');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Catalog edit (standalone only): null = closed, { ex } = editing, { ex: null } = adding.
+  const [form, setForm] = useState<{ ex: LibraryExercise | null } | null>(null);
 
   // Exercises already in this client's program — shown as "In program", not re-addable.
   const inProgram = useMemo(
@@ -113,7 +116,11 @@ export default function Library() {
               const already = pick && inProgram.has(e.name.toLowerCase());
               const isSel = selected.has(k);
               return (
-                <div className={`lib-row${pick && isSel ? ' pick' : ''}`} key={k}>
+                <div
+                  className={`lib-row${pick ? (isSel ? ' pick' : '') : ' tap'}`}
+                  key={k}
+                  onClick={pick ? undefined : () => setForm({ ex: e })}
+                >
                   <div className="lib-ic">
                     <Dumbbell size={18} />
                   </div>
@@ -155,11 +162,13 @@ export default function Library() {
               {add.isPending ? 'Adding…' : `Add ${selected.size || ''} to program`.trim()}
             </button>
           ) : (
-            <button className="bigbtn ghost" onClick={() => toast('Add new exercise — coming soon')}>
+            <button className="bigbtn ghost" onClick={() => setForm({ ex: null })}>
               + Add new exercise
             </button>
           )}
         </div>
+
+        {form && <LibraryForm editing={form.ex} existing={library} onClose={() => setForm(null)} />}
       </div>
     </div>
   );

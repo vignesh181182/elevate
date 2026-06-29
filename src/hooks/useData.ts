@@ -15,7 +15,13 @@ import {
   type WeekLoad,
 } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
-import { fetchLibrary } from '../services/library';
+import {
+  addLibraryExercise,
+  deleteLibraryExercise,
+  fetchLibrary,
+  updateLibraryExercise,
+  type LibraryExerciseInput,
+} from '../services/library';
 import { fetchAllSessionLogs, fetchDaySessions, fetchSessionLog, markAttendance } from '../services/sessions';
 import { fetchMedia } from '../services/media';
 import { fetchReports } from '../services/reports';
@@ -109,6 +115,27 @@ export function useCoaches() {
 
 export function useLibrary() {
   return useQuery({ queryKey: ['library'], queryFn: fetchLibrary });
+}
+
+/** Add or edit a shared library exercise (id present ⇒ edit). Invalidates the library. */
+export function useSaveLibraryExercise() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, input }: { id?: string; input: LibraryExerciseInput }) => {
+      if (id) await updateLibraryExercise(id, input);
+      else await addLibraryExercise(input);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['library'] }),
+  });
+}
+
+/** Delete a shared library exercise. Invalidates the library. */
+export function useDeleteLibraryExercise() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteLibraryExercise(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['library'] }),
+  });
 }
 
 export function useReports() {
