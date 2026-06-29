@@ -1,0 +1,230 @@
+/**
+ * Seed script — populates Firebase Auth + Firestore from the prototype's data
+ * (see scripts/seedData.ts for the ported mock data).
+ *
+ * Local dev (default): targets the Firebase Emulator Suite. Run the emulators
+ * first (`npm run emulators`), then `npm run seed` in another terminal.
+ *
+ * Handover (real project): set GOOGLE_APPLICATION_CREDENTIALS to a service-account
+ * key JSON and SEED_PROJECT_ID to the real project id, then run `npm run seed`.
+ *
+ * Idempotent: deterministic document ids mean re-running updates rather than
+ * duplicating. (The "announcements" feature was dropped, so it is not seeded.)
+ */
+import { cert, initializeApp, applicationDefault } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import { readFileSync } from 'node:fs';
+import { seedClients, seedLibrary, seedReports, seedReviewState } from './seedData';
+
+const PROJECT_ID = process.env.SEED_PROJECT_ID ?? 'demo-elevate';
+const useRealProject = Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+
+if (!useRealProject) {
+  process.env.FIRESTORE_EMULATOR_HOST ??= '127.0.0.1:8080';
+  process.env.FIREBASE_AUTH_EMULATOR_HOST ??= '127.0.0.1:9099';
+}
+
+initializeApp({
+  projectId: PROJECT_ID,
+  ...(useRealProject
+    ? {
+        credential: cert(
+          JSON.parse(readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS as string, 'utf8')),
+        ),
+      }
+    : { credential: applicationDefault() }),
+});
+
+const auth = getAuth();
+const db = getFirestore();
+db.settings({ ignoreUndefinedProperties: true });
+
+// ── Coaches ─────────────────────────────────────────────────────────────────
+const COACHES = [
+  {
+    name: 'Madhan',
+    email: 'madhan@elevatefitness.com',
+    password: 'coach123',
+    role: 'main' as const,
+    photo: '/assets/images/madhan.jpg',
+    phone: '+91 91234 56789',
+    yearsExp: 6,
+    specializations: ['Strength & Conditioning Specialist'],
+    certifications: ['Certified Personal Trainer'],
+    tagline: "I'll guide you. You focus.",
+  },
+  {
+    name: 'Kiran',
+    email: 'kiran@elevatefitness.com',
+    password: 'coach123',
+    role: 'junior' as const,
+    phone: '+91 90000 11223',
+    yearsExp: 3,
+    specializations: ['Rehab & Mobility'],
+    certifications: ['Certified Personal Trainer'],
+    tagline: 'Small steps, steady wins.',
+  },
+  {
+    name: 'Shakthi',
+    email: 'shakthi@elevatefitness.com',
+    password: 'coach123',
+    role: 'junior' as const,
+    phone: '+91 90000 44556',
+    yearsExp: 3,
+    specializations: ['General Fitness'],
+    certifications: ['Certified Personal Trainer'],
+    tagline: 'Show up. The rest follows.',
+  },
+];
+
+async function upsertCoach(c: (typeof COACHES)[number]): Promise<string> {
+  let uid: string;
+  try {
+    const existing = await auth.getUserByEmail(c.email);
+    uid = existing.uid;
+    await auth.updateUser(uid, { password: c.password, displayName: c.name });
+  } catch {
+    const created = await auth.createUser({
+      email: c.email,
+      password: c.password,
+      displayName: c.name,
+    });
+    uid = created.uid;
+  }
+  await auth.setCustomUserClaims(uid, { role: c.role });
+  const { password: _password, ...profile } = c;
+  await db.collection('coaches').doc(uid).set({ id: uid, ...profile }, { merge: true });
+  return uid;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function isoDaysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+function slug(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+// ── Firestore content ─────────────────────────────────────────────────────────
+async function seedClientsData(nameToUid: Record<string, string>) {
+  for (const c of seedClients) {
+    const coachId = c.coachName ? (nameToUid[c.coachName] ?? null) : null;
+    const ref = db.collection('clients').doc(c.id);
+
+    await ref.set({
+      id: c.id,
+      name: c.name,
+      age: c.age,
+      phone: c.phone,
+      email: c.email,
+      category: c.category,
+      ability: c.ability,
+      status: c.status,
+      coachId,
+      joined: c.joined,
+      start: c.start,
+      programStartDate: c.programStartDate,
+      sessions: c.sessions,
+      days: c.days,
+      time: c.time,
+      goals: c.goals,
+      medical: c.medical,
+      activity: c.activity,
+      injuries: c.injuries,
+      assessmentDone: c.assessmentDone,
+      scheduleDone: c.scheduleDone,
+      scheduleSet: c.scheduleSet,
+      measures: c.measures,
+      program: c.program,
+      review: seedReviewState[c.id],
+    });
+
+    // exercises (standing program — source of truth)
+    for (let i = 0; i < c.exercises.length; i++) {
+      const e = c.exercises[i];
+      await ref.collection('exercises').doc(`e${i}`).set({
+        name: e.name,
+        group: e.group,
+        target: e.target,
+        order: i,
+        logs: e.logs ?? {},
+      });
+    }
+
+    // program history
+    for (const h of c.programHistory) {
+      await ref.collection('programHistory').doc(`h${h.id}`).set(h);
+    }
+
+    // payments (main-coach-only via rules; Admin bypasses)
+    for (const p of c.payments) {
+      await ref.collection('payments').doc(`p${p.id}`).set(p);
+    }
+
+    // billing summary
+    await ref.collection('billing').doc('summary').set({
+      sessionsRemaining: c.billing.sessionsRemaining,
+      packageSize: c.billing.packageSize,
+      lastSessionDate: c.billing.lastSessionDaysAgo == null ? null : isoDaysAgo(c.billing.lastSessionDaysAgo),
+    });
+
+    // completed-session history
+    for (const log of c.sessionLog) {
+      const date = isoDaysAgo(log.daysAgo);
+      await ref.collection('sessionLog').doc(date).set({
+        date,
+        when: log.when,
+        early: log.early,
+        roundsCompleted: log.roundsCompleted,
+        totalRounds: log.totalRounds,
+        programs: log.programs,
+      });
+    }
+  }
+}
+
+async function seedLibraryData() {
+  for (const ex of seedLibrary) {
+    await db.collection('library').doc(slug(ex.name)).set(ex);
+  }
+}
+
+async function seedReportsData() {
+  for (const r of seedReports) {
+    await db.collection('reports').doc(`${r.clientId}-w${r.week}`).set(r);
+  }
+}
+
+async function main() {
+  console.log(`Seeding project "${PROJECT_ID}" ${useRealProject ? '(REAL)' : '(emulator)'}…`);
+
+  const nameToUid: Record<string, string> = {};
+  for (const c of COACHES) {
+    const uid = await upsertCoach(c);
+    nameToUid[c.name] = uid;
+    console.log(`  ✓ ${c.role === 'main' ? 'main ' : 'junior'} coach ${c.name} → ${uid}`);
+  }
+
+  await seedClientsData(nameToUid);
+  console.log(`  ✓ ${seedClients.length} clients (+ exercises, history, payments, billing, session log)`);
+  await seedLibraryData();
+  console.log(`  ✓ ${seedLibrary.length} library exercises`);
+  await seedReportsData();
+  console.log(`  ✓ ${seedReports.length} reports`);
+
+  console.log('\nCoach logins (password for all in dev): coach123');
+  console.log('Done.');
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

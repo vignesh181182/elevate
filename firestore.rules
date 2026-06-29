@@ -1,0 +1,65 @@
+rules_version = '2';
+
+// Elevate Fitness access model:
+//  - Any signed-in coach can read/write clients, programs, exercises, sessions,
+//    progress, media, library, announcements, activity and reports.
+//  - PAYMENTS are restricted to the main/head coach only. Payment history and the
+//    billing summary are READABLE only when the auth token carries role == 'main'.
+//  - Junior coaches must still be able to finish sessions, which decrements the
+//    session balance. So `billing` allows WRITE for any signed-in coach (done via an
+//    atomic FieldValue.increment, which needs no prior read) while denying READ.
+//  - The `role` custom claim is set on each coach account by scripts/seed.ts.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed() {
+      return request.auth != null;
+    }
+    function isMain() {
+      return request.auth != null && request.auth.token.role == 'main';
+    }
+
+    // Coach profiles — readable by any coach; each coach writes only their own doc.
+    match /coaches/{coachId} {
+      allow read: if isAuthed();
+      allow write: if isMain() || request.auth.uid == coachId;
+    }
+
+    // Shared exercise library — all coaches read and add.
+    match /library/{exId} {
+      allow read, write: if isAuthed();
+    }
+
+    // Gym-wide collections — all coaches.
+    match /reports/{id} { allow read, write: if isAuthed(); }
+
+    // Activity feed: payment-type activity is main-only; everything else shared.
+    match /activity/{id} {
+      allow read: if isAuthed() && (isMain() || resource.data.type != 'PAYMENT');
+      allow write: if isAuthed();
+    }
+
+    // Clients and their (non-payment) sub-data — shared across all coaches.
+    match /clients/{clientId} {
+      allow read, write: if isAuthed();
+
+      match /exercises/{x}       { allow read, write: if isAuthed(); }
+      match /programHistory/{x}  { allow read, write: if isAuthed(); }
+      match /sessions/{x}        { allow read, write: if isAuthed(); }
+      match /sessionLog/{x}      { allow read, write: if isAuthed(); }
+      match /media/{x}           { allow read, write: if isAuthed(); }
+
+      // Payment data — MAIN COACH ONLY for reads.
+      match /payments/{x} {
+        allow read, write: if isMain();
+      }
+      // Billing summary — main reads; any coach may write (session-completion
+      // decrements the balance via increment without ever reading it).
+      match /billing/{x} {
+        allow read: if isMain();
+        allow create, update: if isAuthed();
+        allow delete: if isMain();
+      }
+    }
+  }
+}

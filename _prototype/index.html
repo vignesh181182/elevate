@@ -1,0 +1,38 @@
+<!--
+  Elevate Fitness — coach-side PWA shell.
+  This file is intentionally minimal: it loads fonts + styles + scripts and
+  defines the static app shell. Every screen is rendered into #screen by
+  js/app.js (render() swaps innerHTML); the chrome (fab / tabbar / toast) is
+  persistent and toggled by the app. Styling lives entirely in css/styles.css.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ===== Meta: mobile viewport + iOS standalone web-app chrome ===== -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0A0A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Elevate Fitness</title>
+
+  <!-- ===== Fonts: Inter (weights 400–800; hierarchy is weight-driven) ===== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- ===== Styles + libs (html2pdf powers the PDF report/welcome/assessment export) ===== -->
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+<!-- ===== App shell: the only static markup; everything else is rendered by js/app.js ===== -->
+<div id="app">
+  <div class="screen" id="screen"></div>                                 <!-- active screen — innerHTML swapped per render() -->
+  <button class="fab" id="fab" onclick="openAddClient()"><i data-lucide="plus"></i></button> <!-- add-client FAB (Clients tab only) -->
+  <div class="tabbar" id="tabbar"></div>                                 <!-- bottom nav — built + toggled by the app -->
+  <div class="toast" id="toast"></div>                                   <!-- transient confirmation toasts -->
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

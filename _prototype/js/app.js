@@ -707,6 +707,7 @@ function logout(){authed=false;loginErr='';loginEmail='';S.view=null;S.tab='home
 // (tab → view → sub-view) and Back always goes UP to that parent — NOT to whatever screen
 // happened to precede it. parentOf() resolves the parent for the current view. The few screens
 // with two genuine entry points record where they were opened from, so "up" lands correctly:
+//   • client       → clientFrom ('session' vs the clients list)
 //   • session     → sessionFrom ('client' vs the launching tab)
 //   • report       → reportFrom ('client' vs the Reports tab)
 //   • programDetail → pdFrom ('history' view vs the client's Program tab)
@@ -714,13 +715,13 @@ function logout(){authed=false;loginErr='';loginEmail='';S.view=null;S.tab='home
 //   • library      → derived from its attach-flags (see libraryParent)
 function tab(t){profileMenu=false;S.tab=t;S.view=null;S.subView=null;if(t==='clients'){clientShown=CLIENT_BATCH;cFilter='All';}render();sc()}
 function navTo(view,id){profileMenu=false;if(id!==undefined)S.clientId=id;S.view=view;render();sc()}
-function openClient(id){profileMenu=false;S.clientId=id;S.ctab='overview';S.subView=null;S.reorder=false;S.view='client';render();sc()}
+function openClient(id){profileMenu=false;S.clientFrom=(S.view==='session')?'session':null;S.clientId=id;S.ctab='overview';S.subView=null;S.reorder=false;S.view='client';render();sc()}
 function openSession(id){profileMenu=false;S.sessionFrom=(S.view==='client')?'client':(S.tab||'schedule');S.clientId=id;S.view='session';render();sc()}
 function openReport(id){S.reportFrom=(S.view==='client')?'client':'reports';navTo('report',id)}
 // the logical parent of the current screen → {tab?, view?, subView?, progSub?} (missing keys reset to root/null)
 function parentOf(){
  switch(S.view){
-  case 'client':         return {tab:'clients',view:null};
+  case 'client':         return S.clientFrom==='session'?{view:'session'}:{tab:'clients',view:null};
   case 'addClient':      return {tab:'clients',view:null};
   case 'editClient':     return {view:'client'};
   case 'announce':       return {tab:'more',view:null};
@@ -3144,11 +3145,10 @@ function sessExCard(c,pIdx,name){
  const meta=sessExMeta(c,name),rep=isRepBased(meta);
  const reps=exRepsFor(c,name);
  const w=exWeightFor(c,name),wDisp=Number.isInteger(w)?w:w.toFixed(1);
- const target=meta.target?`Target ${esc(meta.target)}`:(meta.g?esc(meta.g):'');
  // drag-to-reorder: the grip handle starts a pointer drag (wireExDrag); data attrs identify the card on drop
  return `<div class="ex-card" data-pidx="${pIdx}" data-ex="${esc(name)}"><div class="ex-top">
     <button class="ex-drag" aria-label="Drag to reorder ${esc(name)}">⠿</button>
-    <div class="ex-head"><div class="ex-name">${esc(name)}</div>${target?`<div class="ex-target">${target}</div>`:''}</div>
+    <div class="ex-head"><div class="ex-name">${esc(name)}</div></div>
     <button class="ex-remove" onclick="removeExFromProgram(${c.id},${pIdx},'${jsq(name)}')" aria-label="Remove ${esc(name)} from ${esc(st_label(c,pIdx))}">✕</button></div>
    <div class="stepper-row">
     <div class="stepper"><div class="lbl">${rep?'Level/time':'Weight'}</div><div class="ctl"><button class="stp-btn" onclick="bumpWeight(${c.id},${pIdx},'${jsq(name)}',-1)" aria-label="Less">−</button><div class="stp-val">${wDisp}${rep?'':'<small> kg</small>'}</div><button class="stp-btn" onclick="bumpWeight(${c.id},${pIdx},'${jsq(name)}',1)" aria-label="More">+</button></div></div>
@@ -3163,9 +3163,11 @@ function builderSection(c,st,pIdx){
    :`<div class="slot-empty">No exercises in ${esc(p.label)} yet — tap “Add exercise” below.</div>`;
  const removeProg=nP>1?`<button class="pb-remove" onclick="removeProgram(${c.id},${pIdx})">Remove ${esc(p.label)}</button>`:'';
  return `<div class="pgrp pgrp-${letter}">
-   <div class="pgrp-head"><span class="pgrp-dot"></span><span class="pgrp-name">${esc(p.label)}</span><span class="pgrp-count">${p.exercises.length} exercise${p.exercises.length!==1?'s':''}</span></div>
-   <div class="pgrp-sets"><span class="pb-sets-lbl">No. of Sets</span>
+   <div class="pgrp-bhead">
+    <div class="pgrp-bid"><div class="pgrp-brow"><span class="pgrp-dot"></span><span class="pgrp-name">${esc(p.label)}</span></div><span class="pgrp-bcount">${p.exercises.length} exercise${p.exercises.length!==1?'s':''}</span></div>
+    <div class="pgrp-sets"><span class="pb-sets-lbl">No. of Sets</span>
      <div class="pb-stepper"><button class="pb-step" onclick="bumpSets(${c.id},${pIdx},-1)" aria-label="Fewer sets">−</button><span class="pb-stepval">${p.sets}</span><button class="pb-step" onclick="bumpSets(${c.id},${pIdx},1)" aria-label="More sets">+</button></div></div>
+   </div>
    ${cards}
    <button class="slot-add" onclick="addExercisesToProgram(${c.id},${pIdx})">＋ Add exercise to ${esc(p.label)}</button>
    ${removeProg}
@@ -3201,10 +3203,12 @@ function splitScreen(c,st){
 }
 // PRE-START — the Create Program screen. "Create Program" marks the client present and starts the circuit
 // with the programs just built; "Cancel" backs out. Absent/cancelled live behind "Not present?".
+// the client header card; tapping it opens that client's detail page
 function sessCard(c,chip){const cat=CATS[c.cat];
- return `<div class="se-card">
+ return `<div class="se-card tap" onclick="openClient(${c.id})">
    <div class="dava se-ava tint-cat" style="--c-bg:${cat.b};--c-fg:${cat.c}">${initials(c.name)}</div>
    <div class="se-id"><div class="se-name-row"><span class="se-name">${esc(c.name)}</span>${chip||''}</div><div class="se-meta">${sessionDayFor(c)?sessionDayFor(c)+' · Week '+currentWeekFor(c)+' · ':''}${esc(c.time||'—')} · ${esc(c.coach||'—')}</div></div>
+   <i class="se-chev" data-lucide="chevron-right" aria-hidden="true"></i>
   </div>`;}
 // live-session present pill (maroon) + a ⋯ that opens session options — sits in the session card's name row
 function sessLiveChip(c){const ts=attTime[c.id]?` · ${attTime[c.id]}`:'';
@@ -3213,9 +3217,13 @@ function sessLiveChip(c){const ts=attTime[c.id]?` · ${attTime[c.id]}`:'';
 function sessModifyBar(id){return `<button class="sess-modify2" onclick="editSplit(${id})"><span class="sm2-ic"><i data-lucide="pencil"></i></span>Modify this session</button>`;}
 // which clients are currently in the editable program builder (vs. the read-only Today's Session preview)
 let progEditing={};
-function editProgram(id){progEditing[id]=true;render();sc();}
-// leave the builder → back to the preview; drop any empty programs left behind
-function exitProgramEdit(id){const st=getSession(id);if(st)st.programs=st.programs.filter(p=>p.exercises.length);progEditing[id]=false;render();sc();}
+// snapshot of st.programs taken when the builder opens, so Cancel can revert the in-place edits
+let progEditSnapshot={};
+function editProgram(id){const st=getSession(id);if(st)progEditSnapshot[id]=JSON.parse(JSON.stringify(st.programs));progEditing[id]=true;render();sc();}
+// Save: leave the builder → back to the preview; drop any empty programs left behind
+function exitProgramEdit(id){const st=getSession(id);if(st)st.programs=st.programs.filter(p=>p.exercises.length);delete progEditSnapshot[id];progEditing[id]=false;render();sc();}
+// Cancel: discard every change made since the builder opened, then leave
+function cancelProgramEdit(id){const st=getSession(id);if(st&&progEditSnapshot[id])st.programs=progEditSnapshot[id];delete progEditSnapshot[id];progEditing[id]=false;render();sc();}
 // slide-to-confirm control — drag right to mark present & auto-start the circuit (wired by wireSlide)
 function slideToStart(label){return `<div class="slide-wrap"><div class="slide-track" id="slideTrack">
    <div class="slide-fill" id="slideFill"></div>
@@ -3237,12 +3245,14 @@ function preStartBuilder(c,st){
   </div>
   <div class="sp8"></div></div>`;
  // EDIT — the editable program builder (reached via "Create / Modify program"); ✓ Done returns to the preview
- if(progEditing[c.id])return `<div class="fadein">
-  <div class="bar solid"><button class="iconbtn" onclick="exitProgramEdit(${c.id})" aria-label="Done">‹</button><div class="bar-title">Create Program</div></div>
-  ${sessCard(c)}
+ if(progEditing[c.id]){const meta=`${sessionDayFor(c)?sessionDayFor(c)+' · Week '+currentWeekFor(c)+' · ':''}${esc(c.time||'—')} · ${esc(c.coach||'—')}`;return `<div class="fadein">
+  <div class="pb-edit-head">
+   <div class="pb-edit-top"><div class="bar-title">Create Program</div><button class="iconbtn bar-x" onclick="cancelProgramEdit(${c.id})" aria-label="Cancel"><i data-lucide="x"></i></button></div>
+   <div class="pb-edit-client"><span class="pb-edit-name">${esc(c.name)}</span><span class="pb-edit-name-sub">${meta}</span></div>
+  </div>
   ${builderSections(c,st)}
   ${builderAddProgramBtn(c,st)}
-  <div class="pb-actions"><button class="pb-create" onclick="exitProgramEdit(${c.id})">Done</button></div></div>`;
+  ${pbActions('Save',true,`exitProgramEdit(${c.id})`,`cancelProgramEdit(${c.id})`)}</div>`;}
  // PREVIEW — Today's Session: the standing programs read-only, a Modify affordance, and slide-to-mark-present
  const sections=st.programs.map((p,pIdx)=>p.exercises.length?programBlock(c,p,pIdx,-1):'').join('');
  return `<div class="fadein">
@@ -3335,7 +3345,7 @@ function programBlock(c,p,pIdx,activeIdx,collapsible){
 }
 // green "present" pill for a finished session (vs the maroon live one) — sits in the session card's name row
 function sessDoneChip(c){const ts=attTime[c.id]?` · ${attTime[c.id]}`:'';
- return `<div class="se-present done"><span class="se-present-tx">✓ Present${ts}</span><button class="se-present-dots" onclick="openSessMenu(${c.id})" aria-label="Session options"><i data-lucide="more-vertical"></i></button></div>`;}
+ return `<div class="se-present done"><span class="se-present-tx">✓ Present${ts}</span><button class="se-present-dots" onclick="event.stopPropagation();openSessMenu(${c.id})" aria-label="Session options"><i data-lucide="more-vertical"></i></button></div>`;}
 // session-complete view — every program shown as a COMPLETED per-set grid (all green). Read-only.
 function sessCompleteView(c){
  const st=getSession(c.id);
