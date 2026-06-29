@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Users, Search, X, User, CreditCard, Activity, ChevronDown } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Users, Search, X, User, CreditCard, Activity, ChevronDown, Filter } from 'lucide-react';
 import { useClients, useCoaches, useCoachNameMap, useBillings } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import { paymentStatusFromBilling } from '../domain/payments';
+import { CLIENT_FILTERS, isFilterKey } from '../domain/filters';
 import ClientCard from '../components/ClientCard';
 
 type PayFilter = 'All' | 'Paid' | 'DueSoon' | 'Overdue';
@@ -21,9 +23,15 @@ export default function Clients() {
   const [status, setStatus] = useState<'All' | 'Active' | 'Paused'>('All');
   const [pay, setPay] = useState<PayFilter>('All');
 
+  // Deep-link filter from a Home stat (e.g. /clients?filter=Payment%20overdue).
+  const [params, setParams] = useSearchParams();
+  const deepKey = params.get('filter');
+  const activeFilter = isFilterKey(deepKey) ? deepKey : null;
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return clients.filter((c) => {
+      if (activeFilter && !CLIENT_FILTERS[activeFilter].pred(c, billings[c.id])) return false;
       if (q && !c.name.toLowerCase().includes(q)) return false;
       if (coachId !== 'All' && c.coachId !== coachId) return false;
       if (status !== 'All' && c.status !== status) return false;
@@ -33,7 +41,7 @@ export default function Clients() {
       }
       return true;
     });
-  }, [clients, query, coachId, status, pay, isMain, billings]);
+  }, [clients, query, coachId, status, pay, isMain, billings, activeFilter]);
 
   return (
     <div className="fadein">
@@ -118,6 +126,18 @@ export default function Clients() {
           <ChevronDown size={15} className="cl-select-caret" />
         </div>
       </div>
+
+      {activeFilter && (
+        <div className="cl-fbanner">
+          <span className="cl-fbanner-t">
+            <Filter size={14} />
+            {CLIENT_FILTERS[activeFilter].label} · {filtered.length} {filtered.length === 1 ? 'client' : 'clients'}
+          </span>
+          <button className="cl-fbanner-x" onClick={() => setParams({})}>
+            Clear ✕
+          </button>
+        </div>
+      )}
 
       <div className="cl-cards" id="clientList">
         {isLoading ? (
