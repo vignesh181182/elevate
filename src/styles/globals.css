@@ -148,6 +148,7 @@ svg.ic{display:inline-block;background-color:currentColor;flex-shrink:0}
 .sess-time{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--muted);width:42px;flex-shrink:0;line-height:1.4}
 .sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .sess-main{flex:1;min-width:0}
+.sess-att{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .sess-name{font-weight:var(--weight-bold);font-size:var(--text-md)}
 .sess-sub{font-size:var(--text-sm);color:var(--muted);font-weight:var(--weight-body);line-height:1.4}
 .mini-mark{font-size:var(--text-sm);font-weight:var(--weight-bold);padding:5px 10px;border-radius:9px;border:1px solid var(--line-strong);background:transparent;cursor:pointer;color:var(--muted);line-height:1.4}
@@ -2572,6 +2573,7 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 /* --- text-colour utilities (also tint mask-icons via currentColor) --- */
 .t-blue{color:var(--blue)}
 .t-green{color:var(--green)}
+.t-red{color:var(--red)}
 .t-amber{color:var(--amber)}
 .t-pink{color:var(--pink)}
 .t-accent{color:var(--accent)}

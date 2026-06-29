@@ -124,6 +124,19 @@ export interface LibraryExercise {
   target: string;
 }
 
+export type Attendance = 'present' | 'absent' | 'cancelled';
+
+/**
+ * clients/{id}/sessions/{date} — a single day's live session state. Attendance is
+ * recorded here now; the A/B circuit (split, rounds, progress) will share the same
+ * doc later, so writes MUST merge to avoid clobbering each other.
+ */
+export interface SessionDoc {
+  attendance?: Attendance;
+  markedAt?: string; // ISO timestamp the attendance was set
+  markedBy?: string; // coach uid who marked it
+}
+
 /** clients/{id}/sessionLog/{date} — permanent completed-session archive. */
 export interface SessionLog {
   id?: string;

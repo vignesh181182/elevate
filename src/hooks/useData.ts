@@ -2,13 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClient, fetchClient, fetchClientExercises, fetchClients, type NewClientInput } from '../services/clients';
 import { fetchCoaches } from '../services/coaches';
 import { fetchLibrary } from '../services/library';
-import { fetchAllSessionLogs, fetchSessionLog } from '../services/sessions';
+import { fetchAllSessionLogs, fetchDaySessions, fetchSessionLog, markAttendance } from '../services/sessions';
 import { fetchMedia } from '../services/media';
 import { fetchReports } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Coach, Payment } from '../domain/types';
+import type { Attendance, Coach, Payment } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -53,6 +53,25 @@ export function useReports() {
 
 export function useSessionLogs() {
   return useQuery({ queryKey: ['sessionLogs'], queryFn: fetchAllSessionLogs });
+}
+
+/** Every listed client's session doc for one date — attendance, etc. Shared across coaches. */
+export function useDaySessions(clientIds: string[], date: string) {
+  return useQuery({
+    queryKey: ['daySessions', date, clientIds.slice().sort()],
+    queryFn: () => fetchDaySessions(clientIds, date),
+    enabled: clientIds.length > 0,
+  });
+}
+
+/** Mark attendance for `date`; invalidates that day's session docs. `markedBy` = coach uid. */
+export function useMarkAttendance(date: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clientId, status, markedBy }: { clientId: string; status: Attendance; markedBy: string }) =>
+      markAttendance(clientId, date, status, markedBy),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['daySessions', date] }),
+  });
 }
 
 export function useClientSessionLog(id: string | undefined) {
