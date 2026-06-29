@@ -99,7 +99,11 @@ export default function Schedule() {
           const coachLabel = c.coachId ? coachName[c.coachId] ?? 'Unassigned' : 'Unassigned';
           const att = daySessions[c.id]?.attendance;
           return (
-            <div className="sess-row tap" key={c.id} onClick={() => navigate(`/clients/${c.id}`)}>
+            <div
+              className="sess-row tap"
+              key={c.id}
+              onClick={() => navigate(isToday ? `/clients/${c.id}/session` : `/clients/${c.id}`)}
+            >
               <span className="sess-time">{time}</span>
               <div className="ava sz38 tint-cat" style={avaStyle}>
                 {initials(c.name)}

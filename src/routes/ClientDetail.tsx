@@ -15,6 +15,7 @@ import {
   Activity,
   AlertTriangle,
   CalendarPlus,
+  PlayCircle,
 } from 'lucide-react';
 import { useClient, useCoachNameMap } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
@@ -148,6 +149,12 @@ export default function ClientDetail() {
             </span>
           )}
         </div>
+
+        {c.scheduleSet && (
+          <button className="bigbtn cp-session-cta" onClick={() => navigate(`/clients/${c.id}/session`)}>
+            <PlayCircle size={18} /> Today&rsquo;s session
+          </button>
+        )}
 
         <div className="cp-card">
           <div className="cp-sec">

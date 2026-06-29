@@ -9,6 +9,7 @@ import ClientNew from './routes/ClientNew';
 import ClientDetail from './routes/ClientDetail';
 import ClientSchedule from './routes/ClientSchedule';
 import ClientProgram from './routes/ClientProgram';
+import ClientSession from './routes/ClientSession';
 import Library from './routes/Library';
 import Schedule from './routes/Schedule';
 import Reports from './routes/Reports';
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/clients/:id/schedule" element={<ClientSchedule />} />
           <Route path="/clients/:id/library" element={<Library />} />
           <Route path="/clients/:id/program" element={<ClientProgram />} />
+          <Route path="/clients/:id/session" element={<ClientSession />} />
           <Route path="/library" element={<Library />} />
         </Route>
 

@@ -23,7 +23,7 @@ import {
   updateLibraryExercise,
   type LibraryExerciseInput,
 } from '../services/library';
-import { fetchAllSessionLogs, fetchDaySessions, fetchSessionLog, markAttendance } from '../services/sessions';
+import { fetchAllSessionLogs, fetchDaySessions, fetchSession, fetchSessionLog, markAttendance } from '../services/sessions';
 import { addMedia, deleteMedia, fetchMedia, type NewMedia } from '../services/media';
 import { fetchReports } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
@@ -171,7 +171,19 @@ export function useMarkAttendance(date: string) {
   return useMutation({
     mutationFn: ({ clientId, status, markedBy }: { clientId: string; status: Attendance; markedBy: string }) =>
       markAttendance(clientId, date, status, markedBy),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['daySessions', date] }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['daySessions', date] });
+      qc.invalidateQueries({ queryKey: ['session', vars.clientId, date] });
+    },
+  });
+}
+
+/** One client's session doc for a date (attendance + circuit progress). */
+export function useSession(clientId: string | undefined, date: string) {
+  return useQuery({
+    queryKey: ['session', clientId, date],
+    queryFn: () => fetchSession(clientId as string, date),
+    enabled: !!clientId,
   });
 }
 

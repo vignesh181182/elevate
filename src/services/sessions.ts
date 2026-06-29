@@ -15,6 +15,12 @@ export async function fetchSessionLog(clientId: string): Promise<SessionLog[]> {
   return snap.docs.map((d) => d.data() as SessionLog).sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
+/** One client's session doc for a date (attendance + circuit progress), or null. */
+export async function fetchSession(clientId: string, date: string): Promise<SessionDoc | null> {
+  const snap = await getDoc(doc(db, 'clients', clientId, 'sessions', date));
+  return snap.exists() ? (snap.data() as SessionDoc) : null;
+}
+
 /** Each listed client's session doc for one date (clientId → SessionDoc), unmarked omitted. */
 export async function fetchDaySessions(clientIds: string[], date: string): Promise<Record<string, SessionDoc>> {
   const entries = await Promise.all(
