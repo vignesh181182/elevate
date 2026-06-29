@@ -20,6 +20,7 @@ import { useIsMainCoach } from '../auth/AuthProvider';
 import PaymentCard from '../components/PaymentCard';
 import ProgramCard from '../components/ProgramCard';
 import SessionsCard from '../components/SessionsCard';
+import MediaCard from '../components/MediaCard';
 import { useToast } from '../components/Toast';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
@@ -185,6 +186,9 @@ export default function ClientDetail() {
 
         {/* Completed-session history */}
         {c.scheduleSet && <SessionsCard client={c} />}
+
+        {/* Progress photos */}
+        {c.scheduleSet && <MediaCard client={c} />}
 
         {/* Payment — head coach only (juniors never receive billing/payment data) */}
         {isMain && c.scheduleSet && <PaymentCard client={c} />}

@@ -135,6 +135,15 @@ export interface SessionLog {
   programs: { label: string; sets: number; exercises: string[] }[];
 }
 
+/** clients/{id}/media/{mediaId} — one compressed photo (base64 data URL) per doc. */
+export interface Media {
+  id?: string;
+  data: string; // base64 data URL
+  kind?: 'before' | 'progress';
+  caption?: string;
+  createdAt?: string;
+}
+
 /** reports/{id} */
 export interface Report {
   id?: string;
