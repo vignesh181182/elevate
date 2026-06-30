@@ -151,7 +151,7 @@ function ReadOnly({
 
           {gridMode === 'cards' && (
             <div className="bottom-cta sticky-cta">
-              <button className="bigbtn" onClick={openEdit}>
+              <button className="bigbtn ghost" onClick={openEdit}>
                 <Pencil size={18} /> Change / modify program
               </button>
             </div>
