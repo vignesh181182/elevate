@@ -94,6 +94,10 @@ export interface ProgramExercise {
   target: string;
   order: number;
   future?: boolean;
+  // Per-day A/B plan: the scheduled weekday + A/B slot this exercise belongs to.
+  // Optional during migration; once tagged, the program is planned per training day.
+  day?: string; // e.g. 'Mon'
+  prog?: 'A' | 'B';
   logs: Record<string, { w: number; r: number }>; // keyed by week number
 }
 
