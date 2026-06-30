@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Users, Search, X, User, CreditCard, CircleDot, ChevronDown, Filter, Plus } from 'lucide-react';
+import { Search, X, User, CreditCard, CircleDot, ChevronDown, Filter, Plus } from 'lucide-react';
 import { useClients, useCoaches, useCoachNameMap, useBillings, usePatchClient } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import { useToast } from '../components/Toast';
@@ -82,9 +82,6 @@ export default function Clients() {
           </div>
         ) : (
           <>
-            <div className="ch-icon">
-              <Users size={20} />
-            </div>
             <div className="ch-title-wrap">
               <div className="bar-title">Clients</div>
               <div className="ch-sub">Manage and track all your clients in one place.</div>
