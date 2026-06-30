@@ -4,7 +4,7 @@ import { ChevronLeft, History, Pencil } from 'lucide-react';
 import { useClient, useClientExercises, useProgramHistory } from '../hooks/useData';
 import ProgramHistory from '../components/ProgramHistory';
 import { ROUNDS } from '../domain/session';
-import { currentProgramWeek, isRepBased, programDisplayName, weekLoad } from '../domain/client';
+import { currentProgramWeek, isRepBased, weekLoad } from '../domain/client';
 import {
   exForDayProg,
   hasDayProgPlan,
@@ -86,11 +86,6 @@ function ReadOnly({
         <ProgramHistory client={client} exercises={list} history={history} />
       ) : (
         <>
-          <div className="wkbanner pad-h">
-            {programDisplayName(client.program)} · Week {week} of {weeks}
-            {week === curWk ? ' · this week' : ''}
-          </div>
-
           {list.length > 0 && (
             <div className="grid-toggle">
               <div className={`gt ${gridMode === 'cards' ? 'on' : ''}`} onClick={() => setGridMode('cards')}>
