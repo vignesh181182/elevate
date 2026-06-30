@@ -126,10 +126,6 @@ function ReadOnly({
                   </button>
                 ))}
               </div>
-              <div className="wkbanner">
-                {day}
-                {day === todayWeekday() ? ' · today' : ''} · Week {week}
-              </div>
               {PROG_LABELS.map((prog) => (
                 <ReadOnlySlot
                   key={prog}
