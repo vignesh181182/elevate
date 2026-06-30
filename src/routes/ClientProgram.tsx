@@ -112,8 +112,16 @@ function Editor({
     );
   }
 
-  const card = (ex: ProgramExercise, drag?: CardDrag) => (
-    <ExerciseCard key={ex.id ?? ex.name} ex={ex} v={valueFor(ex)} onAdjust={adjust} onRemove={onRemove} drag={drag} />
+  const card = (ex: ProgramExercise, drag?: CardDrag, builder?: boolean) => (
+    <ExerciseCard
+      key={ex.id ?? ex.name}
+      ex={ex}
+      v={valueFor(ex)}
+      onAdjust={adjust}
+      onRemove={onRemove}
+      drag={drag}
+      builder={builder}
+    />
   );
 
   // Persist a reordered A/B slot: splice the slot's new id sequence back into the full
@@ -453,7 +461,7 @@ function Slot({
 }: {
   prog: ProgLabel;
   exercises: ProgramExercise[];
-  renderCard: (ex: ProgramExercise, drag?: CardDrag) => React.ReactNode;
+  renderCard: (ex: ProgramExercise, drag?: CardDrag, builder?: boolean) => React.ReactNode;
   sets: number;
   onSets: (delta: number) => void;
   onAdd: () => void;
@@ -561,7 +569,7 @@ function Slot({
         </div>
       </div>
       {exercises.length ? (
-        exercises.map((ex, i) => renderCard(ex, dragFor(i)))
+        exercises.map((ex, i) => renderCard(ex, dragFor(i), true))
       ) : (
         <div className="slot-empty">No exercises in Program {prog} yet — add some below.</div>
       )}
@@ -585,12 +593,15 @@ function ExerciseCard({
   onAdjust,
   onRemove,
   drag,
+  builder,
 }: {
   ex: ProgramExercise;
   v: { w: number; r: number };
   onAdjust: (ex: ProgramExercise, k: 'w' | 'r', delta: number) => void;
   onRemove: (ex: ProgramExercise) => void;
   drag?: CardDrag;
+  // Per-day A/B builder card — name only (no target line), matching the prototype.
+  builder?: boolean;
 }) {
   const rep = isRepBased(ex);
   return (
@@ -604,7 +615,7 @@ function ExerciseCard({
           )}
           <div>
             <div className="ex-name">{ex.name}</div>
-            <div className="ex-target">Target {ex.target}</div>
+            {!builder && <div className="ex-target">Target {ex.target}</div>}
           </div>
         </div>
         <button className="ex-remove" onClick={() => onRemove(ex)} aria-label="Remove">
