@@ -203,12 +203,30 @@ export function useSetProgramSets(clientId: string | undefined) {
   });
 }
 
-/** Persist a new exercise order. Invalidates the client's exercises. */
+/**
+ * Persist a new exercise order. Optimistic: the cached exercises reorder instantly
+ * (and their `order` fields update) so inline drag-to-reorder sticks without a
+ * refetch flicker; rolls back on error, re-syncs on settle.
+ */
 export function useReorderProgramExercises(clientId: string | undefined) {
   const qc = useQueryClient();
+  const qk = ['exercises', clientId];
   return useMutation({
     mutationFn: (orderedIds: string[]) => reorderProgramExercises(clientId as string, orderedIds),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
+    onMutate: async (orderedIds) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<ProgramExercise[]>(qk);
+      if (prev) {
+        const rank = new Map(orderedIds.map((id, i) => [id, i + 1]));
+        const next = prev
+          .map((e) => (rank.has(e.id as string) ? { ...e, order: rank.get(e.id as string)! } : e))
+          .sort((a, b) => a.order - b.order);
+        qc.setQueryData<ProgramExercise[]>(qk, next);
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => ctx?.prev && qc.setQueryData(qk, ctx.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
   });
 }
 

@@ -59,6 +59,7 @@ function Editor({
   const save = useSaveWeekLoads(client.id);
   const remove = useRemoveProgramExercise(client.id);
   const setSets = useSetProgramSets(client.id);
+  const reorder = useReorderProgramExercises(client.id);
   const weeks = client.program?.weeks ?? 6;
   const curWk = currentProgramWeek(client);
   const days = programDays(client);
@@ -111,9 +112,20 @@ function Editor({
     );
   }
 
-  const card = (ex: ProgramExercise) => (
-    <ExerciseCard key={ex.id ?? ex.name} ex={ex} v={valueFor(ex)} onAdjust={adjust} onRemove={onRemove} />
+  const card = (ex: ProgramExercise, drag?: CardDrag) => (
+    <ExerciseCard key={ex.id ?? ex.name} ex={ex} v={valueFor(ex)} onAdjust={adjust} onRemove={onRemove} drag={drag} />
   );
+
+  // Persist a reordered A/B slot: splice the slot's new id sequence back into the full
+  // exercise order (other days/programs untouched), then save order = 1..N.
+  function reorderSlot(orderedIds: string[]) {
+    const idSet = new Set(orderedIds);
+    let k = 0;
+    const fullIds = list
+      .map((e) => (idSet.has(e.id as string) ? orderedIds[k++] : (e.id as string)))
+      .filter((x): x is string => !!x);
+    reorder.mutate(fullIds, { onError: () => toast('Could not save order') });
+  }
 
   return (
     <div className="screen">
@@ -201,6 +213,7 @@ function Editor({
                     const n = Math.max(MIN_SETS, Math.min(MAX_SETS, cur + delta));
                     if (n !== cur) setSets.mutate({ label: prog, n });
                   }}
+                  onReorder={reorderSlot}
                   onAdd={() => navigate(`/clients/${client.id}/library?day=${day}&prog=${prog}`)}
                 />
               ))}
@@ -215,14 +228,14 @@ function Editor({
             </div>
           ) : (
             <>
-              {list.map(card)}
+              {list.map((ex) => card(ex))}
               <button className="ex-add-btn" onClick={() => navigate(`/clients/${client.id}/library`)}>
                 ＋ Add from exercise library
               </button>
             </>
           )}
 
-          {list.length >= 2 && (
+          {!perDay && list.length >= 2 && (
             <button className="ex-reorder-btn" onClick={() => setReorderMode(true)}>
               ↕ Reorder exercises
             </button>
@@ -436,14 +449,92 @@ function Slot({
   sets,
   onSets,
   onAdd,
+  onReorder,
 }: {
   prog: ProgLabel;
   exercises: ProgramExercise[];
-  renderCard: (ex: ProgramExercise) => React.ReactNode;
+  renderCard: (ex: ProgramExercise, drag?: CardDrag) => React.ReactNode;
   sets: number;
   onSets: (delta: number) => void;
   onAdd: () => void;
+  // Persist a new in-slot order (the slot's exercise ids, reordered).
+  onReorder: (orderedIds: string[]) => void;
 }) {
+  // Inline drag-to-reorder within this program (ported from the prototype's wireExDrag):
+  // the grip starts a pointer drag, the card follows the finger and neighbours shift past
+  // midpoints (transforms set imperatively — transient gesture state, not rendered markup).
+  const rowEls = useRef<(HTMLDivElement | null)[]>([]);
+  const drag = useRef({ active: false, from: -1, cur: -1, startY: 0, slotH: 0 });
+  const canDrag = exercises.length >= 2;
+
+  function begin(idx: number, e: React.PointerEvent) {
+    e.preventDefault();
+    const rows = rowEls.current;
+    if (rows.length < 2) return;
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* setPointerCapture can throw on detached elements — safe to ignore */
+    }
+    const slotH = rows[1]!.getBoundingClientRect().top - rows[0]!.getBoundingClientRect().top;
+    drag.current = { active: true, from: idx, cur: idx, startY: e.clientY, slotH };
+    rows[idx]?.classList.add('ex-dragging');
+    document.body.classList.add('ex-drag-on');
+  }
+
+  function move(e: React.PointerEvent) {
+    const d = drag.current;
+    if (!d.active) return;
+    const rows = rowEls.current;
+    const el = rows[d.from];
+    if (!el) return;
+    const dy = Math.max(-d.from * d.slotH, Math.min((rows.length - 1 - d.from) * d.slotH, e.clientY - d.startY));
+    el.style.transform = `translateY(${dy}px)`;
+    const ni = Math.max(0, Math.min(rows.length - 1, d.from + Math.round(dy / d.slotH)));
+    if (ni !== d.cur) {
+      d.cur = ni;
+      rows.forEach((r, k) => {
+        if (!r || k === d.from) return;
+        let s = 0;
+        if (d.from < ni && k > d.from && k <= ni) s = -d.slotH;
+        else if (d.from > ni && k >= ni && k < d.from) s = d.slotH;
+        r.style.transform = s ? `translateY(${s}px)` : '';
+      });
+    }
+  }
+
+  function end(e: React.PointerEvent) {
+    const d = drag.current;
+    if (!d.active) return;
+    drag.current = { active: false, from: -1, cur: -1, startY: 0, slotH: 0 };
+    rowEls.current.forEach((r) => {
+      if (r) {
+        r.style.transform = '';
+        r.classList.remove('ex-dragging');
+      }
+    });
+    document.body.classList.remove('ex-drag-on');
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    if (d.cur !== d.from && d.cur >= 0) {
+      const ids = exercises.map((x) => x.id).filter((x): x is string => !!x);
+      const [moved] = ids.splice(d.from, 1);
+      ids.splice(d.cur, 0, moved);
+      onReorder(ids);
+    }
+  }
+
+  const dragFor = (i: number): CardDrag | undefined =>
+    canDrag
+      ? {
+          cardRef: (el) => void (rowEls.current[i] = el),
+          grip: { onPointerDown: (e) => begin(i, e), onPointerMove: move, onPointerUp: end, onPointerCancel: end },
+        }
+      : undefined;
+
   return (
     <div className={`pgrp pgrp-${prog.toLowerCase()}`}>
       <div className="pgrp-bhead">
@@ -470,7 +561,7 @@ function Slot({
         </div>
       </div>
       {exercises.length ? (
-        exercises.map(renderCard)
+        exercises.map((ex, i) => renderCard(ex, dragFor(i)))
       ) : (
         <div className="slot-empty">No exercises in Program {prog} yet — add some below.</div>
       )}
@@ -481,24 +572,40 @@ function Slot({
   );
 }
 
+// Optional drag affordance threaded in by a draggable Slot: a ref to the card root
+// (for measuring/animating) plus the grip's pointer handlers.
+interface CardDrag {
+  cardRef: (el: HTMLDivElement | null) => void;
+  grip: React.DOMAttributes<HTMLButtonElement>;
+}
+
 function ExerciseCard({
   ex,
   v,
   onAdjust,
   onRemove,
+  drag,
 }: {
   ex: ProgramExercise;
   v: { w: number; r: number };
   onAdjust: (ex: ProgramExercise, k: 'w' | 'r', delta: number) => void;
   onRemove: (ex: ProgramExercise) => void;
+  drag?: CardDrag;
 }) {
   const rep = isRepBased(ex);
   return (
-    <div className="ex-card">
+    <div className="ex-card" ref={drag?.cardRef}>
       <div className="ex-top">
-        <div>
-          <div className="ex-name">{ex.name}</div>
-          <div className="ex-target">Target {ex.target}</div>
+        <div className="ex-top-main">
+          {drag && (
+            <button className="ex-drag" aria-label={`Drag to reorder ${ex.name}`} {...drag.grip}>
+              ⠿
+            </button>
+          )}
+          <div>
+            <div className="ex-name">{ex.name}</div>
+            <div className="ex-target">Target {ex.target}</div>
+          </div>
         </div>
         <button className="ex-remove" onClick={() => onRemove(ex)} aria-label="Remove">
           ✕
