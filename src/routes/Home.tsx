@@ -7,6 +7,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   CircleAlert,
+  TriangleAlert,
   Users,
   UserPlus,
   UserCheck,
@@ -131,30 +132,49 @@ export default function Home() {
     else groups.push({ time: s.time, items: [s] });
   });
 
-  // Critical alerts — only categories that have items. Payment ones main-only.
-  const alerts: { key: FilterKey; icon: typeof Wallet; cls: string; title: string; sub: string }[] = [];
-  if (isMain && count('Payment overdue') > 0) {
-    const n = count('Payment overdue');
-    alerts.push({ key: 'Payment overdue', icon: Wallet, cls: 'ic-red', title: 'Payment overdue', sub: `${n} client${n === 1 ? '' : 's'} with pending payments` });
+  // Missed sessions today — real, from attendance (absent/cancelled). Any coach
+  // (not billing-gated). Links to Schedule, where today's attendance is managed.
+  const missedToday = todaySched.filter((s) => {
+    const st = stateOf(s.c.id);
+    return st === 'absent' || st === 'cancelled';
+  }).length;
+
+  // Critical alerts — only categories that have items. Missed leads (most urgent,
+  // matching the prototype); payment ones are main-only.
+  const alerts: { id: string; icon: typeof Wallet; cls: string; title: string; sub: string; onClick: () => void }[] = [];
+  if (missedToday > 0) {
+    alerts.push({
+      id: 'missed',
+      icon: TriangleAlert,
+      cls: 'ic-red',
+      title: `${missedToday} Missed Session${missedToday === 1 ? '' : 's'}`,
+      sub: `${missedToday} client${missedToday === 1 ? '' : 's'} ${missedToday === 1 ? 'needs' : 'need'} attention`,
+      onClick: () => navigate('/schedule'),
+    });
   }
   if (isMain && count('Membership expiring') > 0) {
     const n = count('Membership expiring');
-    alerts.push({ key: 'Membership expiring', icon: Calendar, cls: 'ic-amber', title: 'Membership expiring', sub: `${n} client${n === 1 ? '' : 's'} in next 7 days` });
+    alerts.push({ id: 'expiring', icon: Calendar, cls: 'ic-amber', title: 'Membership expiring', sub: `${n} client${n === 1 ? '' : 's'} in next 7 days`, onClick: () => go('Membership expiring') });
+  }
+  if (isMain && count('Payment overdue') > 0) {
+    const n = count('Payment overdue');
+    alerts.push({ id: 'overdue', icon: Wallet, cls: 'ic-red', title: 'Payment overdue', sub: `${n} client${n === 1 ? '' : 's'} with pending payments`, onClick: () => go('Payment overdue') });
   }
   if (count('Review due') > 0) {
     const n = count('Review due');
-    alerts.push({ key: 'Review due', icon: ClipboardList, cls: 'ic-amber', title: 'Reviews due', sub: `${n} client${n === 1 ? '' : 's'} need a weekly review` });
+    alerts.push({ id: 'review', icon: ClipboardList, cls: 'ic-amber', title: 'Reviews due', sub: `${n} client${n === 1 ? '' : 's'} need a weekly review`, onClick: () => go('Review due') });
   }
 
-  // Client Insights — every card is a real filter (no fabricated rates/deltas).
-  // Billing-dependent cards are head-coach only (juniors never receive billing).
-  const insights: { key: FilterKey; icon: typeof Wallet; cls: string; label: string; sub: string; main?: boolean }[] = [
-    { key: 'Leads', icon: UserPlus, cls: 'ic-grey', label: 'New Leads', sub: 'Not yet activated' },
-    { key: 'Assessment due', icon: ClipboardList, cls: 'ic-amber', label: 'Assessments Due', sub: 'Today' },
-    { key: 'Review due', icon: ClipboardCheck, cls: 'ic-grey', label: 'Reviews Due', sub: 'Weekly check-in' },
-    { key: 'Payment due', icon: Wallet, cls: 'ic-red', label: 'Pending Payments', sub: 'Awaiting payment', main: true },
-    { key: 'Membership expiring', icon: Calendar, cls: 'ic-purple', label: 'Memberships Expiring', sub: 'In next 7 days', main: true },
-    { key: 'Payment overdue', icon: CircleAlert, cls: 'ic-orange', label: 'Payment Overdue', sub: 'Needs follow-up', main: true },
+  // Client Insights — every card is real (no fabricated rates/deltas). Missed is
+  // attendance-derived; billing cards are head-coach only (juniors never receive billing).
+  const insights: { id: string; icon: typeof Wallet; cls: string; label: string; sub: string; count: number; onClick: () => void; main?: boolean }[] = [
+    { id: 'Leads', icon: UserPlus, cls: 'ic-grey', label: 'New Leads', sub: 'Not yet activated', count: count('Leads'), onClick: () => go('Leads') },
+    { id: 'Assessment due', icon: ClipboardList, cls: 'ic-amber', label: 'Assessments Due', sub: 'Today', count: count('Assessment due'), onClick: () => go('Assessment due') },
+    { id: 'missed', icon: CircleAlert, cls: 'ic-orange', label: 'Missed Sessions', sub: 'Clients need attention', count: missedToday, onClick: () => navigate('/schedule') },
+    { id: 'Review due', icon: ClipboardCheck, cls: 'ic-grey', label: 'Reviews Due', sub: 'Weekly check-in', count: count('Review due'), onClick: () => go('Review due') },
+    { id: 'Payment due', icon: Wallet, cls: 'ic-red', label: 'Pending Payments', sub: 'Awaiting payment', count: count('Payment due'), onClick: () => go('Payment due'), main: true },
+    { id: 'Membership expiring', icon: Calendar, cls: 'ic-purple', label: 'Memberships Expiring', sub: 'In next 7 days', count: count('Membership expiring'), onClick: () => go('Membership expiring'), main: true },
+    { id: 'Payment overdue', icon: CircleAlert, cls: 'ic-orange', label: 'Payment Overdue', sub: 'Needs follow-up', count: count('Payment overdue'), onClick: () => go('Payment overdue'), main: true },
   ];
 
   return (
@@ -331,7 +351,7 @@ export default function Home() {
               <div className="ea-empty">All clear — no critical alerts.</div>
             ) : (
               alerts.map((a) => (
-                <div className="ea-row" key={a.key} onClick={() => go(a.key)}>
+                <div className="ea-row" key={a.id} onClick={a.onClick}>
                   <div className={`ea-ic ${a.cls}`}>
                     <a.icon size={18} />
                   </div>
@@ -399,12 +419,12 @@ export default function Home() {
           {insights
             .filter((i) => !i.main || isMain)
             .map((i) => (
-              <div className="ei-card" key={i.key} onClick={() => go(i.key)}>
+              <div className="ei-card" key={i.id} onClick={i.onClick}>
                 <div className="ei-top">
                   <div className={`ei-ic ${i.cls}`}>
                     <i.icon size={18} />
                   </div>
-                  <div className="ei-v">{count(i.key)}</div>
+                  <div className="ei-v">{i.count}</div>
                 </div>
                 <div className="ei-l">{i.label}</div>
                 <div className="ei-s">{i.sub}</div>
