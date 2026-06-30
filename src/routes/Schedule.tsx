@@ -38,17 +38,27 @@ export default function Schedule() {
   const todayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now.getDay()];
   const todayISO = now.toISOString().slice(0, 10);
   const [day, setDay] = useState(DAYS.includes(todayAbbr) ? todayAbbr : 'Mon');
-  const isToday = day === todayAbbr;
+  const [week, setWeek] = useState(0); // 0 = this week, up to 8 weeks ahead
+  // Attendance is today-only: only the current week's actual today maps to a real date.
+  const isToday = week === 0 && day === todayAbbr;
 
-  // The real calendar date of the selected weekday in the current week (this week's
-  // occurrence) — restores the date the prototype banner showed, without faking weeks.
-  const selDateLabel = useMemo(() => {
-    const idx = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(day);
-    const d = new Date(now);
-    d.setDate(now.getDate() + (idx - now.getDay()));
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  // Week context — Monday of (this week + offset), its date range, and the selected
+  // day's date. Mirrors the prototype's schedWeekInfo (anchored to the real week).
+  const fmt = (d: Date) => `${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'short' })}`;
+  const weekInfo = useMemo(() => {
+    const dow = (now.getDay() + 6) % 7; // Mon=0 … Sun=6
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(now.getDate() - dow + 7 * week);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 5);
+    const label = week === 0 ? 'This week' : week === 1 ? 'Next week' : `In ${week} weeks`;
+    const sel = new Date(start);
+    sel.setDate(start.getDate() + DAYS.indexOf(day));
+    return { label, range: `${fmt(start)} – ${fmt(end)}`, selDateLabel: fmt(sel) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day]);
+  }, [day, week]);
+  const selDateLabel = weekInfo.selDateLabel;
 
   const sessions = useMemo(() => {
     return clients
@@ -82,6 +92,28 @@ export default function Schedule() {
     <div className="fadein">
       <div className="bar">
         <div className="bar-title">Schedule</div>
+      </div>
+
+      <div className="sched-week">
+        <button
+          className="sw-arrow"
+          onClick={() => setWeek((w) => Math.max(0, w - 1))}
+          disabled={week <= 0}
+          aria-label="Previous week"
+        >
+          ‹
+        </button>
+        <div className="sw-label">
+          <b>{weekInfo.label}</b>
+          <span>{weekInfo.range}</span>
+        </div>
+        <button
+          className="sw-arrow"
+          onClick={() => setWeek((w) => Math.min(8, w + 1))}
+          aria-label="Next week"
+        >
+          ›
+        </button>
       </div>
 
       <div className="filters">

@@ -1,5 +1,6 @@
 import { type CSSProperties, useMemo, useState } from 'react';
-import { TrendingUp, Trophy, Ruler } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { TrendingUp, Trophy, Ruler, ChartColumn, ChevronRight } from 'lucide-react';
 import { useClientExercises } from '../hooks/useData';
 import { muscleColor } from '../lib/muscleColors';
 import { fmtPayDate } from '../lib/format';
@@ -20,6 +21,7 @@ import type { Client } from '../domain/types';
 const arrow = (v: number) => (v > 0 ? '↑' : v < 0 ? '↓' : '');
 
 export default function ProgressCard({ client }: { client: Client }) {
+  const navigate = useNavigate();
   const { data: exercises = [], isLoading } = useClientExercises(client.id);
 
   const exWithLogs = useMemo(() => exercises.filter((e) => e.logs && Object.keys(e.logs).length), [exercises]);
@@ -45,6 +47,7 @@ export default function ProgressCard({ client }: { client: Client }) {
 
   return (
     <>
+      {client.goals && client.goals !== '—' && <div className="tab-cap">{client.goals}</div>}
       <div className="cp-card">
         <div className="cp-sec">
           <div className="cp-sec-t">
@@ -224,6 +227,20 @@ export default function ProgressCard({ client }: { client: Client }) {
           )}
         </div>
       )}
+
+      <div className="report-row" onClick={() => navigate(`/clients/${client.id}/report`)}>
+        <div className="ac-ic abg ic-42">
+          <ChartColumn />
+        </div>
+        <div className="ac-main">
+          <div className="ac-title">Program completion report</div>
+          <div className="ac-sub">Generate when block ends</div>
+        </div>
+        <div className="cr-chev">
+          <ChevronRight />
+        </div>
+      </div>
+      <div className="sp14" />
     </>
   );
 }

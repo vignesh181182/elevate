@@ -37,6 +37,61 @@ function OvRing({ pct }: { pct: number }) {
   );
 }
 
+// One archived completed session — date chip + circuit summary + rounds badge.
+function SessHistRow({ rec }: { rec: SessionLog }) {
+  const d = new Date(rec.date + 'T00:00:00');
+  const valid = !isNaN(+d);
+  const dnum = valid ? d.getDate() : '—';
+  const mon = valid ? d.toLocaleDateString('en-GB', { month: 'short' }) : '';
+  const summary = rec.programs.map((p) => `${p.label.replace('Program ', '')} ×${p.sets}`).join(' · ') || 'Circuit';
+  return (
+    <div className="sh-row">
+      <div className="sh-date">
+        <b>{dnum}</b>
+        {mon}
+      </div>
+      <div className="sh-main">
+        <div className="sh-focus">Circuit · Programs {summary}</div>
+        <div className="sh-sub">{rec.when || '—'}</div>
+      </div>
+      {rec.early ? (
+        <span className="sh-badge cancelled">
+          Ended early · {rec.roundsCompleted}/{rec.totalRounds}
+        </span>
+      ) : (
+        <span className="sh-badge done">
+          ✓ {rec.roundsCompleted}/{rec.totalRounds} rounds
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Permanent completed-session archive (newest first) — real logs only, no filler.
+function SessionHistory({ client, log }: { client: Client; log: SessionLog[] }) {
+  return (
+    <div className="block">
+      <div className="ov-h">
+        <div className="ov-h-t">Session history</div>
+      </div>
+      {log.length ? (
+        <>
+          <div className="sh-list">
+            {log.map((rec) => (
+              <SessHistRow key={rec.date} rec={rec} />
+            ))}
+          </div>
+          <div className="tab-cap foot">Showing completed sessions</div>
+        </>
+      ) : (
+        <div className="ph-empty-inline">
+          No completed sessions yet — they&rsquo;ll appear here after {client.name.split(' ')[0]}&rsquo;s first session.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CalendarMonth({ client, log }: { client: Client; log: SessionLog[] }) {
   const navigate = useNavigate();
   const now = new Date();
@@ -169,6 +224,8 @@ export default function ClientSessions() {
     <div className="screen">
       <ClientDrillHead name={client.name} label="Sessions" />
       <CalendarMonth client={client} log={log} />
+      <SessionHistory client={client} log={log} />
+      <div className="sp24" />
     </div>
   );
 }
