@@ -89,13 +89,13 @@ export default function More() {
           </div>
           <div className="mrow-chev">›</div>
         </div>
-        <div className="mrow" onClick={() => toast('Settings — coming soon')}>
+        <div className="mrow" onClick={() => navigate('/settings')}>
           <div className="mrow-ic tint-blue">
             <Settings />
           </div>
           <div className="mrow-tx">
             <div className="mrow-t">Settings</div>
-            <div className="mrow-s">Preferences and app settings</div>
+            <div className="mrow-s">Account and app settings</div>
           </div>
           <div className="mrow-chev">›</div>
         </div>

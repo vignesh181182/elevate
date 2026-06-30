@@ -32,6 +32,7 @@ const Schedule = lazy(() => import('./routes/Schedule'));
 const Reports = lazy(() => import('./routes/Reports'));
 const More = lazy(() => import('./routes/More'));
 const ProfileEdit = lazy(() => import('./routes/ProfileEdit'));
+const Settings = lazy(() => import('./routes/Settings'));
 
 const RouteFallback = () => (
   <div className="screen">
@@ -79,6 +80,7 @@ export default function App() {
             <Route path="/library" element={<Library />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile/edit" element={<ProfileEdit />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/home" replace />} />
