@@ -1,9 +1,10 @@
 import { useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Check, ArrowRight, PlayCircle, Clock, Flag } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, ArrowRight, PlayCircle, Clock, Flag } from 'lucide-react';
 import {
   useClient,
   useClientExercises,
+  useCoachNameMap,
   useCompleteSession,
   useMarkAttendance,
   useSession,
@@ -14,7 +15,7 @@ import { useToast } from '../components/Toast';
 import AttendanceSheet from '../components/AttendanceSheet';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
-import { currentProgramWeek, weekLoad } from '../domain/client';
+import { currentProgramWeek, isRepBased, weekLoad } from '../domain/client';
 import {
   ROUNDS,
   activeProgramIndex,
@@ -51,6 +52,7 @@ export default function ClientSession() {
   const { coach } = useAuth();
   const { data: client, isLoading } = useClient(id);
   const { data: exercises = [] } = useClientExercises(id);
+  const coachMap = useCoachNameMap();
   const date = todayISO();
   const { data: session } = useSession(id, date);
   const mark = useMarkAttendance(date);
@@ -66,7 +68,7 @@ export default function ClientSession() {
           <button className="iconbtn" onClick={() => navigate(`/clients/${id}`)} aria-label="Back">
             <ChevronLeft />
           </button>
-          <div className="bar-title">Today&rsquo;s session</div>
+          <div className="bar-title">Today&rsquo;s Session</div>
         </div>
         <div className="cl-loading">Loading…</div>
       </div>
@@ -78,6 +80,7 @@ export default function ClientSession() {
   const completed = session?.status === 'completed';
   const list = exercises.filter((e) => !e.future && e.name !== 'Tap to add exercise');
   const day = sessionDayFor(client);
+  const clientCoach = client.coachId ? coachMap[client.coachId] ?? 'Not assigned' : 'Not assigned';
   const programs = circuitPrograms(list, day);
   const week = currentProgramWeek(client);
   const activeIdx = activeProgramIndex(programs, progress);
@@ -137,10 +140,10 @@ export default function ClientSession() {
         <button className="iconbtn" onClick={() => navigate(`/clients/${client.id}`)} aria-label="Back">
           <ChevronLeft />
         </button>
-        <div className="bar-title">Today&rsquo;s session</div>
+        <div className="bar-title">Today&rsquo;s Session</div>
       </div>
 
-      <div className="se-card">
+      <div className="se-card tap" onClick={() => navigate(`/clients/${client.id}`)}>
         <div className="se-ava tint-cat" style={avaStyle}>
           {initials(client.name)}
         </div>
@@ -150,9 +153,12 @@ export default function ClientSession() {
             {present && !completed && <span className="se-present">✓ Present</span>}
           </div>
           <div className="se-meta">
-            {day ? `${day} · ` : ''}Week {week} · {client.time}
+            {day ? `${day} · ` : ''}Week {week} · {client.time} · {clientCoach}
           </div>
         </div>
+        <span className="se-chev">
+          <ChevronRight />
+        </span>
       </div>
 
       {completed ? (
@@ -328,15 +334,26 @@ function ProgramBlock({
       <div className="pgm-rows">
         {program.exercises.map((ex: ProgramExercise) => {
           const load = weekLoad(ex, week);
+          const rep = isRepBased(ex);
           const isCur = active && ex.name === nextName;
           return (
             <div className={`pgm-ex${idle ? ' idle' : ''}`} key={ex.id ?? ex.name}>
               <div className="pgm-ex-main">
                 <div className="pgm-ex-name">{ex.name}</div>
+                {/* reps · weight, matching the prototype. Rep/time exercises (walks,
+                    planks) carry no external load — never print a bogus weight. */}
                 <div className="pgm-ex-sub">
-                  <span>{load.w > 0 ? `${fmtW(load.w)}kg` : 'Bodyweight'}</span>
-                  <i className="pgm-dot" />
-                  <span>{load.r} reps</span>
+                  {rep ? (
+                    <span>Bodyweight</span>
+                  ) : (
+                    <>
+                      <span>
+                        {load.r} rep{load.r === 1 ? '' : 's'}
+                      </span>
+                      <i className="pgm-dot" />
+                      <span>{load.w > 0 ? `${fmtW(load.w)}kg weights` : 'No weights'}</span>
+                    </>
+                  )}
                 </div>
               </div>
               {!idle && (
