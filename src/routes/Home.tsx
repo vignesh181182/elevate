@@ -1,14 +1,33 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, Wallet, Calendar, ClipboardList, Users, UserPlus, UserCheck, ChevronDown } from 'lucide-react';
+import { Bell, Wallet, Calendar, ClipboardList, Users, UserPlus, UserCheck, ChevronDown } from 'lucide-react';
 import { useAuth, useIsMainCoach } from '../auth/AuthProvider';
 import { useToast } from '../components/Toast';
-import { useClients, useCoaches, useSessionLogs, useBillings } from '../hooks/useData';
+import { useClients, useCoaches, useCoachNameMap, useDaySessions, useBillings } from '../hooks/useData';
 import { parseDays } from '../domain/client';
-import { initials, relativeDay } from '../lib/format';
+import { catStyle } from '../lib/categories';
+import { initials } from '../lib/format';
 import { CLIENT_FILTERS, type FilterKey } from '../domain/filters';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const ROW_CAP = 12;
+
+type SessState = 'done' | 'absent' | 'cancelled' | 'inprogress' | 'upcoming';
+const TAGS: Record<SessState, { label: string; cls: string } | undefined> = {
+  done: { label: 'Done', cls: 'done' },
+  absent: { label: 'Absent', cls: 'missed' },
+  cancelled: { label: 'Cancelled', cls: 'missed' },
+  inprogress: { label: 'In progress', cls: 'prog' },
+  upcoming: undefined,
+};
+
+function timeToMinutes(t: string): number {
+  const m = String(t || '').match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return 9999;
+  let h = +m[1] % 12;
+  if (/pm/i.test(m[3])) h += 12;
+  return h * 60 + +m[2];
+}
 
 export default function Home() {
   const { coach } = useAuth();
@@ -17,7 +36,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { data: clients = [] } = useClients();
   const { data: coaches = [] } = useCoaches();
-  const { data: logs = [] } = useSessionLogs();
+  const coachName = useCoachNameMap();
   const ids = useMemo(() => clients.map((c) => c.id), [clients]);
   const { data: billings = {} } = useBillings(ids);
 
@@ -29,7 +48,6 @@ export default function Home() {
     () => (homeCoach === 'All' ? clients : clients.filter((c) => c.coachId === homeCoach)),
     [clients, homeCoach],
   );
-  const scopedIds = useMemo(() => new Set(scoped.map((c) => c.id)), [scoped]);
 
   const greet = (() => {
     const h = new Date().getHours();
@@ -51,13 +69,55 @@ export default function Home() {
   const count = (key: FilterKey) => scoped.filter((c) => CLIENT_FILTERS[key].pred(c, billings[c.id])).length;
   const go = (key: FilterKey) => navigate(`/clients?filter=${encodeURIComponent(key)}`);
 
-  // Stats strip — all derived from real data (scoped to the selected coach).
+  // Today's schedule — derived from real client schedules (scoped), chronological.
   const now = new Date();
   const todayAbbr = WEEKDAYS[now.getDay()];
   const todayISO = now.toISOString().slice(0, 10);
-  const sessionsToday = scoped.filter((c) => c.scheduleSet && parseDays(c.days).includes(todayAbbr)).length;
-  const completedToday = logs.filter((l) => l.date === todayISO && scopedIds.has(l.clientId)).length;
+  const todaySched = useMemo(
+    () =>
+      scoped
+        .filter((c) => c.scheduleSet && parseDays(c.days).includes(todayAbbr))
+        .map((c) => ({ c, time: c.time || '—' }))
+        .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)),
+    [scoped, todayAbbr],
+  );
+  const todayIds = useMemo(() => todaySched.map((s) => s.c.id), [todaySched]);
+  const { data: daySessions = {} } = useDaySessions(todayIds, todayISO);
+
+  // Each row's live state from real attendance + completion (present ⇒ circuit started).
+  const stateOf = (id: string): SessState => {
+    const s = daySessions[id];
+    if (s?.status === 'completed') return 'done';
+    if (s?.attendance === 'absent') return 'absent';
+    if (s?.attendance === 'cancelled') return 'cancelled';
+    if (s?.attendance === 'present') return 'inprogress';
+    return 'upcoming';
+  };
+
+  const sessionsToday = todaySched.length;
+  const completedToday = todaySched.filter((s) => stateOf(s.c.id) === 'done').length;
   const remaining = Math.max(0, sessionsToday - completedToday);
+
+  // Show only the live part of the day: current + upcoming; hide finished; keep a
+  // missed/cancelled slot only if it's still ahead of the earliest live session.
+  const liveTimes = todaySched
+    .filter((s) => stateOf(s.c.id) === 'inprogress' || stateOf(s.c.id) === 'upcoming')
+    .map((s) => timeToMinutes(s.time));
+  const nowMin = liveTimes.length ? Math.min(...liveTimes) : Infinity;
+  const visible = todaySched.filter((s) => {
+    const st = stateOf(s.c.id);
+    if (st === 'inprogress' || st === 'upcoming') return true;
+    if (st === 'done') return false;
+    return timeToMinutes(s.time) >= nowMin;
+  });
+  const rows = visible.slice(0, ROW_CAP);
+  const hiddenCount = visible.length - rows.length;
+  const groups: { time: string; items: typeof rows }[] = [];
+  rows.forEach((s) => {
+    const g = groups[groups.length - 1];
+    if (g && g.time === s.time) g.items.push(s);
+    else groups.push({ time: s.time, items: [s] });
+  });
 
   // Critical alerts — only categories that have items. Payment ones main-only.
   const alerts: { key: FilterKey; icon: typeof Wallet; cls: string; title: string; sub: string }[] = [];
@@ -73,9 +133,6 @@ export default function Home() {
     const n = count('Review due');
     alerts.push({ key: 'Review due', icon: ClipboardList, cls: 'ic-amber', title: 'Reviews due', sub: `${n} client${n === 1 ? '' : 's'} need a weekly review` });
   }
-
-  const activity = logs.filter((l) => scopedIds.has(l.clientId)).slice(0, 6);
-  const clientName = (cid: string) => clients.find((c) => c.id === cid)?.name ?? 'Client';
 
   return (
     <div className="fadein eh">
@@ -172,100 +229,139 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Critical alerts */}
-      <div className="eh-card">
-        <div className="eh-card-h">
-          <div className="eh-card-t">
-            Critical Alerts {alerts.length > 0 && <span className="eh-badge">{alerts.length}</span>}
+      <div className="eh-cols">
+        {/* Today's Schedule — live timeline */}
+        <div className="es-col eh-card">
+          <div className="eh-card-h">
+            <div className="eh-card-t">Today&rsquo;s Schedule</div>
+            <button className="eh-viewall" onClick={() => navigate('/schedule')}>
+              View all
+            </button>
           </div>
-        </div>
-        {alerts.length === 0 ? (
-          <div className="ea-empty">All clear — no critical alerts.</div>
-        ) : (
-          alerts.map((a) => (
-            <div className="ea-row" key={a.key} onClick={() => go(a.key)}>
-              <div className={`ea-ic ${a.cls}`}>
-                <a.icon size={18} />
+          {visible.length === 0 ? (
+            <div className="es-empty">No upcoming sessions today.</div>
+          ) : (
+            <>
+              <div className="es-list">
+                {groups.map((g) => (
+                  <div className="es-group" key={g.time}>
+                    <div className="es-ghead">{g.time}</div>
+                    {g.items.map(({ c }) => {
+                      const st = stateOf(c.id);
+                      const cat = catStyle(c.category);
+                      const avaStyle = { '--c-bg': cat.b, '--c-fg': cat.c } as CSSProperties;
+                      const rowCls = st === 'inprogress' ? ' live' : st === 'absent' || st === 'cancelled' ? ' missed' : '';
+                      const tag = TAGS[st];
+                      const dest =
+                        st === 'inprogress' || st === 'upcoming' ? `/clients/${c.id}/session` : `/clients/${c.id}`;
+                      return (
+                        <div className={`es-row${rowCls}`} key={c.id} onClick={() => navigate(dest)}>
+                          <span className="es-node">
+                            <span className="es-dot" />
+                          </span>
+                          <div className="es-ava tint-cat" style={avaStyle}>
+                            {initials(c.name)}
+                          </div>
+                          <div className="es-main">
+                            <div className="es-name">{c.name}</div>
+                            <div className="es-prog">
+                              {c.category}
+                              {homeCoach === 'All' && c.coachId && (
+                                <>
+                                  {' · '}
+                                  <span className="es-coach">{coachName[c.coachId] ?? 'Unassigned'}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {tag && <span className={`es-tag ${tag.cls}`}>{tag.label}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-              <div className="ea-main">
-                <div className="ea-t">{a.title}</div>
-                <div className="ea-s">{a.sub}</div>
-              </div>
-              <div className="ea-chev">›</div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Quick stats — each a deep link into the matching filtered list */}
-      <div className="eh-card">
-        <div className="eh-card-h">
-          <div className="eh-card-t">Quick Stats</div>
-        </div>
-        <div className="eq-grid">
-          <div className="eq-tile" onClick={() => go('Active')}>
-            <div className="eq-ic ic-red">
-              <Users size={18} />
-            </div>
-            <div className="eq-tx">
-              <div className="eq-v">{count('Active')}</div>
-              <div className="eq-l">Active Clients</div>
-            </div>
-          </div>
-          <div className="eq-tile" onClick={() => go('Leads')}>
-            <div className="eq-ic ic-grey">
-              <UserPlus size={18} />
-            </div>
-            <div className="eq-tx">
-              <div className="eq-v">{count('Leads')}</div>
-              <div className="eq-l">New Leads</div>
-            </div>
-          </div>
-          <div className="eq-tile" onClick={() => go('Assessment due')}>
-            <div className="eq-ic ic-amber">
-              <ClipboardList size={18} />
-            </div>
-            <div className="eq-tx">
-              <div className="eq-v">{count('Assessment due')}</div>
-              <div className="eq-l">Assessments Due</div>
-            </div>
-          </div>
-          {isMain && (
-            <div className="eq-tile" onClick={() => go('Payment due')}>
-              <div className="eq-ic ic-purple">
-                <Wallet size={18} />
-              </div>
-              <div className="eq-tx">
-                <div className="eq-v">{count('Payment due')}</div>
-                <div className="eq-l">Pending Payments</div>
-              </div>
-            </div>
+              {hiddenCount > 0 && (
+                <button className="es-more" onClick={() => navigate('/schedule')}>
+                  +{hiddenCount} more session{hiddenCount === 1 ? '' : 's'} ›
+                </button>
+              )}
+            </>
           )}
         </div>
-      </div>
 
-      {/* Recent activity */}
-      <div className="eh-card">
-        <div className="eh-card-h">
-          <div className="eh-card-t">Activity</div>
-        </div>
-        {activity.length === 0 ? (
-          <div className="es-empty">No recent activity yet.</div>
-        ) : (
-          activity.map((a) => (
-            <div className="act-row" key={`${a.clientId}-${a.date}`}>
-              <div className="act-ic ai-green">
-                <Check size={16} />
-              </div>
-              <div className="act-body">
-                <div className="act-tx">
-                  {a.early ? 'Ended session early with' : 'Completed session with'} {clientName(a.clientId)}
-                </div>
-                <div className="act-tm">{relativeDay(a.date)}</div>
+        {/* Right column — alerts + quick stats */}
+        <div className="ea-col">
+          <div className="eh-card">
+            <div className="eh-card-h">
+              <div className="eh-card-t">
+                Critical Alerts {alerts.length > 0 && <span className="eh-badge">{alerts.length}</span>}
               </div>
             </div>
-          ))
-        )}
+            {alerts.length === 0 ? (
+              <div className="ea-empty">All clear — no critical alerts.</div>
+            ) : (
+              alerts.map((a) => (
+                <div className="ea-row" key={a.key} onClick={() => go(a.key)}>
+                  <div className={`ea-ic ${a.cls}`}>
+                    <a.icon size={18} />
+                  </div>
+                  <div className="ea-main">
+                    <div className="ea-t">{a.title}</div>
+                    <div className="ea-s">{a.sub}</div>
+                  </div>
+                  <div className="ea-chev">›</div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="eh-card">
+            <div className="eh-card-h">
+              <div className="eh-card-t">Quick Stats</div>
+            </div>
+            <div className="eq-grid">
+              <div className="eq-tile" onClick={() => go('Active')}>
+                <div className="eq-ic ic-red">
+                  <Users size={18} />
+                </div>
+                <div className="eq-tx">
+                  <div className="eq-v">{count('Active')}</div>
+                  <div className="eq-l">Active Clients</div>
+                </div>
+              </div>
+              <div className="eq-tile" onClick={() => go('Leads')}>
+                <div className="eq-ic ic-grey">
+                  <UserPlus size={18} />
+                </div>
+                <div className="eq-tx">
+                  <div className="eq-v">{count('Leads')}</div>
+                  <div className="eq-l">New Leads</div>
+                </div>
+              </div>
+              <div className="eq-tile" onClick={() => go('Assessment due')}>
+                <div className="eq-ic ic-amber">
+                  <ClipboardList size={18} />
+                </div>
+                <div className="eq-tx">
+                  <div className="eq-v">{count('Assessment due')}</div>
+                  <div className="eq-l">Assessments Due</div>
+                </div>
+              </div>
+              {isMain && (
+                <div className="eq-tile" onClick={() => go('Payment due')}>
+                  <div className="eq-ic ic-purple">
+                    <Wallet size={18} />
+                  </div>
+                  <div className="eq-tx">
+                    <div className="eq-v">{count('Payment due')}</div>
+                    <div className="eq-l">Pending Payments</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="sp80" />
