@@ -14,7 +14,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Assessment, Client, ProgramExercise, ProgramHistory } from '../domain/types';
+import type { Assessment, Client, ClientStatus, ProgramExercise, ProgramHistory } from '../domain/types';
 
 /** Fields a coach fills in the add-client form; everything else is defaulted. */
 export interface NewClientInput {
@@ -215,6 +215,14 @@ export async function updateClient(id: string, input: EditClientInput): Promise<
     ability: input.ability,
     coachId: input.coachId,
   });
+}
+
+/** Quick single-concern patch from the client menu — status flip or coach swap. */
+export async function patchClient(
+  id: string,
+  patch: { status?: ClientStatus; coachId?: string | null },
+): Promise<void> {
+  await updateDoc(doc(db, 'clients', id), patch);
 }
 
 export interface AssessmentInput {

@@ -7,6 +7,7 @@ import {
   fetchClients,
   removeProgramExercise,
   reorderProgramExercises,
+  patchClient,
   saveAssessment,
   saveWeekLoads,
   setClientSchedule,
@@ -41,7 +42,7 @@ import { fetchReports } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Attendance, Coach, Payment, ProgramExercise, SessionDoc, SessionLog } from '../domain/types';
+import type { Attendance, ClientStatus, Coach, Payment, ProgramExercise, SessionDoc, SessionLog } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -97,6 +98,18 @@ export function useUpdateClient(id: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: EditClientInput) => updateClient(id as string, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['client', id] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+/** Quick status/coach patch from the client menu. Invalidates client + list. */
+export function usePatchClient(id: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: { status?: ClientStatus; coachId?: string | null }) => patchClient(id as string, patch),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['client', id] });
       qc.invalidateQueries({ queryKey: ['clients'] });

@@ -16,16 +16,20 @@ import {
   TrendingUp,
   Image as ImageIcon,
 } from 'lucide-react';
+import { useState } from 'react';
 import {
   useClient,
   useClientExercises,
   useClientMedia,
+  useCoaches,
   useCoachNameMap,
+  usePatchClient,
   useBilling,
   usePayments,
 } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import AssessmentCard from '../components/AssessmentCard';
+import ClientMenuSheet from '../components/ClientMenuSheet';
 import Sparkline from '../components/charts/Sparkline';
 import { useToast } from '../components/Toast';
 import { catStyle } from '../lib/categories';
@@ -41,10 +45,13 @@ const arrow = (v: number) => (v > 0 ? '↑' : v < 0 ? '↓' : '');
 export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const toast = useToast();
   const { data: c, isLoading } = useClient(id);
+  const { data: coaches = [] } = useCoaches();
   const coachName = useCoachNameMap();
   const isMain = useIsMainCoach();
+  const patch = usePatchClient(id);
+  const toast = useToast();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (isLoading)
     return (
@@ -80,12 +87,30 @@ export default function ClientDetail() {
       </button>
       <div className="cp-top-r">
         {c.assessmentDone && (
-          <button className="iconbtn" onClick={() => toast('More options — coming soon')} aria-label="More options">
+          <button className="iconbtn" onClick={() => setMenuOpen(true)} aria-label="More options">
             <MoreHorizontal />
           </button>
         )}
       </div>
     </div>
+  );
+
+  const menu = menuOpen && (
+    <ClientMenuSheet
+      client={c}
+      coaches={coaches}
+      onEdit={() => {
+        setMenuOpen(false);
+        go('edit');
+      }}
+      onPatch={(p) =>
+        patch.mutate(p, {
+          onSuccess: () => toast('Client updated'),
+          onError: () => toast('Could not update client'),
+        })
+      }
+      onClose={() => setMenuOpen(false)}
+    />
   );
 
   const prof = (
@@ -130,6 +155,7 @@ export default function ClientDetail() {
     return (
       <div className="screen">
         <div className="fadein cprofile">
+          {menu}
           {top}
           {prof}
           <div className="cp-tags">
@@ -174,6 +200,7 @@ export default function ClientDetail() {
   return (
     <div className="screen">
       <div className="fadein cprofile">
+        {menu}
         {top}
         {prof}
 
