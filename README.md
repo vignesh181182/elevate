@@ -128,8 +128,11 @@ npm install
 ## Local development (Firebase Emulator Suite)
 
 No real Firebase project or billing is needed locally — everything runs against the
-emulators. `.env` already ships with `VITE_USE_EMULATOR=true` and demo placeholder
-config, so `src/firebase.ts` routes Auth + Firestore to `127.0.0.1`.
+emulators. A committed [`.env.development`](.env.development) ships the demo config
+(`VITE_USE_EMULATOR=true`, project `demo-elevate`), which Vite auto-loads in dev, so
+`src/firebase.ts` routes Auth + Firestore to `127.0.0.1` straight after a clone — no
+setup. (It is **not** loaded by the production build, so it can't affect a real
+deploy; live values go in a git-ignored `.env` — see "Configuration" below.)
 
 In separate terminals (or background the first):
 
