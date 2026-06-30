@@ -11,6 +11,12 @@ import ClientSchedule from './routes/ClientSchedule';
 import ClientAssessment from './routes/ClientAssessment';
 import ClientProgram from './routes/ClientProgram';
 import ClientSession from './routes/ClientSession';
+import ClientBasic from './routes/ClientBasic';
+import ClientScheduleView from './routes/ClientScheduleView';
+import ClientAssessmentView from './routes/ClientAssessmentView';
+import ClientProgress from './routes/ClientProgress';
+import ClientMedia from './routes/ClientMedia';
+import ClientPayment from './routes/ClientPayment';
 import Library from './routes/Library';
 import Schedule from './routes/Schedule';
 import Reports from './routes/Reports';
@@ -43,6 +49,12 @@ export default function App() {
           <Route path="/clients/:id/library" element={<Library />} />
           <Route path="/clients/:id/program" element={<ClientProgram />} />
           <Route path="/clients/:id/session" element={<ClientSession />} />
+          <Route path="/clients/:id/basic" element={<ClientBasic />} />
+          <Route path="/clients/:id/schedule-view" element={<ClientScheduleView />} />
+          <Route path="/clients/:id/assessment-view" element={<ClientAssessmentView />} />
+          <Route path="/clients/:id/progress" element={<ClientProgress />} />
+          <Route path="/clients/:id/media" element={<ClientMedia />} />
+          <Route path="/clients/:id/payment" element={<ClientPayment />} />
           <Route path="/library" element={<Library />} />
           <Route path="/profile/edit" element={<ProfileEdit />} />
         </Route>

@@ -208,7 +208,7 @@ export default function ClientDetail() {
             </div>
             <ChevronRight className="cp-chev" />
           </div>
-          <div className="cp-row tap" onClick={() => go('assessment')}>
+          <div className="cp-row tap" onClick={() => go('assessment-view')}>
             <span className="cp-row-ic tint-green">
               <ClipboardCheck size={21} />
             </span>
@@ -224,7 +224,7 @@ export default function ClientDetail() {
             </div>
             <ChevronRight className="cp-chev" />
           </div>
-          <div className="cp-row tap" onClick={() => go('schedule')}>
+          <div className="cp-row tap" onClick={() => go('schedule-view')}>
             <span className="cp-row-ic tint-amber">
               <CalendarClock size={21} />
             </span>
