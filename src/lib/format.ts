@@ -25,6 +25,21 @@ export function fmtShortDate(iso?: string | null): string {
   return isNaN(+d) ? iso : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
+/** Program date range, e.g. "3 Feb – 15 Mar 2025"; "from …"/"ended …" when one-sided. */
+export function fmtProgRange(startISO?: string, endISO?: string): string {
+  const a = startISO ? new Date(startISO + 'T00:00:00') : null;
+  const b = endISO ? new Date(endISO + 'T00:00:00') : null;
+  const aOk = a && !isNaN(+a);
+  const bOk = b && !isNaN(+b);
+  const sameYear = aOk && bOk && a!.getFullYear() === b!.getFullYear();
+  const fmt = (d: Date, yr: boolean) =>
+    d.toLocaleDateString('en-GB', yr ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' });
+  if (aOk && bOk) return `${fmt(a!, !sameYear)} – ${fmt(b!, true)}`;
+  if (bOk) return `ended ${fmt(b!, true)}`;
+  if (aOk) return `from ${fmt(a!, true)}`;
+  return '—';
+}
+
 /** Relative day label, e.g. "Today", "Yesterday", "3 days ago". */
 export function relativeDay(iso?: string | null): string {
   if (!iso) return '';

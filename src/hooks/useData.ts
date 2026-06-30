@@ -8,6 +8,7 @@ import {
   removeProgramExercise,
   reorderProgramExercises,
   completeWelcome,
+  fetchProgramHistory,
   patchClient,
   saveAssessment,
   saveWeekLoads,
@@ -127,6 +128,15 @@ export function usePatchClient(id: string | undefined) {
       qc.invalidateQueries({ queryKey: ['client', id] });
       qc.invalidateQueries({ queryKey: ['clients'] });
     },
+  });
+}
+
+/** A client's archived past programs (newest-first handled in the UI). */
+export function useProgramHistory(id: string | undefined) {
+  return useQuery({
+    queryKey: ['programHistory', id],
+    queryFn: () => fetchProgramHistory(id as string),
+    enabled: !!id,
   });
 }
 
