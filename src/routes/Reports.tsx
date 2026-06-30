@@ -1,6 +1,6 @@
 import { type CSSProperties, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useClients, useReports } from '../hooks/useData';
-import { useToast } from '../components/Toast';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
 import type { Report } from '../domain/types';
@@ -8,7 +8,7 @@ import type { Report } from '../domain/types';
 export default function Reports() {
   const { data: clients = [] } = useClients();
   const { data: reports = [] } = useReports();
-  const toast = useToast();
+  const navigate = useNavigate();
 
   // Latest report per client (highest week).
   const latestByClient = useMemo(() => {
@@ -41,7 +41,7 @@ export default function Reports() {
           const rep = latestByClient[c.id];
           const sent = rep?.sent;
           return (
-            <div className="report-row" key={c.id} onClick={() => toast('Report — coming soon')}>
+            <div className="report-row" key={c.id} onClick={() => navigate(`/clients/${c.id}/report`)}>
               <div className="ava sz42 tint-cat" style={avaStyle}>
                 {initials(c.name)}
               </div>

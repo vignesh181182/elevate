@@ -2724,3 +2724,6 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 .modal-back:active{opacity:.6}
 /* welcome-note composer textarea */
 .welcome-ta{min-height:210px;line-height:1.5;resize:vertical}
+/* report A4 doc — scale the fixed-width doc to fit the phone frame (data via custom prop) */
+.rdoc-frame.scaled{height:var(--rd-h,auto)}
+.rdoc-scale{transform-origin:top left;transform:scale(var(--rd-scale,1))}
