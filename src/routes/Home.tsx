@@ -13,7 +13,6 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useAuth, useIsMainCoach } from '../auth/AuthProvider';
-import { useToast } from '../components/Toast';
 import { useClients, useCoaches, useCoachNameMap, useDaySessions, useBillings } from '../hooks/useData';
 import { parseDays } from '../domain/client';
 import { catStyle } from '../lib/categories';
@@ -43,7 +42,6 @@ function timeToMinutes(t: string): number {
 export default function Home() {
   const { coach } = useAuth();
   const isMain = useIsMainCoach();
-  const toast = useToast();
   const navigate = useNavigate();
   const { data: clients = [] } = useClients();
   const { data: coaches = [] } = useCoaches();
@@ -171,7 +169,7 @@ export default function Home() {
         <div className="eh-top-act">
           <button
             className="eh-calbtn eh-notifbtn"
-            onClick={() => toast('Notifications — coming soon')}
+            onClick={() => navigate('/notifications')}
             aria-label="Notifications"
           >
             <Bell size={20} />
