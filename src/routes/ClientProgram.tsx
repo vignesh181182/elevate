@@ -8,9 +8,11 @@ import {
   useRemoveProgramExercise,
   useReorderProgramExercises,
   useSaveWeekLoads,
+  useSetProgramSets,
 } from '../hooks/useData';
 import { useToast } from '../components/Toast';
 import ProgramHistory from '../components/ProgramHistory';
+import { MAX_SETS, MIN_SETS, ROUNDS } from '../domain/session';
 import { currentProgramWeek, isRepBased, programDisplayName, weekLoad } from '../domain/client';
 import {
   exForDayProg,
@@ -56,6 +58,7 @@ function Editor({
   const toast = useToast();
   const save = useSaveWeekLoads(client.id);
   const remove = useRemoveProgramExercise(client.id);
+  const setSets = useSetProgramSets(client.id);
   const weeks = client.program?.weeks ?? 6;
   const curWk = currentProgramWeek(client);
   const days = programDays(client);
@@ -192,6 +195,12 @@ function Editor({
                   prog={prog}
                   exercises={exForDayProg(list, day, prog)}
                   renderCard={card}
+                  sets={client.program?.sets?.[prog] ?? ROUNDS}
+                  onSets={(delta) => {
+                    const cur = client.program?.sets?.[prog] ?? ROUNDS;
+                    const n = Math.max(MIN_SETS, Math.min(MAX_SETS, cur + delta));
+                    if (n !== cur) setSets.mutate({ label: prog, n });
+                  }}
                   onAdd={() => navigate(`/clients/${client.id}/library?day=${day}&prog=${prog}`)}
                 />
               ))}
@@ -424,21 +433,41 @@ function Slot({
   prog,
   exercises,
   renderCard,
+  sets,
+  onSets,
   onAdd,
 }: {
   prog: ProgLabel;
   exercises: ProgramExercise[];
   renderCard: (ex: ProgramExercise) => React.ReactNode;
+  sets: number;
+  onSets: (delta: number) => void;
   onAdd: () => void;
 }) {
   return (
-    <div className="pgrp">
-      <div className={`pgrp-head pgrp-${prog.toLowerCase()}`}>
-        <span className="pgrp-dot" />
-        <span className="pgrp-name">Program {prog}</span>
-        <span className="pgrp-count">
-          {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
-        </span>
+    <div className={`pgrp pgrp-${prog.toLowerCase()}`}>
+      <div className="pgrp-bhead">
+        <div className="pgrp-bid">
+          <div className="pgrp-brow">
+            <span className="pgrp-dot" />
+            <span className="pgrp-name">Program {prog}</span>
+          </div>
+          <span className="pgrp-bcount">
+            {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <div className="pgrp-sets">
+          <span className="pb-sets-lbl">No. of Sets</span>
+          <div className="pb-stepper">
+            <button className="pb-step" onClick={() => onSets(-1)} aria-label="Fewer sets">
+              −
+            </button>
+            <span className="pb-stepval">{sets}</span>
+            <button className="pb-step" onClick={() => onSets(1)} aria-label="More sets">
+              +
+            </button>
+          </div>
+        </div>
       </div>
       {exercises.length ? (
         exercises.map(renderCard)

@@ -8,11 +8,25 @@ import { exForDayProg, hasDayProgPlan, PROG_LABELS } from './program';
 
 export const ROUNDS = 3;
 
+/** Allowed range for the editable per-program sets count. */
+export const MIN_SETS = 1;
+export const MAX_SETS = 9;
+
 export type ProgramLabel = 'A' | 'B';
+
+/** Per-program sets count, keyed by label (absent ⇒ ROUNDS). */
+export type SetsByLabel = Partial<Record<ProgramLabel, number>>;
 
 export interface CircuitProgram {
   label: ProgramLabel;
   exercises: ProgramExercise[];
+  // How many rounds this program runs. Defaults to ROUNDS when unset.
+  sets?: number;
+}
+
+/** The rounds this program runs — its own `sets`, or the ROUNDS default. */
+export function programRounds(p: CircuitProgram): number {
+  return p.sets ?? ROUNDS;
 }
 
 /** Progress map persisted on the session doc — true when a (program,round,exercise) is ticked. */
@@ -35,14 +49,22 @@ export function splitPrograms(list: ProgramExercise[]): CircuitProgram[] {
  * maintain). Otherwise (paused/untagged clients) fall back to halving the flat
  * list so a circuit can still be built. Empty programs are dropped.
  */
-export function circuitPrograms(list: ProgramExercise[], day: string | null): CircuitProgram[] {
+export function circuitPrograms(
+  list: ProgramExercise[],
+  day: string | null,
+  setsByLabel?: SetsByLabel,
+): CircuitProgram[] {
+  const withSets = (programs: CircuitProgram[]) =>
+    setsByLabel
+      ? programs.map((p) => (setsByLabel[p.label] != null ? { ...p, sets: setsByLabel[p.label] } : p))
+      : programs;
   if (day && hasDayProgPlan(list)) {
     const tagged = PROG_LABELS.map((label) => ({ label, exercises: exForDayProg(list, day, label) })).filter(
       (p) => p.exercises.length > 0,
     );
-    if (tagged.length) return tagged;
+    if (tagged.length) return withSets(tagged);
   }
-  return splitPrograms(list);
+  return withSets(splitPrograms(list));
 }
 
 /** Progress key for one set: "A:1:Back squat". */
@@ -56,17 +78,19 @@ export function roundComplete(p: CircuitProgram, round: number, progress: Progre
   return p.exercises.every((e) => !!progress[progressKey(p.label, round, e.name)]);
 }
 
-/** All ROUNDS rounds of the program complete. */
+/** All of the program's rounds complete. */
 export function programComplete(p: CircuitProgram, progress: Progress): boolean {
   if (!p.exercises.length) return true;
-  for (let r = 1; r <= ROUNDS; r++) if (!roundComplete(p, r, progress)) return false;
+  const rounds = programRounds(p);
+  for (let r = 1; r <= rounds; r++) if (!roundComplete(p, r, progress)) return false;
   return true;
 }
 
 /** The round being worked — the lowest incomplete round, clamped to the last. */
 export function currentRound(p: CircuitProgram, progress: Progress): number {
-  for (let r = 1; r <= ROUNDS; r++) if (!roundComplete(p, r, progress)) return r;
-  return ROUNDS;
+  const rounds = programRounds(p);
+  for (let r = 1; r <= rounds; r++) if (!roundComplete(p, r, progress)) return r;
+  return rounds;
 }
 
 /** First not-yet-ticked exercise name in the round (the "Next up"), or null. */
@@ -90,8 +114,9 @@ export function roundCounts(programs: CircuitProgram[], progress: Progress): { d
   let total = 0;
   for (const p of programs) {
     if (!p.exercises.length) continue;
-    total += ROUNDS;
-    for (let r = 1; r <= ROUNDS; r++) if (roundComplete(p, r, progress)) done++;
+    const rounds = programRounds(p);
+    total += rounds;
+    for (let r = 1; r <= rounds; r++) if (roundComplete(p, r, progress)) done++;
   }
   return { done, total };
 }

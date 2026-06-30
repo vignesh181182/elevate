@@ -13,6 +13,7 @@ import {
   saveAssessment,
   saveWeekLoads,
   setClientSchedule,
+  setProgramSets,
   updateClient,
   updateProgramExercise,
   type AssessmentInput,
@@ -44,7 +45,7 @@ import { fetchReports, markReportSent } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Attendance, ClientStatus, Coach, Payment, ProgramExercise, SessionDoc, SessionLog } from '../domain/types';
+import type { Attendance, Client, ClientStatus, Coach, Payment, ProgramExercise, SessionDoc, SessionLog } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -174,6 +175,29 @@ export function useSaveWeekLoads(clientId: string | undefined) {
     mutationFn: ({ week, loads }: { week: number; loads: WeekLoad[] }) =>
       saveWeekLoads(clientId as string, week, loads),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
+  });
+}
+
+/**
+ * Set a program's session-circuit sets (A or B). Optimistic: the cached client
+ * updates instantly so the stepper responds, rolls back on error, re-syncs on settle.
+ */
+export function useSetProgramSets(clientId: string | undefined) {
+  const qc = useQueryClient();
+  const qk = ['client', clientId];
+  return useMutation({
+    mutationFn: ({ label, n }: { label: 'A' | 'B'; n: number }) =>
+      setProgramSets(clientId as string, label, n),
+    onMutate: async ({ label, n }) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<Client | null>(qk);
+      qc.setQueryData<Client | null>(qk, (old) =>
+        old?.program ? { ...old, program: { ...old.program, sets: { ...old.program.sets, [label]: n } } } : old,
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
   });
 }
 

@@ -27,6 +27,9 @@ export interface ClientProgram {
   perWeek: number;
   done: number; // sessions completed in this program
   startDate?: string; // YYYY-MM-DD
+  // Rounds (sets) the session circuit runs per A/B program. Edited in the Program
+  // editor, drives ClientSession. Per-program (A and B independent); absent ⇒ ROUNDS.
+  sets?: { A?: number; B?: number };
 }
 
 export interface ReviewState {

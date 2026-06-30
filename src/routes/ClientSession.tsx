@@ -17,11 +17,11 @@ import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
 import { currentProgramWeek, isRepBased, weekLoad } from '../domain/client';
 import {
-  ROUNDS,
   activeProgramIndex,
   currentRound,
   nextExercise,
   programComplete,
+  programRounds,
   progressKey,
   roundComplete,
   roundCounts,
@@ -35,10 +35,11 @@ import type { ProgramExercise, SessionLog } from '../domain/types';
 
 const nowTime = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-/** Rounds ticked for one program (≤ ROUNDS) — the per-program `sets` in the archive. */
+/** Rounds ticked for one program (≤ its sets) — the per-program `sets` in the archive. */
 function programSets(p: CircuitProgram, progress: Progress): number {
   let n = 0;
-  for (let r = 1; r <= ROUNDS; r++) if (roundComplete(p, r, progress)) n++;
+  const rounds = programRounds(p);
+  for (let r = 1; r <= rounds; r++) if (roundComplete(p, r, progress)) n++;
   return n;
 }
 
@@ -81,7 +82,7 @@ export default function ClientSession() {
   const list = exercises.filter((e) => !e.future && e.name !== 'Tap to add exercise');
   const day = sessionDayFor(client);
   const clientCoach = client.coachId ? coachMap[client.coachId] ?? 'Not assigned' : 'Not assigned';
-  const programs = circuitPrograms(list, day);
+  const programs = circuitPrograms(list, day, client.program?.sets);
   const week = currentProgramWeek(client);
   const activeIdx = activeProgramIndex(programs, progress);
 
@@ -397,6 +398,7 @@ function ProgramBlock({
   week: number;
   onToggle?: (key: string, done: boolean) => void;
 }) {
+  const rounds = programRounds(program);
   const done = programComplete(program, progress);
   const active = pIdx === activeIdx && !done;
   const idle = !done && !active;
@@ -412,7 +414,7 @@ function ProgramBlock({
   ) : (
     <span className="pgm-pill idle">Yet to start</span>
   );
-  const setsLbl = done ? `${ROUNDS}/${ROUNDS} sets` : active ? `${curR}/${ROUNDS} sets` : '';
+  const setsLbl = done ? `${rounds}/${rounds} sets` : active ? `${curR}/${rounds} sets` : '';
 
   return (
     <div className={`pgm-card ${state}`}>
@@ -428,7 +430,7 @@ function ProgramBlock({
         <span className="pgm-cols-lbl">Exercises</span>
         {!idle && (
           <span className="pgm-setcols">
-            {Array.from({ length: ROUNDS }, (_, i) => (
+            {Array.from({ length: rounds }, (_, i) => (
               <span key={i}>Set {i + 1}</span>
             ))}
           </span>
@@ -462,7 +464,7 @@ function ProgramBlock({
               </div>
               {!idle && (
                 <div className="pgm-cells">
-                  {Array.from({ length: ROUNDS }, (_, i) => {
+                  {Array.from({ length: rounds }, (_, i) => {
                     const r = i + 1;
                     const cellDone = !!progress[progressKey(program.label, r, ex.name)];
                     const curCell = active && r === curR && isCur && !cellDone;

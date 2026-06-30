@@ -264,6 +264,15 @@ export async function saveAssessment(id: string, input: AssessmentInput): Promis
   });
 }
 
+/**
+ * Set a program's session-circuit sets count (any coach — training data, one
+ * dataset). Writes the dotted `program.sets.{label}` field so the other label and
+ * the rest of the program are untouched.
+ */
+export async function setProgramSets(clientId: string, label: 'A' | 'B', n: number): Promise<void> {
+  await updateDoc(doc(db, 'clients', clientId), { [`program.sets.${label}`]: n });
+}
+
 export async function fetchProgramHistory(id: string): Promise<ProgramHistory[]> {
   const snap = await getDocs(collection(db, 'clients', id, 'programHistory'));
   return snap.docs
