@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Check, ArrowRight, Clock, Flag, Lock, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Check, ArrowRight, Clock, Flag, Lock, Pencil, X } from 'lucide-react';
 import {
   useClient,
   useClientExercises,
@@ -9,6 +9,7 @@ import {
   useMarkAttendance,
   useSession,
   useSetProgress,
+  useSetSessionSetLog,
 } from '../hooks/useData';
 import { useAuth } from '../auth/AuthProvider';
 import { useToast } from '../components/Toast';
@@ -19,6 +20,7 @@ import { currentProgramWeek, isRepBased, weekLoad } from '../domain/client';
 import {
   activeProgramIndex,
   currentRound,
+  exerciseTopSet,
   nextExercise,
   programComplete,
   programRounds,
@@ -26,9 +28,12 @@ import {
   roundComplete,
   roundCounts,
   sessionComplete,
+  setLogFor,
   circuitPrograms,
   type CircuitProgram,
   type Progress,
+  type SetLoad,
+  type SetLogs,
 } from '../domain/session';
 import { sessionDayFor } from '../domain/program';
 import type { ProgramExercise, SessionLog } from '../domain/types';
@@ -44,6 +49,7 @@ function programSets(p: CircuitProgram, progress: Progress): number {
 }
 
 const fmtW = (w: number) => (Number.isInteger(w) ? `${w}` : w.toFixed(1));
+const round1 = (n: number) => Math.round(n * 10) / 10;
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export default function ClientSession() {
@@ -58,6 +64,7 @@ export default function ClientSession() {
   const { data: session } = useSession(id, date);
   const mark = useMarkAttendance(date);
   const setProgress = useSetProgress(id, date);
+  const setSetLog = useSetSessionSetLog(id, date);
   const complete = useCompleteSession(id, date);
   const [sheet, setSheet] = useState(false);
   const [endEarly, setEndEarly] = useState(false);
@@ -78,6 +85,7 @@ export default function ClientSession() {
 
   const attendance = session?.attendance;
   const progress: Progress = session?.progress ?? {};
+  const setLogs: SetLogs = session?.setLogs ?? {};
   const completed = session?.status === 'completed';
   const list = exercises.filter((e) => !e.future && e.name !== 'Tap to add exercise');
   const day = sessionDayFor(client);
@@ -101,6 +109,12 @@ export default function ClientSession() {
     setProgress.mutate({ key, done });
   }
 
+  // Persist one set's worked load (weight/reps). Stored on the session doc so it
+  // survives reload and folds into the per-week log on completion.
+  function logSet(key: string, load: SetLoad) {
+    setSetLog.mutate({ key, load });
+  }
+
   function buildArchive(early: boolean): SessionLog {
     const counts = roundCounts(programs, progress);
     return {
@@ -114,13 +128,27 @@ export default function ClientSession() {
         sets: programSets(p, progress),
         exercises: p.exercises.map((e) => e.name),
       })),
+      setLogs,
     };
+  }
+
+  // Each performed exercise's top set → its per-week log, so the progress charts
+  // reflect what was actually worked this session.
+  function buildWeekLogs() {
+    const out: { exId: string; week: number; w: number; r: number }[] = [];
+    for (const p of programs) {
+      for (const ex of p.exercises) {
+        const top = exerciseTopSet(setLogs, p.label, ex.name, programRounds(p));
+        if (top && ex.id) out.push({ exId: ex.id, week, w: top.w, r: top.r });
+      }
+    }
+    return out;
   }
 
   function finish(early: boolean) {
     setEndEarly(false);
     complete.mutate(
-      { early, archive: buildArchive(early) },
+      { early, archive: buildArchive(early), weekLogs: buildWeekLogs() },
       {
         onError: () => toast('Could not complete session'),
         onSuccess: () => toast(early ? 'Session ended early' : 'Session completed'),
@@ -174,7 +202,7 @@ export default function ClientSession() {
             <span className="scx-s">All done for today.</span>
           </div>
           {programs.map((p, i) => (
-            <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={-1} progress={progress} week={week} />
+            <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={-1} progress={progress} week={week} setLogs={setLogs} />
           ))}
         </>
       ) : closed ? (
@@ -208,7 +236,7 @@ export default function ClientSession() {
           </div>
           <div className="sx-prelock">
             {programs.map((p, i) => (
-              <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={-1} progress={progress} week={week} />
+              <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={-1} progress={progress} week={week} setLogs={setLogs} />
             ))}
           </div>
           <button className="sess-modify2" onClick={() => navigate(`/clients/${client.id}/program`)}>
@@ -228,7 +256,10 @@ export default function ClientSession() {
               activeIdx={activeIdx}
               progress={progress}
               week={week}
+              setLogs={setLogs}
+              collapsible
               onToggle={toggleSet}
+              onLogSet={logSet}
             />
           ))}
           <button className="sess-modify2" onClick={() => navigate(`/clients/${client.id}/program`)}>
@@ -381,22 +412,29 @@ function SlideToStart({
   );
 }
 
-// One program (A/B) as a per-set grid: each exercise × ROUNDS cells (done / current /
-// pending). Read-only here; tap-to-tick lands in the next slice.
+// One program (A/B) as a per-set grid. Idle/done programs fold to a mini header
+// (when collapsible); the active program's current exercise gets an editable
+// weight/reps card and the whole card taps to tick the current set.
 function ProgramBlock({
   program,
   pIdx,
   activeIdx,
   progress,
   week,
+  setLogs,
+  collapsible = false,
   onToggle,
+  onLogSet,
 }: {
   program: CircuitProgram;
   pIdx: number;
   activeIdx: number;
   progress: Progress;
   week: number;
+  setLogs: SetLogs;
+  collapsible?: boolean;
   onToggle?: (key: string, done: boolean) => void;
+  onLogSet?: (key: string, load: SetLoad) => void;
 }) {
   const rounds = programRounds(program);
   const done = programComplete(program, progress);
@@ -405,6 +443,15 @@ function ProgramBlock({
   const curR = active ? currentRound(program, progress) : 0;
   const nextName = active ? nextExercise(program, curR, progress) : null;
   const state = done ? 'done' : active ? 'active' : 'idle';
+
+  // Idle/done programs can fold away; the active one always stays open.
+  const foldable = collapsible && !active;
+  const [open, setOpen] = useState(false);
+  const expanded = !foldable || open;
+  // The current set's editable card (only one set is edited at a time).
+  const [editName, setEditName] = useState<string | null>(null);
+  const editing = !!nextName && editName === nextName;
+
   const pill = done ? (
     <span className="pgm-pill done">
       <Check size={13} /> Completed
@@ -416,86 +463,224 @@ function ProgramBlock({
   );
   const setsLbl = done ? `${rounds}/${rounds} sets` : active ? `${curR}/${rounds} sets` : '';
 
+  // The load shown for one row: its session per-set value (carried forward) when the
+  // program has started, else the week's prescription. Mirrors the editable card.
+  const rowLoad = (ex: ProgramExercise): SetLoad =>
+    idle ? weekLoad(ex, week) : setLogFor(setLogs, program.label, active ? curR : 0, ex.name, weekLoad(ex, week));
+
+  function bump(name: string, k: 'w' | 'r', delta: number) {
+    if (!onLogSet) return;
+    const cur = setLogFor(setLogs, program.label, curR, name, weekLoad(program.exercises.find((e) => e.name === name)!, week));
+    const next: SetLoad =
+      k === 'w' ? { w: Math.max(0, round1(cur.w + delta * 2.5)), r: cur.r } : { w: cur.w, r: Math.max(1, cur.r + delta) };
+    onLogSet(progressKey(program.label, curR, name), next);
+  }
+
+  function tickCurrent(name: string) {
+    if (!onToggle) return;
+    setEditName(null);
+    const key = progressKey(program.label, curR, name);
+    onToggle(key, !progress[key]);
+  }
+
   return (
-    <div className={`pgm-card ${state}`}>
-      <div className="pgm-head">
+    <div className={`pgm-card ${state}${foldable && !open ? ' mini' : ''}${foldable ? ' foldable' : ''}`}>
+      <div className="pgm-head" onClick={foldable ? () => setOpen((o) => !o) : undefined}>
         <div className="pgm-title-wrap">
           <span className="pgm-title">Program {program.label}</span>
           {pill}
         </div>
-        <span className="pgm-head-right">{setsLbl && <span className="pgm-sets">{setsLbl}</span>}</span>
+        <span className="pgm-head-right">
+          {setsLbl && <span className="pgm-sets">{setsLbl}</span>}
+          {foldable && (
+            <span className={`pgm-chev${open ? ' up' : ''}`}>
+              <ChevronDown size={18} />
+            </span>
+          )}
+        </span>
       </div>
 
-      <div className="pgm-cols">
-        <span className="pgm-cols-lbl">Exercises</span>
-        {!idle && (
-          <span className="pgm-setcols">
-            {Array.from({ length: rounds }, (_, i) => (
-              <span key={i}>Set {i + 1}</span>
-            ))}
-          </span>
-        )}
-      </div>
+      {expanded && (
+        <>
+          <div className="pgm-cols">
+            <span className="pgm-cols-lbl">Exercises</span>
+            {!idle && (
+              <span className="pgm-setcols">
+                {Array.from({ length: rounds }, (_, i) => (
+                  <span key={i}>Set {i + 1}</span>
+                ))}
+              </span>
+            )}
+          </div>
 
-      <div className="pgm-rows">
-        {program.exercises.map((ex: ProgramExercise) => {
-          const load = weekLoad(ex, week);
-          const rep = isRepBased(ex);
-          const isCur = active && ex.name === nextName;
-          return (
-            <div className={`pgm-ex${idle ? ' idle' : ''}`} key={ex.id ?? ex.name}>
-              <div className="pgm-ex-main">
-                <div className="pgm-ex-name">{ex.name}</div>
-                {/* reps · weight, matching the prototype. Rep/time exercises (walks,
-                    planks) carry no external load — never print a bogus weight. */}
-                <div className="pgm-ex-sub">
-                  {rep ? (
-                    <span>Bodyweight</span>
-                  ) : (
-                    <>
-                      <span>
-                        {load.r} rep{load.r === 1 ? '' : 's'}
-                      </span>
-                      <i className="pgm-dot" />
-                      <span>{load.w > 0 ? `${fmtW(load.w)}kg weights` : 'No weights'}</span>
-                    </>
-                  )}
+          <div className="pgm-rows">
+            {program.exercises.map((ex: ProgramExercise) => {
+              const load = rowLoad(ex);
+              const rep = isRepBased(ex);
+              const isCur = active && ex.name === nextName;
+              const main = (
+                <div className="pgm-ex-main">
+                  <div className="pgm-ex-name">{ex.name}</div>
+                  {/* reps · weight. Rep/time exercises (walks, planks) carry no external
+                      load — never print a bogus weight. */}
+                  <div className="pgm-ex-sub">
+                    {rep ? (
+                      <span>Bodyweight</span>
+                    ) : (
+                      <>
+                        <span>
+                          {load.r} rep{load.r === 1 ? '' : 's'}
+                        </span>
+                        <i className="pgm-dot" />
+                        <span>{load.w > 0 ? `${fmtW(load.w)}kg weights` : 'No weights'}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-              {!idle && (
+              );
+              const cells = !idle && (
                 <div className="pgm-cells">
                   {Array.from({ length: rounds }, (_, i) => {
                     const r = i + 1;
                     const cellDone = !!progress[progressKey(program.label, r, ex.name)];
                     const curCell = active && r === curR && isCur && !cellDone;
-                    const interactive = active && r === curR && !!onToggle;
-                    const inner = (
-                      <span className={`pgm-set${cellDone ? ' done' : curCell ? ' cur' : ''}`}>
-                        {cellDone ? <Check size={13} /> : curCell ? <ArrowRight size={13} /> : ''}
-                      </span>
-                    );
-                    return interactive ? (
-                      <span
-                        className="pgm-cell tap"
-                        key={r}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`${cellDone ? 'Undo' : 'Complete'} ${ex.name} set ${r}`}
-                        onClick={() => onToggle!(progressKey(program.label, r, ex.name), !cellDone)}
-                      >
-                        {inner}
-                      </span>
-                    ) : (
+                    return (
                       <span className="pgm-cell" key={r}>
-                        {inner}
+                        <span className={`pgm-set${cellDone ? ' done' : curCell ? ' cur' : ''}`}>
+                          {cellDone ? <Check size={13} /> : curCell ? <ArrowRight size={13} /> : ''}
+                        </span>
                       </span>
                     );
                   })}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+
+              // The current exercise: orange card wrapping the (bare) row + editable
+              // set card. The whole card ticks the current set on tap (unless editing).
+              if (isCur) {
+                return (
+                  <div
+                    key={ex.id ?? ex.name}
+                    className={`pgm-cur-card${editing ? '' : ' tap'}`}
+                    {...(editing
+                      ? {}
+                      : {
+                          role: 'button',
+                          tabIndex: 0,
+                          'aria-label': `Complete ${ex.name} set ${curR}`,
+                          onClick: () => tickCurrent(ex.name),
+                        })}
+                  >
+                    <div className="pgm-ex bare">
+                      {main}
+                      {cells}
+                    </div>
+                    <SetCard
+                      rep={rep}
+                      load={load}
+                      editing={editing}
+                      onToggleEdit={() => setEditName((p) => (p === ex.name ? null : ex.name))}
+                      onBump={(k, d) => bump(ex.name, k, d)}
+                    />
+                  </div>
+                );
+              }
+              return (
+                <div className={`pgm-ex${idle ? ' idle' : ''}`} key={ex.id ?? ex.name}>
+                  {main}
+                  {cells}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// The editable weight/reps card under the current exercise: two value pills + a pencil
+// (collapsed), or two steppers + cancel/confirm (editing). Steppers persist live, so
+// both ✕ and ✓ simply collapse the editor (the edited load is already saved).
+function SetCard({
+  rep,
+  load,
+  editing,
+  onToggleEdit,
+  onBump,
+}: {
+  rep: boolean;
+  load: SetLoad;
+  editing: boolean;
+  onToggleEdit: () => void;
+  onBump: (k: 'w' | 'r', delta: number) => void;
+}) {
+  const unit = rep ? '' : ' kg';
+  const lbl = rep ? 'Level' : 'Weight';
+  const wDisp = fmtW(load.w);
+  if (!editing) {
+    return (
+      <div className="pgm-setcard">
+        <div className="psc-pill">
+          <span className="psc-lbl">Rep</span>
+          <span className="psc-val">{load.r}</span>
+        </div>
+        <div className="psc-pill">
+          <span className="psc-lbl">{lbl}</span>
+          <span className="psc-val">
+            {wDisp}
+            {unit}
+          </span>
+        </div>
+        <button
+          className="psc-edit"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleEdit();
+          }}
+          aria-label="Edit set load"
+        >
+          <Pencil size={16} />
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="pgm-setcard editing" onClick={(e) => e.stopPropagation()}>
+      <div className="psc-step">
+        <div className="psc-step-lbl">Rep</div>
+        <div className="psc-step-ctl">
+          <button className="psc-stp" onClick={() => onBump('r', -1)} aria-label="Fewer reps">
+            −
+          </button>
+          <span className="psc-step-val">{load.r}</span>
+          <button className="psc-stp" onClick={() => onBump('r', 1)} aria-label="More reps">
+            +
+          </button>
+        </div>
+      </div>
+      <div className="psc-step">
+        <div className="psc-step-lbl">{lbl}</div>
+        <div className="psc-step-ctl">
+          <button className="psc-stp" onClick={() => onBump('w', -1)} aria-label="Less">
+            −
+          </button>
+          <span className="psc-step-val">
+            {wDisp}
+            {unit}
+          </span>
+          <button className="psc-stp" onClick={() => onBump('w', 1)} aria-label="More">
+            +
+          </button>
+        </div>
+      </div>
+      <div className="psc-acts">
+        <button className="psc-x" onClick={onToggleEdit} aria-label="Cancel">
+          <X size={16} />
+        </button>
+        <button className="psc-ok" onClick={onToggleEdit} aria-label="Save set">
+          <Check size={16} />
+        </button>
       </div>
     </div>
   );

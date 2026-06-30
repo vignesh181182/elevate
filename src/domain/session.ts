@@ -5,6 +5,14 @@
 // exercise, completion — is computed here. No Firebase, no React.
 import type { ProgramExercise } from './types';
 import { exForDayProg, hasDayProgPlan, PROG_LABELS } from './program';
+import { estimated1RM } from './progress';
+
+/** One worked set's load. */
+export interface SetLoad {
+  w: number;
+  r: number;
+}
+export type SetLogs = Record<string, SetLoad>;
 
 export const ROUNDS = 3;
 
@@ -70,6 +78,55 @@ export function circuitPrograms(
 /** Progress key for one set: "A:1:Back squat". */
 export function progressKey(label: ProgramLabel, round: number, name: string): string {
   return `${label}:${round}:${name}`;
+}
+
+/**
+ * The load to show/seed for one set: its own logged value, else carried forward from
+ * the most recent earlier set in this program, else the prescription fallback. Mirrors
+ * the prototype's setLogFor — within a session, a new set inherits the last worked load.
+ */
+export function setLogFor(
+  setLogs: SetLogs | undefined,
+  label: ProgramLabel,
+  round: number,
+  name: string,
+  fallback: SetLoad,
+): SetLoad {
+  const own = setLogs?.[progressKey(label, round, name)];
+  if (own) return own;
+  if (setLogs) {
+    for (let r = round - 1; r >= 1; r--) {
+      const prev = setLogs[progressKey(label, r, name)];
+      if (prev) return { w: prev.w, r: prev.r };
+    }
+  }
+  return fallback;
+}
+
+/**
+ * The top set actually worked for an exercise across its rounds — the one with the
+ * highest est-1RM (tie → heavier weight). Null when no set was logged for it. This is
+ * what folds into the per-week log so the progress charts reflect real performance.
+ */
+export function exerciseTopSet(
+  setLogs: SetLogs | undefined,
+  label: ProgramLabel,
+  name: string,
+  rounds: number,
+): SetLoad | null {
+  if (!setLogs) return null;
+  let best: SetLoad | null = null;
+  let bestScore = -Infinity;
+  for (let r = 1; r <= rounds; r++) {
+    const l = setLogs[progressKey(label, r, name)];
+    if (!l) continue;
+    const score = estimated1RM(l.w, l.r) || l.w; // bodyweight ⇒ rank by weight (0)
+    if (score > bestScore || (score === bestScore && best && l.w > best.w)) {
+      best = { w: l.w, r: l.r };
+      bestScore = score;
+    }
+  }
+  return best;
 }
 
 /** Every exercise in the program ticked for this round (empty program ⇒ nothing to do). */

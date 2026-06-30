@@ -39,6 +39,8 @@ import {
   fetchSessionLog,
   markAttendance,
   setSessionProgress,
+  setSessionSetLog,
+  type WeekLogWrite,
 } from '../services/sessions';
 import { addMedia, deleteMedia, fetchMedia, type NewMedia } from '../services/media';
 import { fetchReports, markReportSent } from '../services/reports';
@@ -325,6 +327,30 @@ export function useSetProgress(clientId: string | undefined, date: string) {
 }
 
 /**
+ * Record one set's actual weight/reps. Optimistic: the cached session's setLogs updates
+ * instantly so the editor + carry-forward respond, rolls back on error, re-syncs on settle.
+ */
+export function useSetSessionSetLog(clientId: string | undefined, date: string) {
+  const qc = useQueryClient();
+  const qk = ['session', clientId, date];
+  return useMutation({
+    mutationFn: ({ key, load }: { key: string; load: { w: number; r: number } }) =>
+      setSessionSetLog(clientId as string, date, key, load),
+    onMutate: async ({ key, load }) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<SessionDoc | null>(qk);
+      qc.setQueryData<SessionDoc | null>(qk, (old) => ({
+        ...(old ?? {}),
+        setLogs: { ...(old?.setLogs ?? {}), [key]: load },
+      }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
+  });
+}
+
+/**
  * Complete (or end-early) a session: the once-only guard + money side-effects live in
  * the service. Not optimistic — billing decrements only on a confirmed server win.
  * Invalidates the session, the client (sessions/program.done changed), and both the
@@ -333,12 +359,13 @@ export function useSetProgress(clientId: string | undefined, date: string) {
 export function useCompleteSession(clientId: string | undefined, date: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { early: boolean; archive: SessionLog }) =>
+    mutationFn: (vars: { early: boolean; archive: SessionLog; weekLogs?: WeekLogWrite[] }) =>
       completeSession(clientId as string, date, vars),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['session', clientId, date] });
       qc.invalidateQueries({ queryKey: ['client', clientId] });
       qc.invalidateQueries({ queryKey: ['sessionLog', clientId] });
+      qc.invalidateQueries({ queryKey: ['exercises', clientId] }); // top sets folded into per-week logs → charts
       qc.invalidateQueries({ queryKey: ['clients'] });
     },
   });

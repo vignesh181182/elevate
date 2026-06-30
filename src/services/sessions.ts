@@ -49,6 +49,22 @@ export async function setSessionProgress(
   await updateDoc(ref, new FieldPath('progress', key), done ? true : deleteField());
 }
 
+/**
+ * Record one set's actual weight/reps (any coach). Writes setLogs.{key}={w,r} on the
+ * session doc via FieldPath (key holds ':'/spaces). The doc already exists (attendance
+ * was marked). Persisted, not local — so it survives reload and feeds the charts on
+ * completion.
+ */
+export async function setSessionSetLog(
+  clientId: string,
+  date: string,
+  key: string,
+  load: { w: number; r: number },
+): Promise<void> {
+  const ref = doc(db, 'clients', clientId, 'sessions', date);
+  await updateDoc(ref, new FieldPath('setLogs', key), { w: load.w, r: load.r });
+}
+
 /** Each listed client's session doc for one date (clientId → SessionDoc), unmarked omitted. */
 export async function fetchDaySessions(clientIds: string[], date: string): Promise<Record<string, SessionDoc>> {
   const entries = await Promise.all(
@@ -88,10 +104,18 @@ export async function markAttendance(
  * `archive` is the SessionLog record, prebuilt by the caller (it owns programs+progress).
  * Returns whether this call won the guard (false ⇒ it was already completed).
  */
+/** A performed exercise's top set, folded into its per-week log on completion. */
+export interface WeekLogWrite {
+  exId: string;
+  week: number;
+  w: number;
+  r: number;
+}
+
 export async function completeSession(
   clientId: string,
   date: string,
-  opts: { early: boolean; archive: SessionLog },
+  opts: { early: boolean; archive: SessionLog; weekLogs?: WeekLogWrite[] },
 ): Promise<boolean> {
   const sessionRef = doc(db, 'clients', clientId, 'sessions', date);
 
@@ -120,6 +144,13 @@ export async function completeSession(
     'program.done': increment(1),
   });
   batch.set(doc(db, 'clients', clientId, 'sessionLog', date), opts.archive);
+  // Fold each performed exercise's top set into its per-week log so the progress
+  // charts reflect what was actually worked (one dataset — no separate metrics store).
+  for (const wl of opts.weekLogs ?? []) {
+    batch.update(doc(db, 'clients', clientId, 'exercises', wl.exId), {
+      [`logs.${wl.week}`]: { w: wl.w, r: wl.r },
+    });
+  }
   await batch.commit();
 
   return true;

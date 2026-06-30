@@ -165,6 +165,10 @@ export interface SessionDoc {
   // A/B circuit — programs are derived (the flat list split in half), 3 fixed rounds,
   // so only the ticks + completion are stored. progress keys: "A:1:Back squat".
   progress?: Record<string, boolean>;
+  // Per-set actuals logged live during the session, keyed identically to progress
+  // ("A:1:Back squat"). Each is the weight/reps the coach actually worked that set;
+  // on completion the top set folds into the exercise's per-week log (the charts).
+  setLogs?: Record<string, { w: number; r: number }>;
   status?: 'completed';
   completedAt?: string; // ISO when the session was completed
   early?: boolean; // completed with partial progress
@@ -179,6 +183,9 @@ export interface SessionLog {
   roundsCompleted: number;
   totalRounds: number;
   programs: { label: string; sets: number; exercises: string[] }[];
+  // Per-set actuals at completion (key "A:1:Back squat" → {w,r}) — the permanent
+  // record of what was worked each set; optional (older logs predate it).
+  setLogs?: Record<string, { w: number; r: number }>;
 }
 
 /** clients/{id}/media/{mediaId} — one compressed photo (base64 data URL) per doc. */
