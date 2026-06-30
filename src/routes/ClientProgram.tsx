@@ -184,12 +184,8 @@ function ReadOnlySlot({
             <span className="pgrp-name">Program {prog}</span>
           </div>
           <span className="pgrp-bcount">
-            {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
+            {exercises.length} exercise{exercises.length !== 1 ? 's' : ''} · {sets} set{sets !== 1 ? 's' : ''}
           </span>
-        </div>
-        <div className="pgrp-sets">
-          <span className="pb-sets-lbl">No. of Sets</span>
-          <span className="pb-stepval">{sets}</span>
         </div>
       </div>
       {exercises.length ? (
@@ -208,7 +204,7 @@ function ReadOnlyExCard({ ex, week }: { ex: ProgramExercise; week: number }) {
   const l = weekLoad(ex, week);
   const loadLabel = rep ? 'Bodyweight' : l.w > 0 ? `${fmtW(l.w)}kg Weights` : 'No weights';
   return (
-    <div className="ex-card">
+    <div className="ex-card ro-ex">
       <div className="ex-top">
         <div className="ex-top-main">
           <div>
