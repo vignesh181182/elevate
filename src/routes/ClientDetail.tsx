@@ -20,6 +20,7 @@ import {
 import { useClient, useCoachNameMap } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
 import AssessmentCard from '../components/AssessmentCard';
+import ScheduleCard from '../components/ScheduleCard';
 import PaymentCard from '../components/PaymentCard';
 import ProgramCard from '../components/ProgramCard';
 import SessionsCard from '../components/SessionsCard';
@@ -208,6 +209,9 @@ export default function ClientDetail() {
             </button>
           </div>
         )}
+
+        {/* Current training schedule */}
+        {c.scheduleSet && <ScheduleCard client={c} />}
 
         {/* Current program + exercises */}
         {c.scheduleSet && <ProgramCard client={c} />}
