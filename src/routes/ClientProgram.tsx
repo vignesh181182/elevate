@@ -15,6 +15,8 @@ import {
 } from '../domain/program';
 import type { Client, ProgramExercise, ProgramHistory as ProgramHistoryRec } from '../domain/types';
 
+const fmtW = (w: number) => (Number.isInteger(w) ? `${w}` : w.toFixed(1));
+
 // Read-only Program view. Browse any day / week / the full grid / history; editing
 // happens on the dedicated header-less edit page (ClientProgramEdit), reached via the
 // "Change / modify program" button — scoped to the day + week currently in view.
@@ -199,32 +201,22 @@ function ReadOnlySlot({
   );
 }
 
-// Read-only exercise card — name + target + the week's planned load shown as two
-// static pills (reusing the session set-card pill styles).
+// Read-only exercise card — name + the week's planned load as a subline
+// ("12 Reps · 5kg Weights"). Rep/time exercises carry no external load.
 function ReadOnlyExCard({ ex, week }: { ex: ProgramExercise; week: number }) {
   const rep = isRepBased(ex);
   const l = weekLoad(ex, week);
+  const loadLabel = rep ? 'Bodyweight' : l.w > 0 ? `${fmtW(l.w)}kg Weights` : 'No weights';
   return (
     <div className="ex-card">
       <div className="ex-top">
         <div className="ex-top-main">
           <div>
             <div className="ex-name">{ex.name}</div>
-            <div className="ex-target">Target {ex.target}</div>
+            <div className="ex-target">
+              {l.r} Reps · {loadLabel}
+            </div>
           </div>
-        </div>
-      </div>
-      <div className="pgm-setcard">
-        <div className="psc-pill">
-          <span className="psc-lbl">{rep ? 'Level' : 'Weight'}</span>
-          <span className="psc-val">
-            {l.w}
-            {rep ? '' : ' kg'}
-          </span>
-        </div>
-        <div className="psc-pill">
-          <span className="psc-lbl">Reps</span>
-          <span className="psc-val">{l.r}</span>
         </div>
       </div>
     </div>
