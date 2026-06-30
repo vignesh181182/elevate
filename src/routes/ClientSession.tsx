@@ -1,6 +1,6 @@
-import { useState, type CSSProperties } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Check, ArrowRight, PlayCircle, Clock, Flag } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, ArrowRight, Clock, Flag, Lock } from 'lucide-react';
 import {
   useClient,
   useClientExercises,
@@ -194,17 +194,21 @@ export default function ClientSession() {
         </div>
       ) : !present ? (
         <>
-          <div className="sp-intro">Mark present to start the circuit.</div>
-          {programs.map((p, i) => (
-            <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={-1} progress={progress} week={week} />
-          ))}
-          <div className="bottom-cta sticky-cta cta-row">
-            <button className="bigbtn ghost" onClick={() => setSheet(true)} disabled={mark.isPending}>
-              Not present
-            </button>
-            <button className="bigbtn" onClick={markPresent} disabled={mark.isPending}>
-              <PlayCircle size={18} /> {mark.isPending ? 'Starting…' : 'Mark present & start'}
-            </button>
+          <SlideToStart
+            label={mark.isPending ? 'Starting…' : 'Slide to mark present & start'}
+            disabled={mark.isPending}
+            onComplete={markPresent}
+          />
+          <div className="slide-more">
+            <button onClick={() => setSheet(true)}>Not present? More options</button>
+          </div>
+          <div className="sx-prelock-hint">
+            <Lock size={14} /> Slide to mark present to start
+          </div>
+          <div className="sx-prelock">
+            {programs.map((p, i) => (
+              <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={-1} progress={progress} week={week} />
+            ))}
           </div>
         </>
       ) : (
@@ -272,6 +276,94 @@ export default function ClientSession() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Slide-to-mark-present, ported from the prototype wireSlide(): drag the knob right;
+// release past the end commits (onComplete), otherwise it springs back. Knob position
+// is set imperatively during the gesture (transient state, not rendered markup).
+function SlideToStart({
+  label,
+  disabled,
+  onComplete,
+}: {
+  label: string;
+  disabled?: boolean;
+  onComplete: () => void;
+}) {
+  const PAD = 4;
+  const KNOB = 54;
+  const trackRef = useRef<HTMLDivElement>(null);
+  const knobRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
+  const drag = useRef({ active: false, startX: 0, x: 0 });
+
+  const maxX = () => Math.max(0, (trackRef.current?.clientWidth ?? 0) - KNOB - PAD * 2);
+  const moveTo = (px: number) => {
+    const m = maxX();
+    const x = Math.max(0, Math.min(m, px));
+    drag.current.x = x;
+    if (knobRef.current) knobRef.current.style.left = `${PAD + x}px`;
+    if (fillRef.current) fillRef.current.style.width = `${KNOB + x}px`;
+    if (labelRef.current) labelRef.current.style.opacity = String(1 - (m ? x / m : 0) * 1.4);
+  };
+  const clearTransition = () => {
+    if (knobRef.current) knobRef.current.style.transition = '';
+    if (fillRef.current) fillRef.current.style.transition = '';
+  };
+
+  function onDown(e: React.PointerEvent) {
+    if (disabled) return;
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    clearTransition();
+    drag.current.active = true;
+    drag.current.startX = e.clientX - drag.current.x;
+  }
+  function onMove(e: React.PointerEvent) {
+    if (!drag.current.active) return;
+    moveTo(e.clientX - drag.current.startX);
+  }
+  function onUp() {
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    const m = maxX();
+    if (drag.current.x >= m - 6) {
+      moveTo(m);
+      onComplete();
+      return;
+    }
+    if (knobRef.current) knobRef.current.style.transition = 'left .2s';
+    if (fillRef.current) fillRef.current.style.transition = 'width .2s';
+    moveTo(0);
+    if (labelRef.current) labelRef.current.style.opacity = '1';
+    setTimeout(clearTransition, 220);
+  }
+
+  return (
+    <div className="slide-wrap">
+      <div className="slide-track" ref={trackRef}>
+        <div className="slide-fill" ref={fillRef} />
+        <div className="slide-label" ref={labelRef}>
+          {label}
+        </div>
+        <div
+          className="slide-knob"
+          ref={knobRef}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          aria-label="Slide to mark present"
+        >
+          ›
+        </div>
+      </div>
     </div>
   );
 }
