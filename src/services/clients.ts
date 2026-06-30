@@ -171,10 +171,11 @@ export interface ScheduleInput {
 }
 
 /**
- * Assign a coach + training schedule + first program, activating the client
- * (scheduleSet=true). Money-free by design: the head coach records the program
- * package separately via the payment flow (juniors never touch billing). Any coach
- * may run this. Works for both first setup and editing an existing schedule.
+ * Assign a coach + training schedule + first program (onboarding step 2). Sets
+ * scheduleDone — but NOT scheduleSet: full activation waits for the welcome note
+ * (step 3, completeWelcome). Money-free by design: the head coach records the
+ * package separately via payment (juniors never touch billing). Any coach may run
+ * this; it also serves re-edits (scheduleSet, once set, is left untouched).
  */
 export async function setClientSchedule(id: string, input: ScheduleInput): Promise<void> {
   const days = [...input.days].sort((a, b) => WEEK_ORDER.indexOf(a) - WEEK_ORDER.indexOf(b));
@@ -186,7 +187,6 @@ export async function setClientSchedule(id: string, input: ScheduleInput): Promi
     programStartDate: input.programStartDate,
     program: { no: 1, weeks: input.weeks, perWeek: 3, done: 0, startDate: input.programStartDate },
     scheduleDone: true,
-    scheduleSet: true,
   });
 }
 
@@ -217,9 +217,12 @@ export async function updateClient(id: string, input: EditClientInput): Promise<
   });
 }
 
-/** Save the client's welcome note (any coach). Sent 1:1 via WhatsApp, not stored elsewhere. */
-export async function saveWelcomeMessage(id: string, message: string): Promise<void> {
-  await updateDoc(doc(db, 'clients', id), { welcomeMsg: message });
+/**
+ * Onboarding step 3: attach the welcome note AND activate the client (scheduleSet=true)
+ * — this is what flips a lead to a fully active client. Any coach.
+ */
+export async function completeWelcome(id: string, message: string): Promise<void> {
+  await updateDoc(doc(db, 'clients', id), { welcomeMsg: message, scheduleSet: true });
 }
 
 /** Quick single-concern patch from the client menu — status flip or coach swap. */

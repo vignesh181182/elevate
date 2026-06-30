@@ -10,7 +10,6 @@ import {
   ClipboardCheck,
   CalendarCheck,
   CalendarClock,
-  CalendarPlus,
   PlayCircle,
   Wallet,
   TrendingUp,
@@ -28,8 +27,8 @@ import {
   usePayments,
 } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import AssessmentCard from '../components/AssessmentCard';
 import ClientMenuSheet from '../components/ClientMenuSheet';
+import PendingOnboarding from '../components/PendingOnboarding';
 import Sparkline from '../components/charts/Sparkline';
 import { useToast } from '../components/Toast';
 import { catStyle } from '../lib/categories';
@@ -172,21 +171,7 @@ export default function ClientDetail() {
               </span>
             )}
           </div>
-          <AssessmentCard client={c} />
-          <div className="cp-card">
-            <div className="cp-sec">
-              <div className="cp-sec-t">
-                <CalendarPlus size={16} className="t-blue" />
-                Set up training
-              </div>
-            </div>
-            <div className="cp-about-v">
-              Assign a coach and training schedule to activate {c.name.split(' ')[0]}.
-            </div>
-            <button className="bigbtn cp-cta-btn" onClick={() => go('schedule')}>
-              <CalendarPlus size={18} /> Schedule &amp; coach
-            </button>
-          </div>
+          <PendingOnboarding client={c} />
           <div className="sp24" />
         </div>
       </div>

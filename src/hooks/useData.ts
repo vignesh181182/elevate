@@ -7,10 +7,10 @@ import {
   fetchClients,
   removeProgramExercise,
   reorderProgramExercises,
+  completeWelcome,
   patchClient,
   saveAssessment,
   saveWeekLoads,
-  saveWelcomeMessage,
   setClientSchedule,
   updateClient,
   updateProgramExercise,
@@ -106,12 +106,15 @@ export function useUpdateClient(id: string | undefined) {
   });
 }
 
-/** Persist the client's welcome note. Invalidates the client. */
-export function useSaveWelcome(id: string | undefined) {
+/** Complete onboarding: save the welcome note + activate. Invalidates client + list. */
+export function useCompleteWelcome(id: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (message: string) => saveWelcomeMessage(id as string, message),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['client', id] }),
+    mutationFn: (message: string) => completeWelcome(id as string, message),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['client', id] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
   });
 }
 

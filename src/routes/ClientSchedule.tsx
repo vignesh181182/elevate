@@ -45,7 +45,7 @@ function Form({
   back: () => void;
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const editing = client.scheduleSet;
+  const editing = client.scheduleDone;
   const [coachId, setCoachId] = useState(client.coachId ?? '');
   const [days, setDays] = useState<string[]>(editing ? parseDays(client.days) : ['Mon', 'Wed', 'Fri']);
   const [time, setTime] = useState(to24h(client.time)); // '' for a fresh lead

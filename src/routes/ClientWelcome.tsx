@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Send } from 'lucide-react';
-import { useClient, useCoachNameMap, useSaveWelcome } from '../hooks/useData';
+import { useClient, useCoachNameMap, useCompleteWelcome } from '../hooks/useData';
 import { useToast } from '../components/Toast';
 import type { Client } from '../domain/types';
 
@@ -21,7 +21,7 @@ export default function ClientWelcome() {
   const toast = useToast();
   const { data: client, isLoading } = useClient(id);
   const coachName = useCoachNameMap();
-  const save = useSaveWelcome(id);
+  const save = useCompleteWelcome(id);
 
   if (isLoading) return <div className="screen"><div className="cl-loading">Loading…</div></div>;
   if (!client) return <div className="screen"><div className="empty"><p>Client not found.</p></div></div>;
@@ -39,7 +39,7 @@ function Form({
 }: {
   client: Client;
   coach: string;
-  save: ReturnType<typeof useSaveWelcome>;
+  save: ReturnType<typeof useCompleteWelcome>;
   navigate: ReturnType<typeof useNavigate>;
   toast: (m: string) => void;
 }) {
@@ -55,10 +55,10 @@ function Form({
     save.mutate(msg, {
       onSuccess: () => {
         window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
-        toast('Opening WhatsApp…');
+        toast(`${first} is all set 🎉`);
         done();
       },
-      onError: () => toast('Could not save the message'),
+      onError: () => toast('Could not complete onboarding'),
     });
   }
 
@@ -73,7 +73,7 @@ function Form({
 
       <div className="pad">
         <div className="step-title">Send {first} a welcome</div>
-        <div className="step-sub">Edit the note, then send it over WhatsApp. Saved to their profile.</div>
+        <div className="step-sub">Edit the note, then send it over WhatsApp to finish onboarding.</div>
 
         <div className="field">
           <label>Message</label>
