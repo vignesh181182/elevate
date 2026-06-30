@@ -48,9 +48,14 @@ export interface NewProgramExercise {
 
 /**
  * Append exercises to a client's program (any coach). Each lands after the current
- * last (order = max+1) with empty per-week logs, in one atomic batch.
+ * last (order = max+1) with empty per-week logs, in one atomic batch. When a `slot`
+ * is given, the new exercises are tagged into that day's Program A/B.
  */
-export async function addProgramExercises(clientId: string, items: NewProgramExercise[]): Promise<void> {
+export async function addProgramExercises(
+  clientId: string,
+  items: NewProgramExercise[],
+  slot?: { day: string; prog: 'A' | 'B' },
+): Promise<void> {
   if (!items.length) return;
   const col = collection(db, 'clients', clientId, 'exercises');
   const snap = await getDocs(col);
@@ -58,7 +63,14 @@ export async function addProgramExercises(clientId: string, items: NewProgramExe
   const batch = writeBatch(db);
   for (const it of items) {
     order += 1;
-    batch.set(doc(col), { name: it.name, group: it.group ?? '', target: it.target, order, logs: {} });
+    batch.set(doc(col), {
+      name: it.name,
+      group: it.group ?? '',
+      target: it.target,
+      order,
+      logs: {},
+      ...(slot ? { day: slot.day, prog: slot.prog } : {}),
+    });
   }
   await batch.commit();
 }

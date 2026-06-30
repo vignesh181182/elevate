@@ -1,5 +1,5 @@
 import { type CSSProperties, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search, Dumbbell } from 'lucide-react';
 import { useAddProgramExercises, useClientExercises, useLibrary } from '../hooks/useData';
 import { useToast } from '../components/Toast';
@@ -14,6 +14,11 @@ export default function Library() {
   const toast = useToast();
   const { id: clientId } = useParams(); // present ⇒ picking exercises for a client's program
   const pick = !!clientId;
+  const [params] = useSearchParams();
+  const day = params.get('day') ?? undefined;
+  const progRaw = params.get('prog');
+  const prog: 'A' | 'B' | null = progRaw === 'A' || progRaw === 'B' ? progRaw : null;
+  const slot = day && prog ? { day, prog } : undefined;
 
   const { data: library = [], isLoading } = useLibrary();
   const { data: clientExercises = [] } = useClientExercises(clientId);
@@ -25,10 +30,16 @@ export default function Library() {
   // Catalog edit (standalone only): null = closed, { ex } = editing, { ex: null } = adding.
   const [form, setForm] = useState<{ ex: LibraryExercise | null } | null>(null);
 
-  // Exercises already in this client's program — shown as "In program", not re-addable.
+  // Already-present check — scoped to the target slot when picking for one (the same
+  // exercise may legitimately appear in another day/slot), else the whole program.
   const inProgram = useMemo(
-    () => new Set(clientExercises.map((e) => e.name.toLowerCase())),
-    [clientExercises],
+    () =>
+      new Set(
+        clientExercises
+          .filter((e) => (day && prog ? e.day === day && e.prog === prog : true))
+          .map((e) => e.name.toLowerCase()),
+      ),
+    [clientExercises, day, prog],
   );
 
   const filtered = useMemo(() => {
@@ -60,16 +71,19 @@ export default function Library() {
       .filter((e) => selected.has(keyOf(e)))
       .map((e) => ({ name: e.name, group: e.group, target: e.target }));
     if (!items.length) return;
-    add.mutate(items, {
-      onSuccess: () => {
-        toast(`Added ${items.length} exercise${items.length === 1 ? '' : 's'}`);
-        navigate(`/clients/${clientId}`);
+    add.mutate(
+      { items, slot },
+      {
+        onSuccess: () => {
+          toast(`Added ${items.length} exercise${items.length === 1 ? '' : 's'}${slot ? ` to Program ${slot.prog}` : ''}`);
+          navigate(`/clients/${clientId}/program`);
+        },
+        onError: () => toast('Could not add exercises'),
       },
-      onError: () => toast('Could not add exercises'),
-    });
+    );
   }
 
-  const goBack = () => (pick ? navigate(`/clients/${clientId}`) : navigate(-1));
+  const goBack = () => (pick ? navigate(`/clients/${clientId}/program`) : navigate(-1));
 
   return (
     <div className="screen">
@@ -78,7 +92,7 @@ export default function Library() {
           <button className="iconbtn" onClick={goBack} aria-label="Back">
             <ChevronLeft />
           </button>
-          <div className="bar-title">{pick ? 'Add to program' : 'Exercise library'}</div>
+          <div className="bar-title">{slot ? `Add to Program ${slot.prog}` : pick ? 'Add to program' : 'Exercise library'}</div>
         </div>
 
         <div className="searchwrap">

@@ -148,11 +148,12 @@ export function useClientExercises(id: string | undefined) {
   });
 }
 
-/** Append picked library exercises to a client's program. Invalidates their exercises. */
+/** Append picked library exercises to a client's program (optionally into a day's A/B slot). */
 export function useAddProgramExercises(clientId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (items: NewProgramExercise[]) => addProgramExercises(clientId as string, items),
+    mutationFn: ({ items, slot }: { items: NewProgramExercise[]; slot?: { day: string; prog: 'A' | 'B' } }) =>
+      addProgramExercises(clientId as string, items, slot),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
   });
 }
