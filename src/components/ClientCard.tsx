@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Stethoscope, Calendar, CheckCircle2, CreditCard, Clock } from 'lucide-react';
+import { User, Stethoscope, Calendar, CheckCircle2, CreditCard, Clock, MoreVertical } from 'lucide-react';
 import type { Billing, Client } from '../domain/types';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
@@ -50,11 +50,13 @@ export default function ClientCard({
   coachName,
   billing,
   isMain,
+  onMenu,
 }: {
   c: Client;
   coachName: string;
   billing?: Billing | null;
   isMain: boolean;
+  onMenu: () => void;
 }) {
   const navigate = useNavigate();
   const cat = catStyle(c.category);
@@ -76,6 +78,16 @@ export default function ClientCard({
             <User size={13} /> Coach: {coachName || 'Not assigned'}
           </div>
         </div>
+        <button
+          className="cl-kebab"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMenu();
+          }}
+          aria-label="More options"
+        >
+          <MoreVertical size={18} />
+        </button>
       </div>
       <div className="clc-foot">
         <PaymentCell c={c} billing={billing} isMain={isMain} />

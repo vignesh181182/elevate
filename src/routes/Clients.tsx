@@ -1,22 +1,30 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Users, Search, X, User, CreditCard, Activity, ChevronDown, Filter, Plus } from 'lucide-react';
-import { useClients, useCoaches, useCoachNameMap, useBillings } from '../hooks/useData';
+import { Users, Search, X, User, CreditCard, CircleDot, ChevronDown, Filter, Plus } from 'lucide-react';
+import { useClients, useCoaches, useCoachNameMap, useBillings, usePatchClient } from '../hooks/useData';
 import { useIsMainCoach } from '../auth/AuthProvider';
+import { useToast } from '../components/Toast';
 import { paymentStatusFromBilling } from '../domain/payments';
 import { CLIENT_FILTERS, isFilterKey } from '../domain/filters';
 import ClientCard from '../components/ClientCard';
+import ClientMenuSheet from '../components/ClientMenuSheet';
+import type { Client } from '../domain/types';
 
 type PayFilter = 'All' | 'Paid' | 'DueSoon' | 'Overdue';
 
 export default function Clients() {
   const navigate = useNavigate();
+  const toast = useToast();
   const isMain = useIsMainCoach();
   const { data: clients = [], isLoading } = useClients();
   const { data: coaches = [] } = useCoaches();
   const coachName = useCoachNameMap();
   const ids = useMemo(() => clients.map((c) => c.id), [clients]);
   const { data: billings = {} } = useBillings(ids);
+
+  // ⋮ menu (edit / coach / status) for a list card — reuses the ClientDetail sheet.
+  const [menuFor, setMenuFor] = useState<Client | null>(null);
+  const patch = usePatchClient(menuFor?.id);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -116,13 +124,13 @@ export default function Clients() {
         )}
 
         <div className="cl-select-wrap">
-          <Activity size={15} className="cl-select-ic" />
+          <CircleDot size={15} className="cl-select-ic" />
           <select
             className="cl-select"
             value={status}
             onChange={(e) => setStatus(e.target.value as 'All' | 'Active' | 'Paused')}
           >
-            <option value="All">Status</option>
+            <option value="All">All status</option>
             <option value="Active">Active</option>
             <option value="Paused">Paused</option>
           </select>
@@ -160,6 +168,7 @@ export default function Clients() {
               coachName={c.coachId ? coachName[c.coachId] ?? '' : ''}
               billing={billings[c.id]}
               isMain={isMain}
+              onMenu={() => setMenuFor(c)}
             />
           ))
         )}
@@ -169,6 +178,25 @@ export default function Clients() {
       <button className="fab" onClick={() => navigate('/clients/new')} aria-label="Add client">
         <Plus size={26} />
       </button>
+
+      {menuFor && (
+        <ClientMenuSheet
+          client={menuFor}
+          coaches={coaches}
+          onEdit={() => {
+            const id = menuFor.id;
+            setMenuFor(null);
+            navigate(`/clients/${id}/edit`);
+          }}
+          onPatch={(p) =>
+            patch.mutate(p, {
+              onSuccess: () => toast('Client updated'),
+              onError: () => toast('Could not update client'),
+            })
+          }
+          onClose={() => setMenuFor(null)}
+        />
+      )}
     </div>
   );
 }
