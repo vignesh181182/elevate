@@ -24,7 +24,9 @@ export default function ClientSchedule() {
   if (isLoading) return <div className="screen"><div className="cl-loading">Loading…</div></div>;
   if (!client) return <div className="screen"><div className="empty"><p>Client not found.</p></div></div>;
 
-  return <Form key={client.id} client={client} coaches={coaches} save={save} toast={toast} back={back} />;
+  return (
+    <Form key={client.id} client={client} coaches={coaches} save={save} toast={toast} back={back} navigate={navigate} />
+  );
 }
 
 // Inner form, keyed on client so initial state is seeded once from real data.
@@ -34,12 +36,14 @@ function Form({
   save,
   toast,
   back,
+  navigate,
 }: {
   client: Client;
   coaches: Coach[];
   save: ReturnType<typeof useSetSchedule>;
   toast: (m: string) => void;
   back: () => void;
+  navigate: ReturnType<typeof useNavigate>;
 }) {
   const editing = client.scheduleSet;
   const [coachId, setCoachId] = useState(client.coachId ?? '');
@@ -70,7 +74,9 @@ function Form({
       {
         onSuccess: () => {
           toast(editing ? 'Schedule updated' : `${client.name.split(' ')[0]} activated`);
-          back();
+          // First activation flows into the welcome step; edits just return.
+          if (editing) back();
+          else navigate(`/clients/${client.id}/welcome`);
         },
         onError: () => toast('Could not save schedule'),
       },

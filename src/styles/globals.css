@@ -2722,3 +2722,5 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 .modal-subhead-t{font-size:var(--text-md);font-weight:var(--weight-bold)}
 .modal-back{position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;display:flex;padding:4px;font-family:inherit}
 .modal-back:active{opacity:.6}
+/* welcome-note composer textarea */
+.welcome-ta{min-height:210px;line-height:1.5;resize:vertical}

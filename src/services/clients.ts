@@ -217,6 +217,11 @@ export async function updateClient(id: string, input: EditClientInput): Promise<
   });
 }
 
+/** Save the client's welcome note (any coach). Sent 1:1 via WhatsApp, not stored elsewhere. */
+export async function saveWelcomeMessage(id: string, message: string): Promise<void> {
+  await updateDoc(doc(db, 'clients', id), { welcomeMsg: message });
+}
+
 /** Quick single-concern patch from the client menu — status flip or coach swap. */
 export async function patchClient(
   id: string,

@@ -19,6 +19,7 @@ import ClientMedia from './routes/ClientMedia';
 import ClientPayment from './routes/ClientPayment';
 import ClientSessions from './routes/ClientSessions';
 import ClientEdit from './routes/ClientEdit';
+import ClientWelcome from './routes/ClientWelcome';
 import Notifications from './routes/Notifications';
 import Library from './routes/Library';
 import Schedule from './routes/Schedule';
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/clients/:id/payment" element={<ClientPayment />} />
           <Route path="/clients/:id/sessions" element={<ClientSessions />} />
           <Route path="/clients/:id/edit" element={<ClientEdit />} />
+          <Route path="/clients/:id/welcome" element={<ClientWelcome />} />
           <Route path="/library" element={<Library />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile/edit" element={<ProfileEdit />} />
