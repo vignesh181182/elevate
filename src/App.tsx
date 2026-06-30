@@ -15,6 +15,7 @@ const ClientDetail = lazy(() => import('./routes/ClientDetail'));
 const ClientSchedule = lazy(() => import('./routes/ClientSchedule'));
 const ClientAssessment = lazy(() => import('./routes/ClientAssessment'));
 const ClientProgram = lazy(() => import('./routes/ClientProgram'));
+const ClientProgramEdit = lazy(() => import('./routes/ClientProgramEdit'));
 const ClientSession = lazy(() => import('./routes/ClientSession'));
 const ClientBasic = lazy(() => import('./routes/ClientBasic'));
 const ClientScheduleView = lazy(() => import('./routes/ClientScheduleView'));
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="/clients/:id/assessment" element={<ClientAssessment />} />
             <Route path="/clients/:id/library" element={<Library />} />
             <Route path="/clients/:id/program" element={<ClientProgram />} />
+            <Route path="/clients/:id/program/edit" element={<ClientProgramEdit />} />
             <Route path="/clients/:id/session" element={<ClientSession />} />
             <Route path="/clients/:id/basic" element={<ClientBasic />} />
             <Route path="/clients/:id/schedule-view" element={<ClientScheduleView />} />

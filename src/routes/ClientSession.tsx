@@ -95,6 +95,14 @@ export default function ClientSession() {
   const week = currentProgramWeek(client);
   const activeIdx = activeProgramIndex(programs, progress);
 
+  // Open the dedicated program editor for today's day + current week.
+  function openProgramEdit() {
+    const q = new URLSearchParams();
+    if (day) q.set('day', day);
+    q.set('week', String(week));
+    navigate(`/clients/${client!.id}/program/edit?${q.toString()}`);
+  }
+
   function markPresent() {
     if (!coach?.id) return toast('Not signed in');
     mark.mutate({ clientId: client!.id, status: 'present', markedBy: coach.id }, { onError: () => toast('Could not start') });
@@ -243,7 +251,7 @@ export default function ClientSession() {
               <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={-1} progress={progress} week={week} setLogs={setLogs} />
             ))}
           </div>
-          <button className="sess-modify2" onClick={() => navigate(`/clients/${client.id}/program`)}>
+          <button className="sess-modify2" onClick={openProgramEdit}>
             <span className="sm2-ic">
               <Pencil size={16} />
             </span>
@@ -266,7 +274,7 @@ export default function ClientSession() {
               onLogSet={logSet}
             />
           ))}
-          <button className="sess-modify2" onClick={() => navigate(`/clients/${client.id}/program`)}>
+          <button className="sess-modify2" onClick={openProgramEdit}>
             <span className="sm2-ic">
               <Pencil size={16} />
             </span>
@@ -307,7 +315,7 @@ export default function ClientSession() {
                 className="modal-opt"
                 onClick={() => {
                   setMenu(false);
-                  navigate(`/clients/${client.id}/program`);
+                  openProgramEdit();
                 }}
               >
                 <span className="mo-ic bg-blue t-blue">
