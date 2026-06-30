@@ -31,17 +31,19 @@ export default function Clients() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return clients.filter((c) => {
-      if (activeFilter && !CLIENT_FILTERS[activeFilter].pred(c, billings[c.id])) return false;
-      if (q && !c.name.toLowerCase().includes(q)) return false;
-      if (coachId !== 'All' && c.coachId !== coachId) return false;
-      if (status !== 'All' && c.status !== status) return false;
-      if (isMain && pay !== 'All') {
-        if (!c.scheduleSet) return false;
-        if (paymentStatusFromBilling(billings[c.id] ?? null) !== pay) return false;
-      }
-      return true;
-    });
+    return clients
+      .filter((c) => {
+        if (activeFilter && !CLIENT_FILTERS[activeFilter].pred(c, billings[c.id])) return false;
+        if (q && !c.name.toLowerCase().includes(q)) return false;
+        if (coachId !== 'All' && c.coachId !== coachId) return false;
+        if (status !== 'All' && c.status !== status) return false;
+        if (isMain && pay !== 'All') {
+          if (!c.scheduleSet) return false;
+          if (paymentStatusFromBilling(billings[c.id] ?? null) !== pay) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name)); // A–Z, matching the prototype list order
   }, [clients, query, coachId, status, pay, isMain, billings, activeFilter]);
 
   return (

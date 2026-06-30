@@ -40,6 +40,16 @@ export default function Schedule() {
   const [day, setDay] = useState(DAYS.includes(todayAbbr) ? todayAbbr : 'Mon');
   const isToday = day === todayAbbr;
 
+  // The real calendar date of the selected weekday in the current week (this week's
+  // occurrence) — restores the date the prototype banner showed, without faking weeks.
+  const selDateLabel = useMemo(() => {
+    const idx = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(day);
+    const d = new Date(now);
+    d.setDate(now.getDate() + (idx - now.getDay()));
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [day]);
+
   const sessions = useMemo(() => {
     return clients
       .filter((c) => c.scheduleSet && parseDays(c.days).includes(day))
@@ -83,7 +93,7 @@ export default function Schedule() {
       </div>
 
       <div className="wkbanner pad-h">
-        {day} · {sessions.length} session{sessions.length === 1 ? '' : 's'}
+        {day} {selDateLabel} · {sessions.length} session{sessions.length === 1 ? '' : 's'}
         {isToday ? ' — tap to open · ⋯ to mark attendance' : ' — tap a client to open'}
       </div>
 
