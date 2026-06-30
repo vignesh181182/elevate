@@ -102,6 +102,10 @@ svg.ic{display:inline-block;background-color:currentColor;flex-shrink:0}
 .iconbtn:active{transform:scale(.93)}
 .iconbtn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 .bar-title{font-size:var(--text-lg);font-weight:var(--weight-bold);flex:1;min-width:0;letter-spacing:-.02em;line-height:1.3}
+/* stacked bar title + small subtitle (e.g. which client's program) */
+.bar-titles{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.bar-titles .bar-title{flex:none}
+.bar-sub{font-size:var(--text-sm);font-weight:var(--weight-semi);color:var(--muted);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pad{padding:6px 18px 30px}
 .bigbtn{width:100%;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:var(--text-md);font-weight:var(--weight-bold);padding:17px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
 .bigbtn:active{transform:scale(.98);background:var(--accent-dark)}

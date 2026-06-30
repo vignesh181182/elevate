@@ -72,7 +72,10 @@ function ReadOnly({
         <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
           <ChevronLeft />
         </button>
-        <div className="bar-title">{mode === 'history' ? 'Program history' : 'Program'}</div>
+        <div className="bar-titles">
+          <div className="bar-title">{mode === 'history' ? 'Program history' : 'Program'}</div>
+          <div className="bar-sub">{client.name}</div>
+        </div>
         <button
           className={`iconbtn${mode === 'history' ? ' on' : ''}`}
           onClick={() => setMode((m) => (m === 'history' ? 'current' : 'history'))}

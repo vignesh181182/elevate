@@ -125,7 +125,10 @@ function EditView({
   return (
     <div className="screen">
       <div className="bar solid">
-        <div className="bar-title">{perDay ? `Modify ${day} program` : 'Modify program'}</div>
+        <div className="bar-titles">
+          <div className="bar-title">{perDay ? `Modify ${day} program` : 'Modify program'}</div>
+          <div className="bar-sub">{client.name}</div>
+        </div>
         <button className="iconbtn" onClick={close} aria-label="Close without saving">
           <X />
         </button>
