@@ -145,14 +145,22 @@ async function seedClientsData(nameToUid: Record<string, string>) {
       review: seedReviewState[c.id],
     });
 
-    // exercises (standing program — source of truth)
+    // exercises (standing program — source of truth). Tag each into a per-day A/B
+    // slot: build [{Mon,A},{Mon,B},{Wed,A},…] from the training days and spread the
+    // exercise list contiguously across them. Clients with no training days (paused /
+    // leads) stay untagged so the program UI falls back to a flat list.
+    const days = (c.days && c.days !== '—' ? c.days : '').split(',').map((s) => s.trim()).filter(Boolean);
+    const slots = days.flatMap((d) => [{ day: d, prog: 'A' as const }, { day: d, prog: 'B' as const }]);
+    const chunk = slots.length ? Math.ceil(c.exercises.length / slots.length) : 0;
     for (let i = 0; i < c.exercises.length; i++) {
       const e = c.exercises[i];
+      const slot = slots.length ? slots[Math.min(Math.floor(i / chunk), slots.length - 1)] : null;
       await ref.collection('exercises').doc(`e${i}`).set({
         name: e.name,
         group: e.group,
         target: e.target,
         order: i,
+        ...(slot ? { day: slot.day, prog: slot.prog } : {}),
         logs: e.logs ?? {},
       });
     }
