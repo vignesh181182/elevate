@@ -2610,6 +2610,7 @@ th.pt-action,td.pt-action{text-align:center;width:56px}
 .bg-green{background:var(--green-bg)}
 .bg-red{background:var(--red-bg)}
 .bg-amber{background:var(--amber-bg)}
+.bg-blue{background:var(--blue-bg)}
 
 /* --- data-driven fills: value supplied by JS via --c-bg / --c-fg --- */
 .tint-cat{background:var(--c-bg,var(--accent-soft));color:var(--c-fg,var(--accent))}

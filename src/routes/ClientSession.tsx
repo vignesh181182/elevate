@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronDown, Check, ArrowRight, Clock, Flag, Lock, Pencil, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Check, ArrowRight, Calendar, Flag, Lock, Pencil, MoreVertical, X } from 'lucide-react';
 import {
   useClient,
   useClientExercises,
@@ -68,6 +68,7 @@ export default function ClientSession() {
   const complete = useCompleteSession(id, date);
   const [sheet, setSheet] = useState(false);
   const [endEarly, setEndEarly] = useState(false);
+  const [menu, setMenu] = useState(false);
 
   if (isLoading || !client) {
     return (
@@ -170,10 +171,13 @@ export default function ClientSession() {
           <ChevronLeft />
         </button>
         <div className="bar-title">Today&rsquo;s Session</div>
+        <button className="iconbtn" onClick={() => setMenu(true)} aria-label="Session options">
+          <MoreVertical />
+        </button>
       </div>
 
       <div className="se-card tap" onClick={() => navigate(`/clients/${client.id}`)}>
-        <div className="se-ava tint-cat" style={avaStyle}>
+        <div className="dava se-ava tint-cat" style={avaStyle}>
           {initials(client.name)}
         </div>
         <div className="se-id">
@@ -268,27 +272,72 @@ export default function ClientSession() {
             </span>
             Create / modify program
           </button>
-          <button className="sess-modify2 sess-history" onClick={() => setSheet(true)}>
-            <span className="sm2-ic">
-              <Clock size={16} />
-            </span>
-            Change attendance
-          </button>
-          <div className="bottom-cta sticky-cta">
-            {allDone ? (
+          {allDone && (
+            <div className="bottom-cta sticky-cta">
               <button className="bigbtn" onClick={() => finish(false)} disabled={complete.isPending}>
                 <Check size={18} /> {complete.isPending ? 'Saving…' : 'Complete session'}
               </button>
-            ) : (
-              <button className="bigbtn ghost" onClick={() => setEndEarly(true)} disabled={complete.isPending}>
-                <Flag size={16} /> End session early
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
 
       <div className="sp24" />
+
+      {menu && (
+        <div className="modal-overlay" onClick={() => setMenu(false)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">Session options</div>
+            <div className="modal-opts">
+              <button
+                className="modal-opt"
+                onClick={() => {
+                  setMenu(false);
+                  setSheet(true);
+                }}
+              >
+                <span className="mo-ic bg-amber t-amber">
+                  <Calendar size={20} />
+                </span>
+                Change attendance
+                <span className="mo-cur" />
+              </button>
+              <button
+                className="modal-opt"
+                onClick={() => {
+                  setMenu(false);
+                  navigate(`/clients/${client.id}/program`);
+                }}
+              >
+                <span className="mo-ic bg-blue t-blue">
+                  <Pencil size={20} />
+                </span>
+                Edit programs &amp; rounds
+                <span className="mo-cur" />
+              </button>
+              {present && !completed && !allDone && (
+                <button
+                  className="modal-opt"
+                  onClick={() => {
+                    setMenu(false);
+                    setEndEarly(true);
+                  }}
+                >
+                  <span className="mo-ic bg-amber t-amber">
+                    <Flag size={20} />
+                  </span>
+                  End session early
+                  <span className="mo-cur" />
+                </button>
+              )}
+            </div>
+            <button className="modal-cancel" onClick={() => setMenu(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {sheet && (
         <AttendanceSheet
