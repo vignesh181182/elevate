@@ -10,6 +10,7 @@ import {
   detectPRs,
   defaultProgressExercise,
   hasProgressData,
+  strengthToBodyweight,
 } from '../domain/progress';
 import Sparkline from './charts/Sparkline';
 import ProgressionChart from './charts/ProgressionChart';
@@ -37,6 +38,7 @@ export default function ProgressCard({ client }: { client: Client }) {
   const selEx = exWithLogs.find((e) => e.name === selected);
   const mk = measureKey && measureKeys.includes(measureKey) ? measureKey : measureKeys[0];
   const mdata = mk ? client.measures[mk] ?? [] : [];
+  const s2bw = strengthToBodyweight(exercises, client.measures?.Weight ?? []);
 
   const gain = summary.avgGain == null ? '—' : arrow(summary.avgGain) + Math.abs(summary.avgGain) + '%';
   const vol = summary.volChange == null ? '—' : arrow(summary.volChange) + Math.abs(summary.volChange) + '%';
@@ -200,6 +202,24 @@ export default function ProgressCard({ client }: { client: Client }) {
           {mdata.length > 1 && (
             <div className="tab-cap center">
               {mk}: {mdata[0]} → {mdata[mdata.length - 1]}
+            </div>
+          )}
+          {s2bw.length > 0 && (
+            <div className="pg-sbw">
+              <div className="pg-sbw-h">Strength-to-bodyweight</div>
+              {s2bw.map((r) => (
+                <div className="pg-sbw-row" key={r.name}>
+                  <div className="pg-sbw-main">
+                    <div className="pg-sbw-name">{r.name}</div>
+                    <div className="pg-sbw-spark">
+                      <Sparkline vals={r.series} />
+                    </div>
+                  </div>
+                  <div className="pg-sbw-v">
+                    {r.first.toFixed(1)}× → <b>{r.last.toFixed(1)}×</b>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -166,6 +166,37 @@ export function hasProgressData(exercises: ProgramExercise[]): boolean {
   return exercises.some((e) => e.logs && Object.keys(e.logs).length > 0);
 }
 
+export interface StrengthRatio {
+  name: string;
+  first: number; // lift ÷ bodyweight at the first logged week
+  last: number; // … at the latest logged week
+  series: number[]; // every week's ratio, for the sparkline
+}
+
+const COMPOUND = /squat|bench|deadlift|press|row/i;
+
+/**
+ * Strength-to-bodyweight ratios for the main compound lifts: working weight ÷ that
+ * week's bodyweight (carrying forward the last known bodyweight). One entry per lift
+ * with ≥2 ratio points (so there's a first→latest story). Empty when there's no
+ * bodyweight series to divide by.
+ */
+export function strengthToBodyweight(exercises: ProgramExercise[], bodyweights: number[]): StrengthRatio[] {
+  if (!bodyweights?.length) return [];
+  const out: StrengthRatio[] = [];
+  for (const ex of exercises) {
+    if (!COMPOUND.test(ex.name)) continue;
+    const series = exerciseProgression(exercises, ex.name)
+      .map((p) => {
+        const bw = bodyweights[p.week - 1] ?? bodyweights[bodyweights.length - 1];
+        return bw && p.weight ? Math.round((p.weight / bw) * 100) / 100 : null;
+      })
+      .filter((r): r is number => r != null);
+    if (series.length >= 2) out.push({ name: ex.name, first: series[0], last: series[series.length - 1], series });
+  }
+  return out;
+}
+
 /** Default exercise for the progression chart — first compound lift, else first. */
 export function defaultProgressExercise(exercises: ProgramExercise[]): string | null {
   const withLogs = exercises.filter((e) => e.logs && Object.keys(e.logs).length);
