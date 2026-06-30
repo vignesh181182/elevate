@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, History } from 'lucide-react';
 import {
@@ -6,6 +6,7 @@ import {
   useClientExercises,
   useProgramHistory,
   useRemoveProgramExercise,
+  useReorderProgramExercises,
   useSaveWeekLoads,
 } from '../hooks/useData';
 import { useToast } from '../components/Toast';
@@ -56,6 +57,7 @@ function Editor({
 
   const [mode, setMode] = useState<'current' | 'history'>('current');
   const [gridMode, setGridMode] = useState<'cards' | 'grid'>('cards');
+  const [reorderMode, setReorderMode] = useState(false);
   const [week, setWeek] = useState(curWk);
   const [day, setDay] = useState(() => (days.includes(todayWeekday()) ? todayWeekday() : days[0] ?? ''));
   // Unsaved edits, keyed by week → exId → {w,r}. Carry-forward defaults come from weekLoad.
@@ -110,7 +112,9 @@ function Editor({
         <button className="iconbtn" onClick={() => navigate(`/clients/${client.id}`)} aria-label="Back">
           <ChevronLeft />
         </button>
-        <div className="bar-title">{mode === 'history' ? 'Program history' : 'Program'}</div>
+        <div className="bar-title">
+          {mode === 'history' ? 'Program history' : reorderMode ? 'Reorder exercises' : 'Program'}
+        </div>
         <button
           className={`iconbtn${mode === 'history' ? ' on' : ''}`}
           onClick={() => setMode((m) => (m === 'history' ? 'current' : 'history'))}
@@ -122,6 +126,8 @@ function Editor({
 
       {mode === 'history' ? (
         <ProgramHistory client={client} exercises={list} history={history} />
+      ) : reorderMode ? (
+        <Reorder client={client} list={list} weeks={weeks} onDone={() => setReorderMode(false)} />
       ) : (
         <>
           <div className="wkbanner pad-h">
@@ -201,6 +207,12 @@ function Editor({
             </>
           )}
 
+          {list.length >= 2 && (
+            <button className="ex-reorder-btn" onClick={() => setReorderMode(true)}>
+              ↕ Reorder exercises
+            </button>
+          )}
+
           {gridMode === 'cards' && (
             <div className="bottom-cta sticky-cta">
               <button
@@ -266,6 +278,139 @@ function FullGrid({ list, weeks, curWk }: { list: ProgramExercise[]; weeks: numb
         </tbody>
       </table>
     </div>
+  );
+}
+
+// Drag-to-reorder, ported from the prototype wireReorder(): the grip starts a
+// pointer drag, the row follows the finger and neighbours shift past midpoints
+// (transforms set imperatively, as in the prototype — transient gesture state,
+// not rendered markup). Order is committed once on "Done" via a batch write.
+function Reorder({
+  client,
+  list,
+  weeks,
+  onDone,
+}: {
+  client: Client;
+  list: ProgramExercise[];
+  weeks: number;
+  onDone: () => void;
+}) {
+  const toast = useToast();
+  const reorder = useReorderProgramExercises(client.id);
+  const [order, setOrder] = useState<ProgramExercise[]>(list);
+  const rowEls = useRef<(HTMLDivElement | null)[]>([]);
+  const drag = useRef({ active: false, from: -1, cur: -1, startY: 0, slotH: 0 });
+
+  function begin(idx: number, e: React.PointerEvent) {
+    e.preventDefault();
+    const rows = rowEls.current;
+    if (rows.length < 2) return;
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* setPointerCapture can throw on detached elements — safe to ignore */
+    }
+    const slotH = rows[1]!.getBoundingClientRect().top - rows[0]!.getBoundingClientRect().top;
+    drag.current = { active: true, from: idx, cur: idx, startY: e.clientY, slotH };
+    rows[idx]?.classList.add('reord-drag');
+  }
+
+  function move(e: React.PointerEvent) {
+    const d = drag.current;
+    if (!d.active) return;
+    const rows = rowEls.current;
+    const el = rows[d.from];
+    if (!el) return;
+    const dy = Math.max(-d.from * d.slotH, Math.min((rows.length - 1 - d.from) * d.slotH, e.clientY - d.startY));
+    el.style.transform = `translateY(${dy}px)`;
+    const ni = Math.max(0, Math.min(rows.length - 1, d.from + Math.round(dy / d.slotH)));
+    if (ni !== d.cur) {
+      d.cur = ni;
+      rows.forEach((r, k) => {
+        if (!r || k === d.from) return;
+        let s = 0;
+        if (d.from < ni && k > d.from && k <= ni) s = -d.slotH;
+        else if (d.from > ni && k >= ni && k < d.from) s = d.slotH;
+        r.style.transform = s ? `translateY(${s}px)` : '';
+      });
+    }
+  }
+
+  function end() {
+    const d = drag.current;
+    if (!d.active) return;
+    drag.current = { active: false, from: -1, cur: -1, startY: 0, slotH: 0 };
+    rowEls.current.forEach((r) => {
+      if (r) {
+        r.style.transform = '';
+        r.classList.remove('reord-drag');
+      }
+    });
+    if (d.cur !== d.from && d.cur >= 0) {
+      setOrder((prev) => {
+        const a = [...prev];
+        a.splice(d.cur, 0, a.splice(d.from, 1)[0]);
+        return a;
+      });
+    }
+  }
+
+  function onDoneClick() {
+    const ids = order.map((e) => e.id).filter((x): x is string => !!x);
+    const unchanged = ids.length === list.length && ids.every((id, i) => id === list[i].id);
+    if (unchanged) {
+      onDone();
+      return;
+    }
+    reorder.mutate(ids, {
+      onSuccess: () => {
+        toast('Exercise order saved');
+        onDone();
+      },
+      onError: () => toast('Could not save order'),
+    });
+  }
+
+  return (
+    <>
+      <div className="scr-head">
+        <div className="scr-head-t">Reorder exercises</div>
+        <div className="scr-head-s">
+          {client.name.split(' ')[0]}&rsquo;s program · {order.length} exercise{order.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+      <div className="reord-banner">
+        Press the ⠿ handle and drag an exercise up or down. This order applies across all {weeks} weeks.
+      </div>
+      <div>
+        {order.map((ex, i) => (
+          <div key={ex.id ?? ex.name} className="reord-row" ref={(el) => void (rowEls.current[i] = el)}>
+            <div className="reord-main">
+              <div className="reord-name">{ex.name}</div>
+              <div className="reord-target">
+                {ex.day && ex.prog ? `${ex.day} · Program ${ex.prog} · ` : ''}Target {ex.target}
+              </div>
+            </div>
+            <div
+              className="reord-grip"
+              aria-label="Drag to reorder"
+              onPointerDown={(e) => begin(i, e)}
+              onPointerMove={move}
+              onPointerUp={end}
+              onPointerCancel={end}
+            >
+              ⠿
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="bottom-cta">
+        <button className={`bigbtn${reorder.isPending ? ' dim' : ''}`} disabled={reorder.isPending} onClick={onDoneClick}>
+          {reorder.isPending ? 'Saving…' : '✓ Done'}
+        </button>
+      </div>
+    </>
   );
 }
 
