@@ -33,11 +33,7 @@ export default function More() {
           <div className="more-prof-n">{name}</div>
           <div className="more-prof-r">{roleLabel}</div>
         </div>
-        <button
-          className="more-prof-edit"
-          onClick={() => toast('Edit profile — coming soon')}
-          aria-label="Edit profile"
-        >
+        <button className="more-prof-edit" onClick={() => navigate('/profile/edit')} aria-label="Edit profile">
           <Pencil />
         </button>
       </div>

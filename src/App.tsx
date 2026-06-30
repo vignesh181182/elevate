@@ -15,6 +15,7 @@ import Library from './routes/Library';
 import Schedule from './routes/Schedule';
 import Reports from './routes/Reports';
 import More from './routes/More';
+import ProfileEdit from './routes/ProfileEdit';
 
 // Each menu item is its own route. Tab routes render inside TabLayout (with the
 // bottom nav + FAB); detail/sub views render plain. More routes land in later milestones.
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/clients/:id/program" element={<ClientProgram />} />
           <Route path="/clients/:id/session" element={<ClientSession />} />
           <Route path="/library" element={<Library />} />
+          <Route path="/profile/edit" element={<ProfileEdit />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/home" replace />} />

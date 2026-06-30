@@ -17,6 +17,8 @@ interface AuthState {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Re-read the signed-in coach's profile doc (after a profile edit). */
+  refreshCoach: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -27,23 +29,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<CoachRole | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load the coach doc + role for a signed-in user. Reused on auth change and refresh.
+  const loadCoach = async (u: User) => {
+    const token = await u.getIdTokenResult();
+    const claimRole = token.claims.role as CoachRole | undefined;
+    try {
+      const snap = await getDoc(doc(db, 'coaches', u.uid));
+      const data = snap.exists() ? (snap.data() as Omit<Coach, 'id'>) : null;
+      setCoach(data ? { id: u.uid, ...data } : null);
+      setRole(claimRole ?? data?.role ?? null);
+    } catch {
+      setCoach(null);
+      setRole(claimRole ?? null);
+    }
+  };
+
   useEffect(() => {
     return onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u) {
-        // role from the custom claim (set by the seed); fall back to the coach doc.
-        const token = await u.getIdTokenResult();
-        const claimRole = token.claims.role as CoachRole | undefined;
-        try {
-          const snap = await getDoc(doc(db, 'coaches', u.uid));
-          const data = snap.exists() ? (snap.data() as Omit<Coach, 'id'>) : null;
-          setCoach(data ? { id: u.uid, ...data } : null);
-          setRole(claimRole ?? data?.role ?? null);
-        } catch {
-          setCoach(null);
-          setRole(claimRole ?? null);
-        }
-      } else {
+      if (u) await loadCoach(u);
+      else {
         setCoach(null);
         setRole(null);
       }
@@ -59,8 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fbSignOut(auth);
   };
 
+  const refreshCoach = async () => {
+    if (auth.currentUser) await loadCoach(auth.currentUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, coach, role, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, coach, role, loading, signIn, signOut, refreshCoach }}>
       {children}
     </AuthContext.Provider>
   );

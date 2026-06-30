@@ -17,7 +17,7 @@ import {
   type ScheduleInput,
   type WeekLoad,
 } from '../services/clients';
-import { fetchCoaches } from '../services/coaches';
+import { fetchCoaches, saveCoachProfile, type CoachProfilePatch } from '../services/coaches';
 import {
   addLibraryExercise,
   deleteLibraryExercise,
@@ -256,6 +256,17 @@ export function useCompleteSession(clientId: string | undefined, date: string) {
       qc.invalidateQueries({ queryKey: ['sessionLog', clientId] });
       qc.invalidateQueries({ queryKey: ['clients'] });
     },
+  });
+}
+
+/**
+ * Update the signed-in coach's own profile doc. The coach object lives in
+ * AuthProvider (not React Query), so the caller refreshes it via refreshCoach() on
+ * success rather than invalidating a query key.
+ */
+export function useSaveProfile(uid: string | undefined) {
+  return useMutation({
+    mutationFn: (patch: CoachProfilePatch) => saveCoachProfile(uid as string, patch),
   });
 }
 
