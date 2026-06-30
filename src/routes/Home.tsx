@@ -1,6 +1,17 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Wallet, Calendar, ClipboardList, Users, UserPlus, UserCheck, ChevronDown } from 'lucide-react';
+import {
+  Bell,
+  Wallet,
+  Calendar,
+  ClipboardList,
+  ClipboardCheck,
+  CircleAlert,
+  Users,
+  UserPlus,
+  UserCheck,
+  ChevronDown,
+} from 'lucide-react';
 import { useAuth, useIsMainCoach } from '../auth/AuthProvider';
 import { useToast } from '../components/Toast';
 import { useClients, useCoaches, useCoachNameMap, useDaySessions, useBillings } from '../hooks/useData';
@@ -133,6 +144,17 @@ export default function Home() {
     const n = count('Review due');
     alerts.push({ key: 'Review due', icon: ClipboardList, cls: 'ic-amber', title: 'Reviews due', sub: `${n} client${n === 1 ? '' : 's'} need a weekly review` });
   }
+
+  // Client Insights — every card is a real filter (no fabricated rates/deltas).
+  // Billing-dependent cards are head-coach only (juniors never receive billing).
+  const insights: { key: FilterKey; icon: typeof Wallet; cls: string; label: string; sub: string; main?: boolean }[] = [
+    { key: 'Leads', icon: UserPlus, cls: 'ic-grey', label: 'New Leads', sub: 'Not yet activated' },
+    { key: 'Assessment due', icon: ClipboardList, cls: 'ic-amber', label: 'Assessments Due', sub: 'Today' },
+    { key: 'Review due', icon: ClipboardCheck, cls: 'ic-grey', label: 'Reviews Due', sub: 'Weekly check-in' },
+    { key: 'Payment due', icon: Wallet, cls: 'ic-red', label: 'Pending Payments', sub: 'Awaiting payment', main: true },
+    { key: 'Membership expiring', icon: Calendar, cls: 'ic-purple', label: 'Memberships Expiring', sub: 'In next 7 days', main: true },
+    { key: 'Payment overdue', icon: CircleAlert, cls: 'ic-orange', label: 'Payment Overdue', sub: 'Needs follow-up', main: true },
+  ];
 
   return (
     <div className="fadein eh">
@@ -361,6 +383,26 @@ export default function Home() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="ei-wrap">
+        <div className="ei-h">Client Insights</div>
+        <div className="ei-grid">
+          {insights
+            .filter((i) => !i.main || isMain)
+            .map((i) => (
+              <div className="ei-card" key={i.key} onClick={() => go(i.key)}>
+                <div className="ei-top">
+                  <div className={`ei-ic ${i.cls}`}>
+                    <i.icon size={18} />
+                  </div>
+                  <div className="ei-v">{count(i.key)}</div>
+                </div>
+                <div className="ei-l">{i.label}</div>
+                <div className="ei-s">{i.sub}</div>
+              </div>
+            ))}
         </div>
       </div>
 
