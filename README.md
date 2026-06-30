@@ -24,7 +24,7 @@ code changes** — fill in `.env`, seed, and deploy.
 | Server state   | [TanStack Query](https://tanstack.com/query) (React Query) |
 | Backend        | Firebase Auth + Cloud Firestore |
 | Chrome icons   | [lucide-react](https://lucide.dev/) (content/emoji icons stay inline) |
-| PDF (deferred) | html2pdf.js |
+| PDF export     | html2pdf.js (lazy-loaded — see "Bundle" below) |
 | Lint           | [oxlint](https://oxc.rs/) |
 
 There is no component framework or CSS-in-JS — all styles live in a single
@@ -76,6 +76,15 @@ Tab routes (`/home`, `/clients`, `/schedule`, `/reports`, `/more`) render inside
 `/clients/new`, `/clients/:id`, `/clients/:id/schedule`, `/clients/:id/program`,
 `/clients/:id/session`, `/clients/:id/library`, `/library`. Everything behind
 `RequireAuth` redirects to `/login` when signed out.
+
+### Bundle
+
+Every screen behind auth is **code-split** with `React.lazy`, so each ships as its
+own chunk loaded on navigation. The app entry chunk is ~216KB; `firebase` is
+isolated into its own long-cacheable vendor chunk, and `html2pdf.js` (~900KB) is
+dynamically imported only when a coach exports a PDF, so it never touches first
+paint. The split is configured in [`vite.config.ts`](vite.config.ts) (`manualChunks`)
+and [`src/App.tsx`](src/App.tsx) (lazy routes + a `Suspense` fallback).
 
 ---
 
@@ -226,11 +235,14 @@ No code changes are required. The whole switch is config + seed + deploy.
 
 ## Not yet built (deferred)
 
-These were intentionally scoped out of the rewrite and can be added later:
+The rewrite is at parity with the prototype, including the client assessment flow,
+the gated 3-step onboarding (assessment → schedule → welcome), the per-day A/B
+program editor with the full N-week grid and drag-to-reorder, today's-session
+circuit with completion + billing decrement, and the welcome / weekly-report PDFs
+(generated on demand with html2pdf.js, shared via a `wa.me` link, never stored).
 
-- **Client assessment flow** (the onboarding "Flow B" measurement step).
-- **Welcome / weekly-report PDFs** — generated on demand with html2pdf.js and shared
-  via a `wa.me` link; never stored.
+The one remaining stub is **Settings** — the `More → Settings` row currently toasts
+"coming soon". It can be added later as a plain route.
 
 ---
 
