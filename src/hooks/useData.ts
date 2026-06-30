@@ -10,8 +10,10 @@ import {
   saveAssessment,
   saveWeekLoads,
   setClientSchedule,
+  updateClient,
   updateProgramExercise,
   type AssessmentInput,
+  type EditClientInput,
   type NewClientInput,
   type NewProgramExercise,
   type ScheduleInput,
@@ -87,6 +89,18 @@ export function useClient(id: string | undefined) {
     queryKey: ['client', id],
     queryFn: () => fetchClient(id as string),
     enabled: !!id,
+  });
+}
+
+/** Update a client's profile (identity + category + coach). Invalidates client + list. */
+export function useUpdateClient(id: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EditClientInput) => updateClient(id as string, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['client', id] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
   });
 }
 

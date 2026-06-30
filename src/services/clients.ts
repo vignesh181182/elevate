@@ -190,6 +190,33 @@ export async function setClientSchedule(id: string, input: ScheduleInput): Promi
   });
 }
 
+/** Editable client profile fields — identity + category + coach (never billing). */
+export interface EditClientInput {
+  name: string;
+  age: number;
+  phone: string; // already formatted, e.g. "+91 98765 43210"
+  email: string; // '' when not provided
+  category: string;
+  ability: string;
+  coachId: string | null; // null = not assigned
+}
+
+/**
+ * Update a client's profile (any coach — training/identity data, not billing). Only
+ * the editable fields are touched; lifecycle flags, program and measures are untouched.
+ */
+export async function updateClient(id: string, input: EditClientInput): Promise<void> {
+  await updateDoc(doc(db, 'clients', id), {
+    name: input.name,
+    age: input.age,
+    phone: input.phone,
+    email: input.email,
+    category: input.category,
+    ability: input.ability,
+    coachId: input.coachId,
+  });
+}
+
 export interface AssessmentInput {
   assessment: Assessment;
   measures: Record<string, number[]>; // full merged map (baseline-seeded, history preserved)

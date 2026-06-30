@@ -1,9 +1,8 @@
 import type { ComponentType } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { UserRound, User, Phone, Mail, Tag, Calendar } from 'lucide-react';
 import ClientDrill from '../components/ClientDrill';
 import { useCoachNameMap } from '../hooks/useData';
-import { useToast } from '../components/Toast';
 import type { Client } from '../domain/types';
 
 function KV({ icon: Icon, k, v }: { icon: ComponentType<{ size?: number }>; k: string; v: string }) {
@@ -20,7 +19,7 @@ function KV({ icon: Icon, k, v }: { icon: ComponentType<{ size?: number }>; k: s
 
 function BasicCard({ client }: { client: Client }) {
   const coachName = useCoachNameMap();
-  const toast = useToast();
+  const navigate = useNavigate();
   const coach = client.coachId ? coachName[client.coachId] ?? 'Not assigned' : 'Not assigned';
   return (
     <div className="cp-card">
@@ -29,7 +28,7 @@ function BasicCard({ client }: { client: Client }) {
           <UserRound size={16} className="t-blue" />
           Basic information
         </div>
-        <button className="cp-link" onClick={() => toast('Edit client — coming soon')}>
+        <button className="cp-link" onClick={() => navigate(`/clients/${client.id}/edit`)}>
           Edit
         </button>
       </div>
