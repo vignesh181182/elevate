@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Check, ArrowRight, Clock, Flag, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, ArrowRight, Clock, Flag, Lock, Pencil } from 'lucide-react';
 import {
   useClient,
   useClientExercises,
@@ -210,6 +210,12 @@ export default function ClientSession() {
               <ProgramBlock key={p.label} program={p} pIdx={i} activeIdx={-1} progress={progress} week={week} />
             ))}
           </div>
+          <button className="sess-modify2" onClick={() => navigate(`/clients/${client.id}/program`)}>
+            <span className="sm2-ic">
+              <Pencil size={16} />
+            </span>
+            Create / modify program
+          </button>
         </>
       ) : (
         <>
@@ -224,6 +230,12 @@ export default function ClientSession() {
               onToggle={toggleSet}
             />
           ))}
+          <button className="sess-modify2" onClick={() => navigate(`/clients/${client.id}/program`)}>
+            <span className="sm2-ic">
+              <Pencil size={16} />
+            </span>
+            Create / modify program
+          </button>
           <button className="sess-modify2 sess-history" onClick={() => setSheet(true)}>
             <span className="sm2-ic">
               <Clock size={16} />
