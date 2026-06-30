@@ -6,6 +6,7 @@ import {
   fetchClientExercises,
   fetchClients,
   removeProgramExercise,
+  removeProgramExercises,
   reorderProgramExercises,
   completeWelcome,
   fetchProgramHistory,
@@ -47,7 +48,7 @@ import { fetchReports, markReportSent } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Attendance, Client, ClientStatus, Coach, Payment, ProgramExercise, SessionDoc, SessionLog } from '../domain/types';
+import type { Attendance, Client, ClientStatus, Coach, Payment, ProgKey, ProgramExercise, SessionDoc, SessionLog } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -151,11 +152,11 @@ export function useClientExercises(id: string | undefined) {
   });
 }
 
-/** Append picked library exercises to a client's program (optionally into a day's A/B slot). */
+/** Append picked library exercises to a client's program (optionally into a day's slot). */
 export function useAddProgramExercises(clientId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ items, slot }: { items: NewProgramExercise[]; slot?: { day: string; prog: 'A' | 'B' } }) =>
+    mutationFn: ({ items, slot }: { items: NewProgramExercise[]; slot?: { day: string; prog: ProgKey } }) =>
       addProgramExercises(clientId as string, items, slot),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
   });
@@ -166,6 +167,15 @@ export function useRemoveProgramExercise(clientId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (exId: string) => removeProgramExercise(clientId as string, exId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
+  });
+}
+
+/** Remove a whole program slot (all its exercises) in one batch. Invalidates exercises. */
+export function useRemoveProgram(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (exIds: string[]) => removeProgramExercises(clientId as string, exIds),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', clientId] }),
   });
 }
@@ -188,7 +198,7 @@ export function useSetProgramSets(clientId: string | undefined) {
   const qc = useQueryClient();
   const qk = ['client', clientId];
   return useMutation({
-    mutationFn: ({ label, n }: { label: 'A' | 'B'; n: number }) =>
+    mutationFn: ({ label, n }: { label: ProgKey; n: number }) =>
       setProgramSets(clientId as string, label, n),
     onMutate: async ({ label, n }) => {
       await qc.cancelQueries({ queryKey: qk });

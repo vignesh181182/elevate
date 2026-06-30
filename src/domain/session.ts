@@ -4,7 +4,7 @@
 // "label:round:name"). Everything else — active program, current round, next
 // exercise, completion — is computed here. No Firebase, no React.
 import type { ProgramExercise } from './types';
-import { exForDayProg, hasDayProgPlan, PROG_LABELS } from './program';
+import { exForDayProg, hasDayProgPlan, PROG_LABELS, type ProgLabel } from './program';
 import { estimated1RM } from './progress';
 
 /** One worked set's load. */
@@ -20,7 +20,7 @@ export const ROUNDS = 3;
 export const MIN_SETS = 1;
 export const MAX_SETS = 9;
 
-export type ProgramLabel = 'A' | 'B';
+export type ProgramLabel = ProgLabel;
 
 /** Per-program sets count, keyed by label (absent ⇒ ROUNDS). */
 export type SetsByLabel = Partial<Record<ProgramLabel, number>>;

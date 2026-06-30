@@ -5,6 +5,7 @@ import { useAddProgramExercises, useClientExercises, useLibrary } from '../hooks
 import { useToast } from '../components/Toast';
 import LibraryForm from '../components/LibraryForm';
 import { LIB_GROUPS, muscleColor } from '../lib/muscleColors';
+import { PROG_LABELS, type ProgLabel } from '../domain/program';
 import type { LibraryExercise } from '../domain/types';
 
 const keyOf = (e: LibraryExercise) => e.id ?? e.name;
@@ -17,7 +18,7 @@ export default function Library() {
   const [params] = useSearchParams();
   const day = params.get('day') ?? undefined;
   const progRaw = params.get('prog');
-  const prog: 'A' | 'B' | null = progRaw === 'A' || progRaw === 'B' ? progRaw : null;
+  const prog = (PROG_LABELS as string[]).includes(progRaw ?? '') ? (progRaw as ProgLabel) : null;
   const slot = day && prog ? { day, prog } : undefined;
 
   const { data: library = [], isLoading } = useLibrary();

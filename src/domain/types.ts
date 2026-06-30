@@ -19,6 +19,9 @@ export interface Coach {
 
 export type ClientStatus = 'Active' | 'Paused';
 
+/** A circuit/program slot label within a training day (A–F, like the prototype). */
+export type ProgKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+
 /** Active program metadata. The exercises live in the `exercises` subcollection. */
 export interface ClientProgram {
   no: number;
@@ -27,9 +30,9 @@ export interface ClientProgram {
   perWeek: number;
   done: number; // sessions completed in this program
   startDate?: string; // YYYY-MM-DD
-  // Rounds (sets) the session circuit runs per A/B program. Edited in the Program
-  // editor, drives ClientSession. Per-program (A and B independent); absent ⇒ ROUNDS.
-  sets?: { A?: number; B?: number };
+  // Rounds (sets) the session circuit runs per program, keyed by label. Edited in the
+  // Program editor, drives ClientSession. Per-program independent; a label absent ⇒ ROUNDS.
+  sets?: Partial<Record<ProgKey, number>>;
 }
 
 export interface ReviewState {
@@ -100,7 +103,7 @@ export interface ProgramExercise {
   // Per-day A/B plan: the scheduled weekday + A/B slot this exercise belongs to.
   // Optional during migration; once tagged, the program is planned per training day.
   day?: string; // e.g. 'Mon'
-  prog?: 'A' | 'B';
+  prog?: ProgKey;
   logs: Record<string, { w: number; r: number }>; // keyed by week number
 }
 

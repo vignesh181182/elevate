@@ -1,11 +1,22 @@
-// Pure per-day A/B program helpers. The standing program is planned per training
-// day with two slots (Program A / Program B); each exercise is tagged with `day` +
-// `prog`. These helpers group/filter that flat list — no Firebase, no React.
-import type { Client, ProgramExercise } from './types';
+// Pure per-day program helpers. The standing program is planned per training day
+// with one or more circuit slots (Program A, B, C…); each exercise is tagged with
+// `day` + `prog`. These helpers group/filter that flat list — no Firebase, no React.
+import type { Client, ProgKey, ProgramExercise } from './types';
 import { parseDays } from './client';
 
-export type ProgLabel = 'A' | 'B';
-export const PROG_LABELS: ProgLabel[] = ['A', 'B'];
+export type ProgLabel = ProgKey;
+/** All possible program slots (A–F), in order — used for deriving + adding programs. */
+export const PROG_LABELS: ProgLabel[] = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+/** The program labels actually present for a day (have ≥1 exercise), in A→F order. */
+export function dayProgLabels(exercises: ProgramExercise[], day: string): ProgLabel[] {
+  return PROG_LABELS.filter((p) => exForDayProg(exercises, day, p).length > 0);
+}
+
+/** The next free program label given the labels already in use, or null once F is used. */
+export function nextProgLabel(inUse: ProgLabel[]): ProgLabel | null {
+  return PROG_LABELS.find((p) => !inUse.includes(p)) ?? null;
+}
 
 /** A real, plannable exercise (excludes future rows + the "Tap to add" placeholder). */
 export function isPlannable(e: ProgramExercise): boolean {

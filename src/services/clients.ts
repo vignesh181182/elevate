@@ -14,7 +14,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Assessment, Client, ClientStatus, ProgramExercise, ProgramHistory } from '../domain/types';
+import type { Assessment, Client, ClientStatus, ProgKey, ProgramExercise, ProgramHistory } from '../domain/types';
 
 /** Fields a coach fills in the add-client form; everything else is defaulted. */
 export interface NewClientInput {
@@ -54,7 +54,7 @@ export interface NewProgramExercise {
 export async function addProgramExercises(
   clientId: string,
   items: NewProgramExercise[],
-  slot?: { day: string; prog: 'A' | 'B' },
+  slot?: { day: string; prog: ProgKey },
 ): Promise<void> {
   if (!items.length) return;
   const col = collection(db, 'clients', clientId, 'exercises');
@@ -78,6 +78,14 @@ export async function addProgramExercises(
 /** Remove one exercise from a client's program. */
 export async function removeProgramExercise(clientId: string, exId: string): Promise<void> {
   await deleteDoc(doc(db, 'clients', clientId, 'exercises', exId));
+}
+
+/** Remove several exercises at once (e.g. an entire program slot) in one batch. */
+export async function removeProgramExercises(clientId: string, exIds: string[]): Promise<void> {
+  if (!exIds.length) return;
+  const batch = writeBatch(db);
+  for (const exId of exIds) batch.delete(doc(db, 'clients', clientId, 'exercises', exId));
+  await batch.commit();
 }
 
 /** Persist a new exercise order — writes order = 1..N in the given id sequence, atomically. */
@@ -269,7 +277,7 @@ export async function saveAssessment(id: string, input: AssessmentInput): Promis
  * dataset). Writes the dotted `program.sets.{label}` field so the other label and
  * the rest of the program are untouched.
  */
-export async function setProgramSets(clientId: string, label: 'A' | 'B', n: number): Promise<void> {
+export async function setProgramSets(clientId: string, label: ProgKey, n: number): Promise<void> {
   await updateDoc(doc(db, 'clients', clientId), { [`program.sets.${label}`]: n });
 }
 

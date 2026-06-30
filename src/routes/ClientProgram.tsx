@@ -6,10 +6,10 @@ import ProgramHistory from '../components/ProgramHistory';
 import { ROUNDS } from '../domain/session';
 import { currentProgramWeek, isRepBased, weekLoad } from '../domain/client';
 import {
+  dayProgLabels,
   exForDayProg,
   hasDayProgPlan,
   programDays,
-  PROG_LABELS,
   todayWeekday,
   type ProgLabel,
 } from '../domain/program';
@@ -124,15 +124,22 @@ function ReadOnly({
                   </button>
                 ))}
               </div>
-              {PROG_LABELS.map((prog) => (
-                <ReadOnlySlot
-                  key={prog}
-                  prog={prog}
-                  exercises={exForDayProg(list, day, prog)}
-                  sets={client.program?.sets?.[prog] ?? ROUNDS}
-                  week={week}
-                />
-              ))}
+              {dayProgLabels(list, day).length ? (
+                dayProgLabels(list, day).map((prog) => (
+                  <ReadOnlySlot
+                    key={prog}
+                    prog={prog}
+                    exercises={exForDayProg(list, day, prog)}
+                    sets={client.program?.sets?.[prog] ?? ROUNDS}
+                    week={week}
+                  />
+                ))
+              ) : (
+                <div className="empty">
+                  <div className="em">🏋️</div>
+                  <p>No exercises for {day} yet. Tap below to build the program.</p>
+                </div>
+              )}
             </>
           ) : list.length === 0 ? (
             <div className="empty">

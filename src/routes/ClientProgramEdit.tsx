@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import {
   useClient,
   useClientExercises,
+  useRemoveProgram,
   useRemoveProgramExercise,
   useReorderProgramExercises,
   useSaveWeekLoads,
@@ -12,7 +13,7 @@ import {
 import { useToast } from '../components/Toast';
 import { MAX_SETS, MIN_SETS, ROUNDS } from '../domain/session';
 import { currentProgramWeek, isRepBased, weekLoad } from '../domain/client';
-import { exForDayProg, hasDayProgPlan, PROG_LABELS, type ProgLabel } from '../domain/program';
+import { dayProgLabels, exForDayProg, hasDayProgPlan, nextProgLabel, PROG_LABELS, type ProgLabel } from '../domain/program';
 import type { Client, ProgramExercise } from '../domain/types';
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -59,7 +60,26 @@ function EditView({
   const remove = useRemoveProgramExercise(client.id);
   const setSets = useSetProgramSets(client.id);
   const reorder = useReorderProgramExercises(client.id);
+  const removeProgram = useRemoveProgram(client.id);
   const perDay = !!day && hasDayProgPlan(list);
+
+  // Programs shown for this day: those with exercises, plus any empty ones the coach
+  // just added (transient — they persist once an exercise is tagged into them).
+  const [added, setAdded] = useState<ProgLabel[]>([]);
+  const present = perDay ? dayProgLabels(list, day) : [];
+  const labels = PROG_LABELS.filter((p) => present.includes(p) || added.includes(p));
+  const editLabels: ProgLabel[] = labels.length ? labels : ['A'];
+
+  function removeProgramSlot(prog: ProgLabel) {
+    setAdded((a) => a.filter((l) => l !== prog));
+    const exIds = exForDayProg(list, day, prog).map((e) => e.id).filter((x): x is string => !!x);
+    if (exIds.length) {
+      removeProgram.mutate(exIds, {
+        onSuccess: () => toast(`Program ${prog} removed`),
+        onError: () => toast('Could not remove program'),
+      });
+    }
+  }
 
   // Unsaved weight/reps for THIS week, keyed by exId. Defaults from the stored load.
   const [drafts, setDrafts] = useState<Record<string, { w: number; r: number }>>({});
@@ -127,34 +147,40 @@ function EditView({
       <div className="bar solid">
         <div className="bar-titles">
           <div className="bar-title">{perDay ? `Modify ${day} program` : 'Modify program'}</div>
-          <div className="bar-sub">{client.name}</div>
+          <div className="bar-sub">
+            {client.name} · Week {week}
+          </div>
         </div>
         <button className="iconbtn" onClick={close} aria-label="Close without saving">
           <X />
         </button>
       </div>
 
-      <div className="wkbanner pad-h">
-        Week {week} — tap − / + to set this week&rsquo;s load
-      </div>
-
       {perDay ? (
-        PROG_LABELS.map((prog) => (
-          <Slot
-            key={prog}
-            prog={prog}
-            exercises={exForDayProg(list, day, prog)}
-            renderCard={card}
-            sets={client.program?.sets?.[prog] ?? ROUNDS}
-            onSets={(delta) => {
-              const cur = client.program?.sets?.[prog] ?? ROUNDS;
-              const n = Math.max(MIN_SETS, Math.min(MAX_SETS, cur + delta));
-              if (n !== cur) setSets.mutate({ label: prog, n });
-            }}
-            onReorder={reorderSlot}
-            onAdd={() => navigate(`/clients/${client.id}/library?day=${day}&prog=${prog}`)}
-          />
-        ))
+        <>
+          {editLabels.map((prog) => (
+            <Slot
+              key={prog}
+              prog={prog}
+              exercises={exForDayProg(list, day, prog)}
+              renderCard={card}
+              sets={client.program?.sets?.[prog] ?? ROUNDS}
+              onSets={(delta) => {
+                const cur = client.program?.sets?.[prog] ?? ROUNDS;
+                const n = Math.max(MIN_SETS, Math.min(MAX_SETS, cur + delta));
+                if (n !== cur) setSets.mutate({ label: prog, n });
+              }}
+              onReorder={reorderSlot}
+              onAdd={() => navigate(`/clients/${client.id}/library?day=${day}&prog=${prog}`)}
+              onRemoveProgram={editLabels.length > 1 ? () => removeProgramSlot(prog) : undefined}
+            />
+          ))}
+          {nextProgLabel(editLabels) && (
+            <button className="pb-addprog" onClick={() => setAdded((a) => [...a, nextProgLabel(editLabels)!])}>
+              ＋ Add program
+            </button>
+          )}
+        </>
       ) : list.length === 0 ? (
         <div className="empty">
           <div className="em">🏋️</div>
@@ -196,6 +222,7 @@ function Slot({
   onSets,
   onAdd,
   onReorder,
+  onRemoveProgram,
 }: {
   prog: ProgLabel;
   exercises: ProgramExercise[];
@@ -204,6 +231,7 @@ function Slot({
   onSets: (delta: number) => void;
   onAdd: () => void;
   onReorder: (orderedIds: string[]) => void;
+  onRemoveProgram?: () => void;
 }) {
   // Inline drag-to-reorder within this program (ported from the prototype's wireExDrag):
   // the grip starts a pointer drag, the card follows the finger and neighbours shift past
@@ -313,6 +341,11 @@ function Slot({
       <button className="slot-add" onClick={onAdd}>
         ＋ Add exercise to Program {prog}
       </button>
+      {onRemoveProgram && (
+        <button className="pb-remove" onClick={onRemoveProgram}>
+          Remove Program {prog}
+        </button>
+      )}
     </div>
   );
 }
