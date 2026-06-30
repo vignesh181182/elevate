@@ -4,6 +4,7 @@
 // "label:round:name"). Everything else — active program, current round, next
 // exercise, completion — is computed here. No Firebase, no React.
 import type { ProgramExercise } from './types';
+import { exForDayProg, hasDayProgPlan, PROG_LABELS } from './program';
 
 export const ROUNDS = 3;
 
@@ -26,6 +27,22 @@ export function splitPrograms(list: ProgramExercise[]): CircuitProgram[] {
       { label: 'B', exercises: list.slice(half) },
     ] as CircuitProgram[]
   ).filter((p) => p.exercises.length > 0);
+}
+
+/**
+ * Today's circuit programs. When the standing plan is tagged per training day,
+ * Program A/B ARE that day's tagged slots (one dataset — no separate split to
+ * maintain). Otherwise (paused/untagged clients) fall back to halving the flat
+ * list so a circuit can still be built. Empty programs are dropped.
+ */
+export function circuitPrograms(list: ProgramExercise[], day: string | null): CircuitProgram[] {
+  if (day && hasDayProgPlan(list)) {
+    const tagged = PROG_LABELS.map((label) => ({ label, exercises: exForDayProg(list, day, label) })).filter(
+      (p) => p.exercises.length > 0,
+    );
+    if (tagged.length) return tagged;
+  }
+  return splitPrograms(list);
 }
 
 /** Progress key for one set: "A:1:Back squat". */

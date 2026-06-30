@@ -29,6 +29,30 @@ export function programDays(client: Pick<Client, 'days'>): string[] {
   return parseDays(client.days);
 }
 
+const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** Today as a 3-letter weekday label ('Mon'…'Sun'). */
+export function todayWeekday(): string {
+  return DAY_ORDER[(new Date().getDay() + 6) % 7];
+}
+
+/**
+ * Which scheduled day today's session runs: today if it's a training day, else
+ * the next scheduled day (wrapping the week). null when no days are set.
+ */
+export function sessionDayFor(client: Pick<Client, 'days'>): string | null {
+  const days = programDays(client);
+  if (!days.length) return null;
+  const today = todayWeekday();
+  if (days.includes(today)) return today;
+  const ti = DAY_ORDER.indexOf(today);
+  for (let i = 1; i <= 7; i++) {
+    const d = DAY_ORDER[(ti + i) % 7];
+    if (days.includes(d)) return d;
+  }
+  return days[0];
+}
+
 /** Count of plannable exercises in a (day, prog) slot. */
 export function slotCount(exercises: ProgramExercise[], day: string, prog: ProgLabel): number {
   return exForDayProg(exercises, day, prog).length;

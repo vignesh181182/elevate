@@ -25,10 +25,11 @@ import {
   roundComplete,
   roundCounts,
   sessionComplete,
-  splitPrograms,
+  circuitPrograms,
   type CircuitProgram,
   type Progress,
 } from '../domain/session';
+import { sessionDayFor } from '../domain/program';
 import type { ProgramExercise, SessionLog } from '../domain/types';
 
 const nowTime = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -76,7 +77,8 @@ export default function ClientSession() {
   const progress: Progress = session?.progress ?? {};
   const completed = session?.status === 'completed';
   const list = exercises.filter((e) => !e.future && e.name !== 'Tap to add exercise');
-  const programs = splitPrograms(list);
+  const day = sessionDayFor(client);
+  const programs = circuitPrograms(list, day);
   const week = currentProgramWeek(client);
   const activeIdx = activeProgramIndex(programs, progress);
 
@@ -148,7 +150,7 @@ export default function ClientSession() {
             {present && !completed && <span className="se-present">✓ Present</span>}
           </div>
           <div className="se-meta">
-            Week {week} · {client.time}
+            {day ? `${day} · ` : ''}Week {week} · {client.time}
           </div>
         </div>
       </div>

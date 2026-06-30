@@ -12,11 +12,17 @@ import {
 import { useToast } from '../components/Toast';
 import ProgramHistory from '../components/ProgramHistory';
 import { currentProgramWeek, isRepBased, programDisplayName, weekLoad } from '../domain/client';
-import { exForDayProg, hasDayProgPlan, programDays, PROG_LABELS, type ProgLabel } from '../domain/program';
+import {
+  exForDayProg,
+  hasDayProgPlan,
+  programDays,
+  PROG_LABELS,
+  todayWeekday,
+  type ProgLabel,
+} from '../domain/program';
 import type { Client, ProgramExercise, ProgramHistory as ProgramHistoryRec } from '../domain/types';
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
-const todayWeekday = () => new Date().toLocaleDateString('en-US', { weekday: 'short' });
 
 export default function ClientProgram() {
   const { id } = useParams();
