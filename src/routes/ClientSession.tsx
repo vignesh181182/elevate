@@ -65,7 +65,7 @@ export default function ClientSession() {
     return (
       <div className="screen">
         <div className="bar solid">
-          <button className="iconbtn" onClick={() => navigate(`/clients/${id}`)} aria-label="Back">
+          <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
             <ChevronLeft />
           </button>
           <div className="bar-title">Today&rsquo;s Session</div>
@@ -137,7 +137,7 @@ export default function ClientSession() {
   return (
     <div className="screen">
       <div className="bar solid">
-        <button className="iconbtn" onClick={() => navigate(`/clients/${client.id}`)} aria-label="Back">
+        <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
           <ChevronLeft />
         </button>
         <div className="bar-title">Today&rsquo;s Session</div>

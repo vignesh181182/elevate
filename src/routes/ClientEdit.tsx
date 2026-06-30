@@ -25,7 +25,7 @@ export default function ClientEdit() {
     return (
       <div className="screen">
         <div className="bar solid">
-          <button className="iconbtn" onClick={() => navigate('/clients')} aria-label="Back">
+          <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
             <ChevronLeft />
           </button>
           <div className="bar-title">Edit client</div>
@@ -61,7 +61,7 @@ function Form({
   const [ability, setAbility] = useState(client.ability || 'Abled');
   const [coachId, setCoachId] = useState(client.coachId ?? '');
 
-  const back = () => navigate(`/clients/${client.id}`);
+  const back = () => navigate(-1);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();

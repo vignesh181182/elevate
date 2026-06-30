@@ -154,7 +154,7 @@ export default function ClientSessions() {
     return (
       <div className="screen">
         <div className="bar solid">
-          <button className="iconbtn" onClick={() => navigate('/clients')} aria-label="Back">
+          <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
             <ChevronLeft />
           </button>
         </div>
@@ -167,7 +167,7 @@ export default function ClientSessions() {
 
   return (
     <div className="screen">
-      <ClientDrillHead clientId={client.id} name={client.name} label="Sessions" />
+      <ClientDrillHead name={client.name} label="Sessions" />
       <CalendarMonth client={client} log={log} />
     </div>
   );

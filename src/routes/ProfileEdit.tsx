@@ -13,7 +13,7 @@ export default function ProfileEdit() {
   const { coach, refreshCoach } = useAuth();
   const save = useSaveProfile(coach?.id);
 
-  const back = () => navigate('/more');
+  const back = () => navigate(-1);
 
   const [name, setName] = useState(coach?.name ?? '');
   const [phone, setPhone] = useState(coach?.phone ?? '');

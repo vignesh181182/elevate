@@ -62,7 +62,7 @@ export default function ClientDetail() {
     return (
       <div className="screen">
         <div className="bar solid">
-          <button className="iconbtn" onClick={() => navigate('/clients')} aria-label="Back">
+          <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
             <ChevronLeft />
           </button>
         </div>
@@ -81,7 +81,7 @@ export default function ClientDetail() {
 
   const top = (
     <div className="cp-top">
-      <button className="iconbtn" onClick={() => navigate('/clients')} aria-label="Back">
+      <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
         <ChevronLeft />
       </button>
       <div className="cp-top-r">

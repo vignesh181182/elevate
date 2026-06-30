@@ -5,12 +5,12 @@ import { useClient } from '../hooks/useData';
 import type { Client } from '../domain/types';
 
 /** Drill-in back-bar: "‹ {first} · {label}" — back returns to the client hub. */
-export function ClientDrillHead({ clientId, name, label }: { clientId: string; name: string; label: string }) {
+export function ClientDrillHead({ name, label }: { name: string; label: string }) {
   const navigate = useNavigate();
   const first = name.split(' ')[0];
   return (
     <div className="bar solid">
-      <button className="iconbtn" onClick={() => navigate(`/clients/${clientId}`)} aria-label="Back">
+      <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
         <ChevronLeft />
       </button>
       <div className="bar-title nm">
@@ -47,7 +47,7 @@ export default function ClientDrill({
     return (
       <div className="screen">
         <div className="bar solid">
-          <button className="iconbtn" onClick={() => navigate('/clients')} aria-label="Back">
+          <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
             <ChevronLeft />
           </button>
         </div>
@@ -60,7 +60,7 @@ export default function ClientDrill({
 
   return (
     <div className="screen">
-      <ClientDrillHead clientId={client.id} name={client.name} label={label} />
+      <ClientDrillHead name={client.name} label={label} />
       <div className="fadein">
         <div className="sp10" />
         {children(client)}

@@ -43,7 +43,7 @@ export default function Settings() {
   return (
     <div className="fadein">
       <div className="bar solid">
-        <button className="iconbtn" onClick={() => navigate('/more')} aria-label="Back">
+        <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
           <ChevronLeft />
         </button>
         <div className="bar-title">Settings</div>

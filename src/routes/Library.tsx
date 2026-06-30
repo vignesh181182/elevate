@@ -76,14 +76,14 @@ export default function Library() {
       {
         onSuccess: () => {
           toast(`Added ${items.length} exercise${items.length === 1 ? '' : 's'}${slot ? ` to Program ${slot.prog}` : ''}`);
-          navigate(`/clients/${clientId}/program`);
+          navigate(-1); // return to wherever the library was opened (the program editor)
         },
         onError: () => toast('Could not add exercises'),
       },
     );
   }
 
-  const goBack = () => (pick ? navigate(`/clients/${clientId}/program`) : navigate(-1));
+  const goBack = () => navigate(-1);
 
   return (
     <div className="screen">

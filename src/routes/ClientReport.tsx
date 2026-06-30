@@ -37,7 +37,7 @@ export default function ClientReport() {
     return (
       <div className="screen">
         <div className="bar solid">
-          <button className="iconbtn" onClick={() => navigate('/reports')} aria-label="Back">
+          <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
             <ChevronLeft />
           </button>
           <div className="bar-title">Weekly report</div>
@@ -151,7 +151,7 @@ function Composer({
   return (
     <div className="screen">
       <div className="bar solid">
-        <button className="iconbtn" onClick={() => navigate('/reports')} aria-label="Back">
+        <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
           <ChevronLeft />
         </button>
         <div className="bar-title">Weekly report</div>
