@@ -55,6 +55,7 @@ function Editor({
   const perDay = hasDayProgPlan(list) && days.length > 0;
 
   const [mode, setMode] = useState<'current' | 'history'>('current');
+  const [gridMode, setGridMode] = useState<'cards' | 'grid'>('cards');
   const [week, setWeek] = useState(curWk);
   const [day, setDay] = useState(() => (days.includes(todayWeekday()) ? todayWeekday() : days[0] ?? ''));
   // Unsaved edits, keyed by week → exId → {w,r}. Carry-forward defaults come from weekLoad.
@@ -128,6 +129,23 @@ function Editor({
             {week === curWk ? ' · this week' : ''}
           </div>
 
+          {list.length > 0 && (
+            <div className="grid-toggle">
+              <div
+                className={`gt ${gridMode === 'cards' ? 'on' : ''}`}
+                onClick={() => setGridMode('cards')}
+              >
+                Plan by week
+              </div>
+              <div
+                className={`gt ${gridMode === 'grid' ? 'on' : ''}`}
+                onClick={() => setGridMode('grid')}
+              >
+                Full {weeks}-week grid
+              </div>
+            </div>
+          )}
+
           <div className="weeks">
             {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => {
               const cls = w === week ? 'cur' : w < curWk ? 'done' : w === curWk ? 'current' : 'plan';
@@ -140,7 +158,9 @@ function Editor({
             })}
           </div>
 
-          {perDay ? (
+          {gridMode === 'grid' ? (
+            <FullGrid list={list} weeks={weeks} curWk={curWk} />
+          ) : perDay ? (
             <>
               <div className="day-tabs">
                 {days.map((d) => (
@@ -181,17 +201,70 @@ function Editor({
             </>
           )}
 
-          <div className="bottom-cta sticky-cta">
-            <button
-              className={`bigbtn${!dirty || save.isPending ? ' dim' : ''}`}
-              disabled={!dirty || save.isPending}
-              onClick={onSave}
-            >
-              {save.isPending ? 'Saving…' : dirty ? `Save week ${week}` : 'No changes'}
-            </button>
-          </div>
+          {gridMode === 'cards' && (
+            <div className="bottom-cta sticky-cta">
+              <button
+                className={`bigbtn${!dirty || save.isPending ? ' dim' : ''}`}
+                disabled={!dirty || save.isPending}
+                onClick={onSave}
+              >
+                {save.isPending ? 'Saving…' : dirty ? `Save week ${week}` : 'No changes'}
+              </button>
+            </div>
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+// Read-only port of the prototype fullGrid(): exercises × weeks, showing each
+// week's stored load (future weeks dimmed, the live week highlighted). No mutation.
+function FullGrid({ list, weeks, curWk }: { list: ProgramExercise[]; weeks: number; curWk: number }) {
+  const wkArr = Array.from({ length: weeks }, (_, i) => i + 1);
+  return (
+    <div className="fullgrid">
+      <table>
+        <thead>
+          <tr>
+            <th className="ex-h">Exercise</th>
+            {wkArr.map((w) => (
+              <th key={w} className={w === curWk ? 'nowcol' : ''}>
+                W{w}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((ex) => (
+            <tr key={ex.id ?? ex.name}>
+              <td className="ex">
+                {ex.name}
+                {ex.day && ex.prog && (
+                  <span className="grid-tag">
+                    {ex.day}·{ex.prog}
+                  </span>
+                )}
+              </td>
+              {wkArr.map((w) => {
+                const l = ex.logs?.[w];
+                return (
+                  <td key={w} className={w === curWk ? 'nowcol' : ''}>
+                    {l ? (
+                      <>
+                        <span className={`wt${w > curWk ? ' plan' : ''}`}>{l.w}</span>
+                        <div className="rp">{l.r}r</div>
+                      </>
+                    ) : (
+                      <span className="rp">—</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

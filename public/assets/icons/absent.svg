@@ -1,0 +1,47 @@
+<svg width="220" height="220" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Background Circle -->
+  <circle cx="110" cy="110" r="72"
+          fill="#1B1B1F"/>
+
+  <!-- Decorative Dots -->
+  <circle cx="48" cy="72" r="3" fill="#3B3B40"/>
+  <circle cx="58" cy="150" r="4" fill="#3B3B40"/>
+  <circle cx="168" cy="58" r="3" fill="#3B3B40"/>
+  <circle cx="180" cy="82" r="4" fill="#3B3B40"/>
+
+  <!-- Plus -->
+  <path d="M182 146V158M176 152H188"
+        stroke="#444"
+        stroke-width="3"
+        stroke-linecap="round"/>
+
+  <!-- Calendar -->
+  <rect x="66"
+        y="62"
+        width="88"
+        height="88"
+        rx="18"
+        stroke="#5A5A5A"
+        stroke-width="3"/>
+
+  <!-- Calendar Rings -->
+  <path d="M88 50V72" stroke="#5A5A5A" stroke-width="6" stroke-linecap="round"/>
+  <path d="M132 50V72" stroke="#5A5A5A" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Calendar Top Line -->
+  <line x1="66" y1="84" x2="154" y2="84"
+        stroke="#5A5A5A"
+        stroke-width="3"/>
+
+  <!-- Red Badge -->
+  <circle cx="110" cy="110" r="22"
+          fill="#E11937"/>
+
+  <!-- X -->
+  <path d="M102 102L118 118M118 102L102 118"
+        stroke="white"
+        stroke-width="4"
+        stroke-linecap="round"/>
+
+</svg>
