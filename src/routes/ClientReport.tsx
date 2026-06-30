@@ -1,12 +1,18 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Download } from 'lucide-react';
-import { useClient, useClientExercises, useClientSessionLog, useCoachNameMap } from '../hooks/useData';
+import { ChevronLeft, Download, Send } from 'lucide-react';
+import {
+  useClient,
+  useClientExercises,
+  useClientSessionLog,
+  useCoachNameMap,
+  useMarkReportSent,
+} from '../hooks/useData';
 import { useToast } from '../components/Toast';
 import { catStyle } from '../lib/categories';
-import { initials } from '../lib/format';
+import { initials, fmtShortDate } from '../lib/format';
 import { downloadElementPdf } from '../lib/pdf';
-import { programDisplayName } from '../domain/client';
+import { currentProgramWeek, programDisplayName } from '../domain/client';
 import { reportPeriod, weekSessions, performanceRows, GYM, type PerfRow, type ReportDay } from '../domain/report';
 import type { Client, ProgramExercise, SessionLog } from '../domain/types';
 
@@ -58,6 +64,7 @@ function Composer({
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const toast = useToast();
+  const markSent = useMarkReportSent();
   const first = client.name.split(' ')[0];
   const [note, setNote] = useState('');
   const [goals, setGoals] = useState<Goal[]>([
@@ -105,6 +112,38 @@ function Composer({
     } finally {
       setBusy(false);
     }
+  }
+
+  // Send the report 1:1 via WhatsApp (text summary; coach attaches the downloaded PDF)
+  // and record it as sent so the Reports list reflects it.
+  function sendWhatsApp() {
+    const digits = client.phone.replace(/\D/g, '');
+    if (!digits) return toast('No phone number on file');
+    const ups = rows
+      .filter((r) => r.cls === 'up')
+      .slice(0, 3)
+      .map((r) => `• ${r.name}: ${r.imp}`)
+      .join('\n');
+    const text = [
+      `Hi ${first}, here's your progress report for ${period}.`,
+      ``,
+      `Sessions completed: ${sessions.done}/${sessions.total}`,
+      ups ? `Improvements:\n${ups}` : '',
+      note.trim() ? `\n${note.trim()}` : '',
+      `\n— ${coach}, ${GYM.name}`,
+    ]
+      .filter((l) => l !== '')
+      .join('\n');
+    markSent.mutate(
+      { clientId: client.id, week: currentProgramWeek(client), when: fmtShortDate(new Date().toISOString().slice(0, 10)) },
+      {
+        onSuccess: () => {
+          window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+          toast('Marked sent — opening WhatsApp');
+        },
+        onError: () => toast('Could not record the report'),
+      },
+    );
   }
 
   const filledGoals = goals.filter((g) => g.t.trim() || g.s.trim());
@@ -193,6 +232,11 @@ function Composer({
         <button className={`bigbtn${busy ? ' dim' : ''}`} onClick={onDownload} disabled={busy}>
           <Download size={18} /> {busy ? 'Preparing…' : 'Download PDF'}
         </button>
+        <div className="rdoc-share">
+          <button className="bigbtn ghost" onClick={sendWhatsApp} disabled={markSent.isPending}>
+            <Send size={18} /> {markSent.isPending ? 'Sending…' : 'Send via WhatsApp'}
+          </button>
+        </div>
       </div>
       <div className="sp24" />
     </div>

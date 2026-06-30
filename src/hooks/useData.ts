@@ -39,7 +39,7 @@ import {
   setSessionProgress,
 } from '../services/sessions';
 import { addMedia, deleteMedia, fetchMedia, type NewMedia } from '../services/media';
-import { fetchReports } from '../services/reports';
+import { fetchReports, markReportSent } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
@@ -213,6 +213,16 @@ export function useDeleteLibraryExercise() {
 
 export function useReports() {
   return useQuery({ queryKey: ['reports'], queryFn: fetchReports });
+}
+
+/** Mark a client's week-N report sent. Invalidates the reports list. */
+export function useMarkReportSent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clientId, week, when }: { clientId: string; week: number; when: string }) =>
+      markReportSent(clientId, week, when),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['reports'] }),
+  });
 }
 
 export function useSessionLogs() {
