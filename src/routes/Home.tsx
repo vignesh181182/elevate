@@ -15,6 +15,7 @@ import {
 import { useAuth, useIsMainCoach } from '../auth/AuthProvider';
 import { useClients, useCoaches, useCoachNameMap, useDaySessions, useBillings } from '../hooks/useData';
 import { parseDays } from '../domain/client';
+import { buildNotifications } from '../domain/notifications';
 import { catStyle } from '../lib/categories';
 import { initials } from '../lib/format';
 import { CLIENT_FILTERS, type FilterKey } from '../domain/filters';
@@ -48,6 +49,8 @@ export default function Home() {
   const coachName = useCoachNameMap();
   const ids = useMemo(() => clients.map((c) => c.id), [clients]);
   const { data: billings = {} } = useBillings(ids);
+  // Bell badge — same feed the Notifications screen shows (all clients, role-aware).
+  const notifCount = useMemo(() => buildNotifications(clients, billings, isMain).length, [clients, billings, isMain]);
 
   // Coach switcher — scope the whole dashboard to one coach's roster (or All).
   const [homeCoach, setHomeCoach] = useState<string>(coach?.id ?? 'All');
@@ -173,6 +176,7 @@ export default function Home() {
             aria-label="Notifications"
           >
             <Bell size={20} />
+            {notifCount > 0 && <span className="eh-nbadge">{notifCount}</span>}
           </button>
         </div>
         {menuOpen && (
@@ -203,7 +207,7 @@ export default function Home() {
       {menuOpen && <div className="pm-overlay" onClick={() => setMenuOpen(false)} />}
 
       <div className="eh-greet">
-        {homeCoach === 'All' ? 'Viewing all coaches' : `${greet}, ${selectedName.split(' ')[0]} 👋`}
+        {homeCoach === 'All' ? 'View all coaches' : `${greet}, ${selectedName.split(' ')[0]} 👋`}
       </div>
 
       <div className="eh-stats">
@@ -317,6 +321,11 @@ export default function Home() {
               <div className="eh-card-t">
                 Critical Alerts {alerts.length > 0 && <span className="eh-badge">{alerts.length}</span>}
               </div>
+              {alerts.length > 0 && (
+                <button className="eh-viewall" onClick={() => go('All')}>
+                  View all
+                </button>
+              )}
             </div>
             {alerts.length === 0 ? (
               <div className="ea-empty">All clear — no critical alerts.</div>
