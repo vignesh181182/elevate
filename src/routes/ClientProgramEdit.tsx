@@ -91,7 +91,6 @@ function EditView({
   // Unsaved weight/reps for THIS week, keyed by exId. Defaults from the stored load.
   const [drafts, setDrafts] = useState<Record<string, { w: number; r: number }>>({});
   const valueFor = (ex: ProgramExercise) => drafts[ex.id as string] ?? weekLoad(ex, week);
-  const dirty = Object.keys(drafts).length > 0;
 
   function adjust(ex: ProgramExercise, k: 'w' | 'r', delta: number) {
     if (!ex.id) return;
@@ -217,8 +216,8 @@ function EditView({
 
       <div className="pb-actions">
         <button
-          className={`pb-create${!dirty || save.isPending ? ' dim' : ''}`}
-          disabled={!dirty || save.isPending}
+          className={`pb-create${save.isPending ? ' dim' : ''}`}
+          disabled={save.isPending}
           onClick={onSave}
         >
           {save.isPending ? 'Saving…' : 'Save'}
