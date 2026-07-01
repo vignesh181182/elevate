@@ -5,11 +5,9 @@ import {
   Wallet,
   Calendar,
   ClipboardList,
-  ClipboardCheck,
   CircleAlert,
   TriangleAlert,
   Users,
-  UserPlus,
   UserCheck,
   ChevronDown,
 } from 'lucide-react';
@@ -69,12 +67,18 @@ export default function Home() {
   const selectedName = homeCoach === 'All' ? '' : coaches.find((c) => c.id === homeCoach)?.name ?? coach?.name ?? '';
   const switcherLabel = homeCoach === 'All' ? 'All coaches' : selectedName || 'Coach';
 
+  // Logged-in coach first, then the rest — so the current user is always on top.
+  const orderedCoaches = useMemo(
+    () => [...coaches].sort((a, b) => (a.id === coach?.id ? -1 : b.id === coach?.id ? 1 : 0)),
+    [coaches, coach?.id],
+  );
+
   const coachOpts = [
     { id: 'All', name: 'All coaches', role: 'Every coach', photo: undefined as string | undefined },
-    ...coaches.map((c) => ({
+    ...orderedCoaches.map((c) => ({
       id: c.id,
       name: c.name,
-      role: c.role === 'main' ? 'Head coach' : 'Junior coach',
+      role: c.role === 'main' ? 'Head coach' : 'Coach',
       photo: c.photo,
     })),
   ];
@@ -139,6 +143,12 @@ export default function Home() {
     return st === 'absent' || st === 'cancelled';
   }).length;
 
+  // Today's attendance rate — attended (present/done) over every session with a recorded
+  // outcome. Real data only: null (shown as '—') until something is marked, no fake default.
+  const markedStates = todaySched.map((s) => stateOf(s.c.id)).filter((st) => st !== 'upcoming');
+  const attendedCount = markedStates.filter((st) => st === 'done' || st === 'inprogress').length;
+  const attRate = markedStates.length ? Math.round((attendedCount / markedStates.length) * 100) : null;
+
   // Critical alerts — only categories that have items. Missed leads (most urgent,
   // matching the prototype); payment ones are main-only.
   const alerts: { id: string; icon: typeof Wallet; cls: string; title: string; sub: string; onClick: () => void }[] = [];
@@ -165,16 +175,26 @@ export default function Home() {
     alerts.push({ id: 'review', icon: ClipboardList, cls: 'ic-amber', title: 'Reviews due', sub: `${n} client${n === 1 ? '' : 's'} need a weekly review`, onClick: () => go('Review due') });
   }
 
-  // Client Insights — every card is real (no fabricated rates/deltas). Missed is
-  // attendance-derived; billing cards are head-coach only (juniors never receive billing).
-  const insights: { id: string; icon: typeof Wallet; cls: string; label: string; sub: string; count: number; onClick: () => void; main?: boolean }[] = [
-    { id: 'Leads', icon: UserPlus, cls: 'ic-grey', label: 'New Leads', sub: 'Not yet activated', count: count('Leads'), onClick: () => go('Leads') },
-    { id: 'Assessment due', icon: ClipboardList, cls: 'ic-amber', label: 'Assessments Due', sub: 'Today', count: count('Assessment due'), onClick: () => go('Assessment due') },
-    { id: 'missed', icon: CircleAlert, cls: 'ic-orange', label: 'Missed Sessions', sub: 'Clients need attention', count: missedToday, onClick: () => navigate('/schedule') },
-    { id: 'Review due', icon: ClipboardCheck, cls: 'ic-grey', label: 'Reviews Due', sub: 'Weekly check-in', count: count('Review due'), onClick: () => go('Review due') },
-    { id: 'Payment due', icon: Wallet, cls: 'ic-red', label: 'Pending Payments', sub: 'Awaiting payment', count: count('Payment due'), onClick: () => go('Payment due'), main: true },
-    { id: 'Membership expiring', icon: Calendar, cls: 'ic-purple', label: 'Memberships Expiring', sub: 'In next 7 days', count: count('Membership expiring'), onClick: () => go('Membership expiring'), main: true },
+  // Client Insights — merged with the old Quick Stats into one grid. Every card is real
+  // (no fabricated rates/deltas): attendance + missed are attendance-derived; billing
+  // cards are head-coach only (juniors never receive billing). `value` overrides the
+  // big number when it isn't a plain count (e.g. the attendance %).
+  const insights: {
+    id: string;
+    icon: typeof Wallet;
+    cls: string;
+    label: string;
+    sub: string;
+    count: number;
+    value?: string;
+    onClick: () => void;
+    main?: boolean;
+  }[] = [
+    { id: 'Attendance', icon: UserCheck, cls: 'ic-green', label: 'Attendance Rate', sub: 'Today', count: attRate ?? 0, value: attRate == null ? '—' : `${attRate}%`, onClick: () => navigate('/schedule') },
     { id: 'Payment overdue', icon: CircleAlert, cls: 'ic-orange', label: 'Payment Overdue', sub: 'Needs follow-up', count: count('Payment overdue'), onClick: () => go('Payment overdue'), main: true },
+    { id: 'Membership expiring', icon: Calendar, cls: 'ic-purple', label: 'Memberships Expiring', sub: 'In next 7 days', count: count('Membership expiring'), onClick: () => go('Membership expiring'), main: true },
+    { id: 'missed', icon: CircleAlert, cls: 'ic-orange', label: 'Missed Sessions', sub: 'Clients need attention', count: missedToday, onClick: () => navigate('/schedule') },
+    { id: 'Active', icon: Users, cls: 'ic-red', label: 'Active Clients', sub: 'Currently active', count: count('Active'), onClick: () => go('Active') },
   ];
 
   return (
@@ -364,52 +384,6 @@ export default function Home() {
               ))
             )}
           </div>
-
-          <div className="eh-card">
-            <div className="eh-card-h">
-              <div className="eh-card-t">Quick Stats</div>
-            </div>
-            <div className="eq-grid">
-              <div className="eq-tile" onClick={() => go('Active')}>
-                <div className="eq-ic ic-red">
-                  <Users size={18} />
-                </div>
-                <div className="eq-tx">
-                  <div className="eq-v">{count('Active')}</div>
-                  <div className="eq-l">Active Clients</div>
-                </div>
-              </div>
-              <div className="eq-tile" onClick={() => go('Leads')}>
-                <div className="eq-ic ic-grey">
-                  <UserPlus size={18} />
-                </div>
-                <div className="eq-tx">
-                  <div className="eq-v">{count('Leads')}</div>
-                  <div className="eq-l">New Leads</div>
-                </div>
-              </div>
-              <div className="eq-tile" onClick={() => go('Assessment due')}>
-                <div className="eq-ic ic-amber">
-                  <ClipboardList size={18} />
-                </div>
-                <div className="eq-tx">
-                  <div className="eq-v">{count('Assessment due')}</div>
-                  <div className="eq-l">Assessments Due</div>
-                </div>
-              </div>
-              {isMain && (
-                <div className="eq-tile" onClick={() => go('Payment due')}>
-                  <div className="eq-ic ic-purple">
-                    <Wallet size={18} />
-                  </div>
-                  <div className="eq-tx">
-                    <div className="eq-v">{count('Payment due')}</div>
-                    <div className="eq-l">Pending Payments</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -418,22 +392,60 @@ export default function Home() {
         <div className="ei-grid">
           {insights
             .filter((i) => !i.main || isMain)
-            .map((i) => (
-              <div className="ei-card" key={i.id} onClick={i.onClick}>
-                <div className="ei-top">
-                  <div className={`ei-ic ${i.cls}`}>
-                    <i.icon size={18} />
+            .map((i) =>
+              i.id === 'Attendance' ? (
+                // Full-width hero: ring graph + label, so the remaining cards form a
+                // balanced 2-up grid beneath it.
+                <div className="ei-card ei-att" key={i.id} onClick={i.onClick}>
+                  <AttRing pct={attRate ?? 0} label={i.value ?? String(i.count)} />
+                  <div className="ei-att-tx">
+                    <div className="ei-att-l">{i.label}</div>
+                    <div className="ei-att-s">{i.sub}</div>
                   </div>
-                  <div className="ei-v">{i.count}</div>
                 </div>
-                <div className="ei-l">{i.label}</div>
-                <div className="ei-s">{i.sub}</div>
-              </div>
-            ))}
+              ) : (
+                <div className="ei-card" key={i.id} onClick={i.onClick}>
+                  <div className="ei-top">
+                    <div className={`ei-ic ${i.cls}`}>
+                      <i.icon size={18} />
+                    </div>
+                    <div className="ei-v">{i.value ?? i.count}</div>
+                  </div>
+                  <div className="ei-l">{i.label}</div>
+                  <div className="ei-s">{i.sub}</div>
+                </div>
+              ),
+            )}
         </div>
       </div>
 
       <div className="sp80" />
+    </div>
+  );
+}
+
+// Attendance ring — green arc over a faint track, with the % (or '—') centered inside.
+function AttRing({ pct, label }: { pct: number; label: string }) {
+  const r = 30;
+  const cc = 2 * Math.PI * r;
+  const dash = (cc * Math.max(0, Math.min(100, pct))) / 100;
+  return (
+    <div className="ei-ringwrap">
+      <svg viewBox="0 0 72 72" className="ei-ring">
+        <circle cx="36" cy="36" r={r} fill="none" stroke="var(--green-bg)" strokeWidth="7" />
+        <circle
+          cx="36"
+          cy="36"
+          r={r}
+          fill="none"
+          stroke="var(--green)"
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={`${dash.toFixed(1)} ${cc.toFixed(1)}`}
+          transform="rotate(-90 36 36)"
+        />
+      </svg>
+      <span className="ei-ring-v">{label}</span>
     </div>
   );
 }

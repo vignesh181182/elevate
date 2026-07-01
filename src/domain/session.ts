@@ -3,7 +3,7 @@
 // a fixed number of rounds; only the per-tick progress is persisted (keyed
 // "label:round:name"). Everything else — active program, current round, next
 // exercise, completion — is computed here. No Firebase, no React.
-import type { ProgramExercise } from './types';
+import type { ProgramExercise, SessionComment, SessionLog } from './types';
 import { exForDayProg, hasDayProgPlan, PROG_LABELS, type ProgLabel } from './program';
 import { estimated1RM } from './progress';
 
@@ -13,6 +13,24 @@ export interface SetLoad {
   r: number;
 }
 export type SetLogs = Record<string, SetLoad>;
+
+/** One skipped set — the coach's reason + when it was skipped. */
+export interface SkipInfo {
+  reason?: string;
+  at?: string;
+}
+export type Skips = Record<string, SkipInfo>;
+
+/** A session comment with its map-key id attached, ready to render. */
+export type CommentWithId = SessionComment & { id: string };
+
+/** Flatten the comments map into a list sorted oldest-first (by creation time). */
+export function sortedComments(map: Record<string, SessionComment> | undefined): CommentWithId[] {
+  if (!map) return [];
+  return Object.entries(map)
+    .map(([id, c]) => ({ id, ...c }))
+    .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+}
 
 export const ROUNDS = 3;
 
@@ -73,6 +91,28 @@ export function circuitPrograms(
     if (tagged.length) return withSets(tagged);
   }
   return withSets(splitPrograms(list));
+}
+
+/**
+ * Exercise count + distinct-muscle-group count for a day's circuit — the at-a-glance
+ * summary shown on the schedule row. Derived from the same circuitPrograms the session
+ * screen runs, so the numbers match what a coach will actually see when they open it.
+ */
+export function daySummary(
+  list: ProgramExercise[],
+  day: string | null,
+  setsByLabel?: SetsByLabel,
+): { exercises: number; groups: number } {
+  const exs = circuitPrograms(list, day, setsByLabel).flatMap((p) => p.exercises);
+  const groups = new Set(exs.map((e) => e.group).filter(Boolean));
+  return { exercises: exs.length, groups: groups.size };
+}
+
+/** Completed session logs whose date falls inside [start, end] (end open ⇒ ongoing), newest first. */
+export function sessionsInRange(log: SessionLog[], start?: string, end?: string): SessionLog[] {
+  return log
+    .filter((r) => (!start || r.date >= start) && (!end || r.date <= end))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
 /** Progress key for one set: "A:1:Back squat". */

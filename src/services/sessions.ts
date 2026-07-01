@@ -65,6 +65,68 @@ export async function setSessionSetLog(
   await updateDoc(ref, new FieldPath('setLogs', key), { w: load.w, r: load.r });
 }
 
+/**
+ * Skip one circuit set (any coach): ticks progress.{key}=true so the circuit advances
+ * to the next exercise AND records the skip + reason under skips.{key}. Both writes in
+ * one update; FieldPath handles the ':'/spaces in keys. The doc already exists.
+ */
+export async function setSessionSkip(
+  clientId: string,
+  date: string,
+  key: string,
+  reason: string,
+): Promise<void> {
+  const ref = doc(db, 'clients', clientId, 'sessions', date);
+  await updateDoc(
+    ref,
+    new FieldPath('progress', key),
+    true,
+    new FieldPath('skips', key),
+    { reason, at: new Date().toISOString() },
+  );
+}
+
+/**
+ * Save the coach's free-text session note (any coach). merge:true so it coexists with
+ * attendance + circuit fields on the same doc. The doc already exists (present was marked).
+ */
+export async function setSessionNote(clientId: string, date: string, note: string): Promise<void> {
+  const ref = doc(db, 'clients', clientId, 'sessions', date);
+  await setDoc(ref, { note }, { merge: true });
+}
+
+/**
+ * Add one session-notes comment (any coach). Writes comments.{id}={by,text,at} via
+ * FieldPath so it merges into the map without clobbering siblings. The doc already exists.
+ */
+export async function addSessionComment(
+  clientId: string,
+  date: string,
+  id: string,
+  comment: { by: string; text: string; at: string },
+): Promise<void> {
+  const ref = doc(db, 'clients', clientId, 'sessions', date);
+  await updateDoc(ref, new FieldPath('comments', id), comment);
+}
+
+/** Edit one comment's text (any coach): updates text + editedAt, leaving by/at intact. */
+export async function editSessionComment(
+  clientId: string,
+  date: string,
+  id: string,
+  text: string,
+  editedAt: string,
+): Promise<void> {
+  const ref = doc(db, 'clients', clientId, 'sessions', date);
+  await updateDoc(ref, new FieldPath('comments', id, 'text'), text, new FieldPath('comments', id, 'editedAt'), editedAt);
+}
+
+/** Delete one comment (any coach): removes comments.{id} from the map. */
+export async function deleteSessionComment(clientId: string, date: string, id: string): Promise<void> {
+  const ref = doc(db, 'clients', clientId, 'sessions', date);
+  await updateDoc(ref, new FieldPath('comments', id), deleteField());
+}
+
 /** Each listed client's session doc for one date (clientId → SessionDoc), unmarked omitted. */
 export async function fetchDaySessions(clientIds: string[], date: string): Promise<Record<string, SessionDoc>> {
   const entries = await Promise.all(

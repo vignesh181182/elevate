@@ -17,7 +17,7 @@ export default function Settings() {
 
   const name = coach?.name ?? user?.email ?? 'Coach';
   const email = coach?.email ?? user?.email ?? '';
-  const roleLabel = role === 'main' ? 'Head coach' : role === 'junior' ? 'Junior coach' : 'Coach';
+  const roleLabel = role === 'main' ? 'Head coach' : 'Coach';
   const useEmulator = import.meta.env.VITE_USE_EMULATOR === 'true';
   const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || '—';
 

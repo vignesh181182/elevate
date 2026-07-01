@@ -1,7 +1,9 @@
-import { Dumbbell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronRight, Dumbbell } from 'lucide-react';
 import { fmtShortDate, fmtProgRange } from '../lib/format';
 import { programDisplayName } from '../domain/client';
-import type { Client, ProgramExercise, ProgramHistory as ProgramHistoryRec } from '../domain/types';
+import { sessionsInRange } from '../domain/session';
+import type { Client, ProgramExercise, ProgramHistory as ProgramHistoryRec, SessionLog } from '../domain/types';
 
 // One program card — the live program (current) or an archived record.
 type CardRec = {
@@ -15,7 +17,17 @@ type CardRec = {
   exercises: { name: string }[];
 };
 
-function ProgramCard({ rec, current }: { rec: CardRec; current: boolean }) {
+function ProgramCard({
+  rec,
+  current,
+  sessionCount,
+  onOpen,
+}: {
+  rec: CardRec;
+  current: boolean;
+  sessionCount: number;
+  onOpen?: () => void;
+}) {
   const total = rec.weeks * rec.perWeek;
   const names = rec.exercises.map((e) => e.name);
   const shown = names.slice(0, 5).join(' · ') + (names.length > 5 ? ' · …' : '');
@@ -23,7 +35,12 @@ function ProgramCard({ rec, current }: { rec: CardRec; current: boolean }) {
     ? `Started ${rec.startDate ? fmtShortDate(rec.startDate) : '—'} · ongoing`
     : fmtProgRange(rec.startDate, rec.endDate);
   return (
-    <div className={`ph-card${current ? ' current' : ''}`}>
+    <div
+      className={`ph-card${current ? ' current' : ''}${onOpen ? ' tap' : ''}`}
+      onClick={onOpen}
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+    >
       {current && <div className="ph-curlabel">Current program</div>}
       <div className="ph-top">
         <div className="ph-name">{rec.name}</div>
@@ -34,20 +51,31 @@ function ProgramCard({ rec, current }: { rec: CardRec; current: boolean }) {
         {rec.weeks} weeks · {rec.perWeek}/week · {rec.sessionsCompleted} of {total} sessions completed
       </div>
       <div className="ph-exlist">{names.length ? shown : 'No exercises'}</div>
+      {onOpen && (
+        <div className="ph-open">
+          View {sessionCount} session{sessionCount === 1 ? '' : 's'} &amp; details
+          <ChevronRight size={15} />
+        </div>
+      )}
     </div>
   );
 }
 
-// Program history view: the current program plus archived records (newest first).
+// Program history view: the current program plus archived records (newest first). Each
+// past program opens a read-only detail page (the program landing page, scoped to that
+// program) where its sessions can be browsed.
 export default function ProgramHistory({
   client,
   exercises,
   history,
+  log = [],
 }: {
   client: Client;
   exercises: ProgramExercise[];
   history: ProgramHistoryRec[];
+  log?: SessionLog[];
 }) {
+  const navigate = useNavigate();
   const first = client.name.split(' ')[0];
   const liveExercises = exercises.filter((e) => !e.future && e.name !== 'Tap to add exercise');
   const hasCurrent = !!client.program && liveExercises.length > 0;
@@ -70,12 +98,18 @@ export default function ProgramHistory({
 
   return (
     <div className="pad">
-      {currentRec && <ProgramCard rec={currentRec} current />}
+      {currentRec && <ProgramCard rec={currentRec} current sessionCount={0} />}
       {past.length > 0 ? (
         <>
           <div className="ph-sec">History</div>
           {past.map((r) => (
-            <ProgramCard key={r.id} rec={r} current={false} />
+            <ProgramCard
+              key={r.id}
+              rec={r}
+              current={false}
+              sessionCount={sessionsInRange(log, r.startDate, r.endDate).length}
+              onOpen={() => navigate(`/clients/${client.id}/program?history=${r.no}`)}
+            />
           ))}
         </>
       ) : hasCurrent ? (

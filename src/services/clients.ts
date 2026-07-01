@@ -131,6 +131,14 @@ export async function fetchClientExercises(id: string): Promise<ProgramExercise[
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ProgramExercise, 'id'>) }));
 }
 
+/** Program exercises for many clients at once, keyed by client id (batched). */
+export async function fetchClientsExercises(ids: string[]): Promise<Record<string, ProgramExercise[]>> {
+  const entries = await Promise.all(ids.map(async (id) => [id, await fetchClientExercises(id)] as const));
+  const out: Record<string, ProgramExercise[]> = {};
+  for (const [id, list] of entries) out[id] = list;
+  return out;
+}
+
 /**
  * Create a new client as a fresh lead — coachId null, all onboarding lifecycle
  * flags false. Also seeds an empty billing summary so onboarding payments land in
@@ -188,6 +196,8 @@ export interface ScheduleInput {
   weeks: number; // program length
   sessionDuration: number; // minutes
   programStartDate: string; // YYYY-MM-DD
+  progPaid: boolean; // program-fee status flag (gate); actual payment recorded separately
+  progPaidOn: string | null; // YYYY-MM-DD marked Paid, or null when Pending
 }
 
 /**
@@ -205,7 +215,15 @@ export async function setClientSchedule(id: string, input: ScheduleInput): Promi
     time: input.time,
     sessionDuration: input.sessionDuration,
     programStartDate: input.programStartDate,
-    program: { no: 1, weeks: input.weeks, perWeek: 3, done: 0, startDate: input.programStartDate },
+    program: {
+      no: 1,
+      weeks: input.weeks,
+      perWeek: 3,
+      done: 0,
+      startDate: input.programStartDate,
+      paid: input.progPaid,
+      ...(input.progPaid && input.progPaidOn ? { paidOn: input.progPaidOn } : {}),
+    },
     scheduleDone: true,
   });
 }
@@ -241,8 +259,12 @@ export async function updateClient(id: string, input: EditClientInput): Promise<
  * Onboarding step 3: attach the welcome note AND activate the client (scheduleSet=true)
  * — this is what flips a lead to a fully active client. Any coach.
  */
-export async function completeWelcome(id: string, message: string): Promise<void> {
-  await updateDoc(doc(db, 'clients', id), { welcomeMsg: message, scheduleSet: true });
+export async function completeWelcome(id: string, message: string, summary?: string): Promise<void> {
+  const patch: Record<string, unknown> = { welcomeMsg: message, scheduleSet: true };
+  // Coach-written assessment summary (welcome step) — merged onto the existing
+  // assessment map via a dotted path so nothing else on it is touched.
+  if (summary && summary.trim()) patch['assessment.summary'] = summary.trim();
+  await updateDoc(doc(db, 'clients', id), patch);
 }
 
 /** Quick single-concern patch from the client menu — status flip or coach swap. */
@@ -256,19 +278,23 @@ export async function patchClient(
 export interface AssessmentInput {
   assessment: Assessment;
   measures: Record<string, number[]>; // full merged map (baseline-seeded, history preserved)
+  paid: boolean; // assessment-fee status flag (gate); actual payment recorded separately
+  paidOn: string | null; // YYYY-MM-DD marked Paid, or null when Pending
 }
 
 /**
  * Save a client's first-assessment (any coach — training data, not billing). Stores
- * the assessment, flips assessmentDone, and writes the measures map (already merged
- * by the caller so existing series aren't clobbered). Money-free: the assessment fee
- * is recorded separately via the payment flow.
+ * the assessment, flips assessmentDone, writes the measures map (already merged by the
+ * caller), and records the fee-status flag. The actual assessment payment is recorded
+ * separately in the ledger by the head coach (juniors can't write payments).
  */
 export async function saveAssessment(id: string, input: AssessmentInput): Promise<void> {
   await updateDoc(doc(db, 'clients', id), {
     assessment: input.assessment,
     assessmentDone: true,
     measures: input.measures,
+    assessmentPaid: input.paid,
+    ...(input.paid && input.paidOn ? { assessmentPaidOn: input.paidOn } : {}),
   });
 }
 

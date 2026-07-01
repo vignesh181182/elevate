@@ -4,6 +4,7 @@ import {
   createClient,
   fetchClient,
   fetchClientExercises,
+  fetchClientsExercises,
   fetchClients,
   removeProgramExercise,
   removeProgramExercises,
@@ -39,8 +40,13 @@ import {
   fetchSession,
   fetchSessionLog,
   markAttendance,
+  addSessionComment,
+  deleteSessionComment,
+  editSessionComment,
+  setSessionNote,
   setSessionProgress,
   setSessionSetLog,
+  setSessionSkip,
   type WeekLogWrite,
 } from '../services/sessions';
 import { addMedia, deleteMedia, fetchMedia, type NewMedia } from '../services/media';
@@ -48,7 +54,7 @@ import { fetchReports, markReportSent } from '../services/reports';
 import { fetchBilling, fetchBillingSummaries, fetchPayments, savePayment } from '../services/payments';
 import { billingAdjustment } from '../domain/payments';
 import { useIsMainCoach } from '../auth/AuthProvider';
-import type { Attendance, Client, ClientStatus, Coach, Payment, ProgKey, ProgramExercise, SessionDoc, SessionLog } from '../domain/types';
+import type { Attendance, Client, ClientStatus, Coach, Payment, ProgKey, ProgramExercise, SessionComment, SessionDoc, SessionLog } from '../domain/types';
 
 export function useClients() {
   return useQuery({ queryKey: ['clients'], queryFn: fetchClients });
@@ -115,7 +121,8 @@ export function useUpdateClient(id: string | undefined) {
 export function useCompleteWelcome(id: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (message: string) => completeWelcome(id as string, message),
+    mutationFn: ({ message, summary }: { message: string; summary?: string }) =>
+      completeWelcome(id as string, message, summary),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['client', id] });
       qc.invalidateQueries({ queryKey: ['clients'] });
@@ -149,6 +156,15 @@ export function useClientExercises(id: string | undefined) {
     queryKey: ['exercises', id],
     queryFn: () => fetchClientExercises(id as string),
     enabled: !!id,
+  });
+}
+
+/** Program exercises for several clients at once, keyed by id — feeds the schedule summary. */
+export function useClientsExercises(ids: string[]) {
+  return useQuery({
+    queryKey: ['dayExercises', ids.slice().sort()],
+    queryFn: () => fetchClientsExercises(ids),
+    enabled: ids.length > 0,
   });
 }
 
@@ -376,6 +392,106 @@ export function useSetSessionSetLog(clientId: string | undefined, date: string) 
     onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
     onSettled: () => qc.invalidateQueries({ queryKey: qk }),
   });
+}
+
+/**
+ * Skip one set: ticks progress AND records the reason under skips. Optimistic so the
+ * circuit advances to the next exercise immediately; rolls back on error, re-syncs on settle.
+ */
+export function useSkipSet(clientId: string | undefined, date: string) {
+  const qc = useQueryClient();
+  const qk = ['session', clientId, date];
+  return useMutation({
+    mutationFn: ({ key, reason }: { key: string; reason: string }) =>
+      setSessionSkip(clientId as string, date, key, reason),
+    onMutate: async ({ key, reason }) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<SessionDoc | null>(qk);
+      qc.setQueryData<SessionDoc | null>(qk, (old) => ({
+        ...(old ?? {}),
+        progress: { ...(old?.progress ?? {}), [key]: true },
+        skips: { ...(old?.skips ?? {}), [key]: { reason } },
+      }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
+  });
+}
+
+/**
+ * Save the coach's session note. Optimistic: the cached session's note updates instantly
+ * so the textarea keeps its value across refetches, rolls back on error, re-syncs on settle.
+ */
+export function useSetSessionNote(clientId: string | undefined, date: string) {
+  const qc = useQueryClient();
+  const qk = ['session', clientId, date];
+  return useMutation({
+    mutationFn: ({ note }: { note: string }) => setSessionNote(clientId as string, date, note),
+    onMutate: async ({ note }) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<SessionDoc | null>(qk);
+      qc.setQueryData<SessionDoc | null>(qk, (old) => ({ ...(old ?? {}), note }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
+  });
+}
+
+/**
+ * Session-notes comment thread — add / edit / delete, all optimistic on the cached
+ * `comments` map so the thread updates instantly, rolls back on error, re-syncs on settle.
+ */
+export function useSessionComments(clientId: string | undefined, date: string) {
+  const qc = useQueryClient();
+  const qk = ['session', clientId, date];
+  const patch = (fn: (m: Record<string, SessionComment>) => Record<string, SessionComment>) => {
+    qc.setQueryData<SessionDoc | null>(qk, (old) => ({ ...(old ?? {}), comments: fn({ ...(old?.comments ?? {}) }) }));
+  };
+
+  const add = useMutation({
+    mutationFn: ({ id, comment }: { id: string; comment: SessionComment }) =>
+      addSessionComment(clientId as string, date, id, comment),
+    onMutate: async ({ id, comment }) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<SessionDoc | null>(qk);
+      patch((m) => ({ ...m, [id]: comment }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
+  });
+
+  const edit = useMutation({
+    mutationFn: ({ id, text, editedAt }: { id: string; text: string; editedAt: string }) =>
+      editSessionComment(clientId as string, date, id, text, editedAt),
+    onMutate: async ({ id, text, editedAt }) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<SessionDoc | null>(qk);
+      patch((m) => (m[id] ? { ...m, [id]: { ...m[id], text, editedAt } } : m));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
+  });
+
+  const remove = useMutation({
+    mutationFn: ({ id }: { id: string }) => deleteSessionComment(clientId as string, date, id),
+    onMutate: async ({ id }) => {
+      await qc.cancelQueries({ queryKey: qk });
+      const prev = qc.getQueryData<SessionDoc | null>(qk);
+      patch((m) => {
+        delete m[id];
+        return m;
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(qk, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk }),
+  });
+
+  return { add, edit, remove };
 }
 
 /**

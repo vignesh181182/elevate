@@ -99,10 +99,60 @@ async function upsertCoach(c: (typeof COACHES)[number]): Promise<string> {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+// Local YYYY-MM-DD (NOT toISOString, which is UTC — that shifts a local-midnight
+// date back a day in timezones east of UTC, e.g. IST). The app builds schedule date
+// keys from local parts too, so seeded session dates must match that convention.
+const iso = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 function isoDaysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return iso(d);
+}
+
+const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** Parse a client's "Mon, Wed, Fri" schedule into training-day abbreviations. */
+function trainingDays(daysStr: string): string[] {
+  return daysStr && daysStr !== '—' ? daysStr.split(',').map((s) => s.trim()).filter(Boolean) : [];
+}
+
+/**
+ * The archive programs for one training day, mirroring how the seed tags exercises
+ * into per-day A/B slots — so a generated completed session matches the day's real plan.
+ */
+function programsForDay(c: (typeof seedClients)[number], day: string): { label: string; sets: number; exercises: string[] }[] {
+  const days = trainingDays(c.days);
+  const slots = days.flatMap((d) => [{ day: d, prog: 'A' as const }, { day: d, prog: 'B' as const }]);
+  const chunk = slots.length ? Math.ceil(c.exercises.length / slots.length) : 0;
+  const byProg: Record<'A' | 'B', string[]> = { A: [], B: [] };
+  for (let i = 0; i < c.exercises.length; i++) {
+    const slot = slots.length ? slots[Math.min(Math.floor(i / chunk), slots.length - 1)] : null;
+    if (slot && slot.day === day) byProg[slot.prog].push(c.exercises[i].name);
+  }
+  const out: { label: string; sets: number; exercises: string[] }[] = [];
+  if (byProg.A.length) out.push({ label: 'Program A', sets: 3, exercises: byProg.A });
+  if (byProg.B.length) out.push({ label: 'Program B', sets: 3, exercises: byProg.B });
+  return out;
+}
+
+/** This week's training days that fall strictly before today, as {iso, weekday}. */
+function currentWeekPastTrainingDays(daysStr: string): { iso: string; wd: string }[] {
+  const days = trainingDays(daysStr);
+  const now = new Date();
+  const dow = (now.getDay() + 6) % 7; // Mon=0 … Sun=6
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(now.getDate() - dow);
+  const out: { iso: string; wd: string }[] = [];
+  for (let i = 0; i < dow; i++) {
+    const wd = WEEK_DAYS[i];
+    if (!days.includes(wd)) continue;
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    out.push({ iso: iso(d), wd });
+  }
+  return out;
 }
 function slug(s: string): string {
   return s
@@ -182,7 +232,30 @@ async function seedClientsData(nameToUid: Record<string, string>) {
       lastSessionDate: c.billing.lastSessionDaysAgo == null ? null : isoDaysAgo(c.billing.lastSessionDaysAgo),
     });
 
-    // completed-session history
+    // completed-session history. Clear any prior docs first so re-seeds don't leave
+    // stale dates behind, then regenerate deterministically.
+    const existingLogs = await ref.collection('sessionLog').get();
+    for (const d of existingLogs.docs) await d.ref.delete();
+
+    // First, fill in this week's past training days so every past row in the Schedule
+    // opens a real completed session (for testing the read-only view). Written before
+    // the hand-authored logs so those take precedence on any clash.
+    if (c.scheduleSet) {
+      for (const { iso: date, wd } of currentWeekPastTrainingDays(c.days)) {
+        const programs = programsForDay(c, wd);
+        if (!programs.length) continue;
+        const total = programs.reduce((n, p) => n + p.sets, 0);
+        await ref.collection('sessionLog').doc(date).set({
+          date,
+          when: c.time || '5:30 PM',
+          early: false,
+          roundsCompleted: total,
+          totalRounds: total,
+          programs,
+        });
+      }
+    }
+
     for (const log of c.sessionLog) {
       const date = isoDaysAgo(log.daysAgo);
       await ref.collection('sessionLog').doc(date).set({

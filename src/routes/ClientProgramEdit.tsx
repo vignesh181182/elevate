@@ -11,7 +11,9 @@ import {
   useSetProgramSets,
 } from '../hooks/useData';
 import { useToast } from '../components/Toast';
+import EditableNumber from '../components/EditableNumber';
 import { MAX_SETS, MIN_SETS, ROUNDS } from '../domain/session';
+import { nextWeight, prevWeight } from '../domain/weights';
 import { currentProgramWeek, isRepBased, weekLoad } from '../domain/client';
 import { dayProgLabels, exForDayProg, hasDayProgPlan, nextProgLabel, PROG_LABELS, type ProgLabel } from '../domain/program';
 import type { Client, ProgramExercise } from '../domain/types';
@@ -61,7 +63,12 @@ function EditView({
   const setSets = useSetProgramSets(client.id);
   const reorder = useReorderProgramExercises(client.id);
   const removeProgram = useRemoveProgram(client.id);
-  const perDay = !!day && hasDayProgPlan(list);
+  // Use the program-first builder whenever we have a day context: either the client already
+  // has a per-day plan, or it's a fresh client (empty list) building one from scratch — the
+  // latter is the "Add program" entry from an empty session. Only genuinely legacy flat plans
+  // (exercises with no day/prog tags) fall back to the plain list editor below.
+  const building = !!day && list.length === 0;
+  const perDay = !!day && (hasDayProgPlan(list) || list.length === 0);
 
   // Programs shown for this day: those with exercises, plus any empty ones the coach
   // just added (transient — they persist once an exercise is tagged into them).
@@ -91,6 +98,12 @@ function EditView({
     const cur = valueFor(ex);
     const next = { ...cur, [k]: Math.max(0, round1(cur[k] + delta)) };
     setDrafts((prev) => ({ ...prev, [ex.id as string]: next }));
+  }
+
+  // Set an exact weight (snap step or manual entry), leaving reps untouched.
+  function setWeight(ex: ProgramExercise, w: number) {
+    if (!ex.id) return;
+    setDrafts((prev) => ({ ...prev, [ex.id as string]: { ...valueFor(ex), w } }));
   }
 
   function onRemove(ex: ProgramExercise) {
@@ -136,6 +149,7 @@ function EditView({
       ex={ex}
       v={valueFor(ex)}
       onAdjust={adjust}
+      onSetWeight={setWeight}
       onRemove={onRemove}
       drag={drag}
       builder={perDay}
@@ -146,9 +160,12 @@ function EditView({
     <div className="screen">
       <div className="bar solid">
         <div className="bar-titles">
-          <div className="bar-title">{perDay ? `Modify ${day} program` : 'Modify program'}</div>
+          <div className="bar-title">
+            {building ? 'Create program' : perDay ? `Modify ${day} program` : 'Modify program'}
+          </div>
           <div className="bar-sub">
-            {client.name} · Week {week}
+            {client.name}
+            {day ? ` · ${day}` : ''} · Week {week}
           </div>
         </div>
         <button className="iconbtn" onClick={close} aria-label="Close without saving">
@@ -177,7 +194,7 @@ function EditView({
           ))}
           {nextProgLabel(editLabels) && (
             <button className="pb-addprog" onClick={() => setAdded((a) => [...a, nextProgLabel(editLabels)!])}>
-              ＋ Add program
+              ＋ Add another program
             </button>
           )}
         </>
@@ -361,6 +378,7 @@ function ExerciseCard({
   ex,
   v,
   onAdjust,
+  onSetWeight,
   onRemove,
   drag,
   builder,
@@ -368,6 +386,7 @@ function ExerciseCard({
   ex: ProgramExercise;
   v: { w: number; r: number };
   onAdjust: (ex: ProgramExercise, k: 'w' | 'r', delta: number) => void;
+  onSetWeight: (ex: ProgramExercise, w: number) => void;
   onRemove: (ex: ProgramExercise) => void;
   drag?: CardDrag;
   // Per-day A/B builder card — name only (no target line), matching the prototype.
@@ -396,14 +415,25 @@ function ExerciseCard({
         <div className="stepper">
           <div className="lbl">{rep ? 'Level/time' : 'Weight'}</div>
           <div className="ctl">
-            <button className="stp-btn" onClick={() => onAdjust(ex, 'w', -2.5)} aria-label="Decrease weight">
+            <button
+              className="stp-btn"
+              onClick={() => (rep ? onAdjust(ex, 'w', -2.5) : onSetWeight(ex, prevWeight(v.w)))}
+              aria-label="Decrease weight"
+            >
               −
             </button>
-            <div className="stp-val">
-              {v.w}
-              {rep ? '' : <small> kg</small>}
-            </div>
-            <button className="stp-btn" onClick={() => onAdjust(ex, 'w', 2.5)} aria-label="Increase weight">
+            <EditableNumber
+              value={v.w}
+              onCommit={(w) => onSetWeight(ex, w)}
+              className="stp-val"
+              inputClassName="stp-val stp-input"
+              suffix={rep ? null : <small> kg</small>}
+            />
+            <button
+              className="stp-btn"
+              onClick={() => (rep ? onAdjust(ex, 'w', 2.5) : onSetWeight(ex, nextWeight(v.w)))}
+              aria-label="Increase weight"
+            >
               +
             </button>
           </div>

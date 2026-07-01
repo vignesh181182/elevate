@@ -75,7 +75,7 @@ export default function ClientCard({
         <div className="clc-id">
           <div className="clc-name">{c.name}</div>
           <div className="clc-coach">
-            <User size={13} /> Coach: {coachName || 'Not assigned'}
+            <User size={13} /> {coachName || 'Not assigned'}
           </div>
         </div>
         <button

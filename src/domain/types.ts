@@ -30,6 +30,10 @@ export interface ClientProgram {
   perWeek: number;
   done: number; // sessions completed in this program
   startDate?: string; // YYYY-MM-DD
+  // Onboarding program-fee status (flag only — the head coach records the actual
+  // payment in the ledger via Record Payment; juniors can't write payments).
+  paid?: boolean;
+  paidOn?: string; // YYYY-MM-DD the fee was marked Paid
   // Rounds (sets) the session circuit runs per program, keyed by label. Edited in the
   // Program editor, drives ClientSession. Per-program independent; a label absent ⇒ ROUNDS.
   sets?: Partial<Record<ProgKey, number>>;
@@ -65,6 +69,10 @@ export interface Client {
   assessmentDone: boolean;
   scheduleDone: boolean;
   scheduleSet: boolean;
+  // Onboarding assessment-fee status (flag only — the actual payment is recorded
+  // separately in the ledger by the head coach; see ClientProgram.paid for the program fee).
+  assessmentPaid?: boolean;
+  assessmentPaidOn?: string; // YYYY-MM-DD the fee was marked Paid
   measures: Record<string, number[]>;
   program: ClientProgram | null;
   review?: ReviewState;
@@ -90,6 +98,7 @@ export interface Assessment {
   primaryGoal?: string;
   focusAreas: string[];
   notes?: string;
+  summary?: string; // coach-written first-assessment summary (filled on the welcome step)
 }
 
 /** clients/{id}/exercises/{exId} — source of truth for the standing program. */
@@ -157,6 +166,17 @@ export interface LibraryExercise {
 export type Attendance = 'present' | 'absent' | 'cancelled';
 
 /**
+ * One session comment (the session-notes thread). Stored on the session doc as a map
+ * keyed by id (merge-safe, like progress/setLogs); `by` is the authoring coach uid.
+ */
+export interface SessionComment {
+  by: string; // coach uid who wrote it
+  text: string;
+  at: string; // ISO timestamp created
+  editedAt?: string; // ISO timestamp last edited
+}
+
+/**
  * clients/{id}/sessions/{date} — a single day's live session state. Attendance is
  * recorded here now; the A/B circuit (split, rounds, progress) will share the same
  * doc later, so writes MUST merge to avoid clobbering each other.
@@ -172,9 +192,17 @@ export interface SessionDoc {
   // ("A:1:Back squat"). Each is the weight/reps the coach actually worked that set;
   // on completion the top set folds into the exercise's per-week log (the charts).
   setLogs?: Record<string, { w: number; r: number }>;
+  // Sets the coach explicitly skipped, keyed like progress. A skip also ticks progress
+  // (so the circuit advances to the next exercise) but is recorded here with its reason.
+  skips?: Record<string, { reason?: string; at?: string }>;
   status?: 'completed';
   completedAt?: string; // ISO when the session was completed
   early?: boolean; // completed with partial progress
+  // Session-notes comment thread, keyed by comment id (merge-safe map). Each carries the
+  // authoring coach + timestamps; folded into the SessionLog archive on completion.
+  comments?: Record<string, SessionComment>;
+  // Legacy single free-text note (pre-comments). Kept for older docs; read-only.
+  note?: string;
 }
 
 /** clients/{id}/sessionLog/{date} — permanent completed-session archive. */
@@ -189,6 +217,12 @@ export interface SessionLog {
   // Per-set actuals at completion (key "A:1:Back squat" → {w,r}) — the permanent
   // record of what was worked each set; optional (older logs predate it).
   setLogs?: Record<string, { w: number; r: number }>;
+  // Sets skipped during the session (key → reason), snapshotted on completion.
+  skips?: Record<string, { reason?: string; at?: string }>;
+  // Session-notes comment thread, snapshotted on completion (keyed by comment id).
+  comments?: Record<string, SessionComment>;
+  note?: string; // legacy single note, snapshotted on completion
+
 }
 
 /** clients/{id}/media/{mediaId} — one compressed photo (base64 data URL) per doc. */

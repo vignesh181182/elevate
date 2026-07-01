@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ClipboardPen, LineChart } from 'lucide-react';
+import { ClipboardPen, LineChart, Calendar, Lock } from 'lucide-react';
 import { useClient, useSaveAssessment } from '../hooks/useData';
 import { useAuth } from '../auth/AuthProvider';
 import { useToast } from '../components/Toast';
@@ -25,7 +25,10 @@ export default function ClientAssessment() {
   const { data: client, isLoading } = useClient(id);
   const save = useSaveAssessment(id);
 
-  const back = () => navigate(`/clients/${id}`);
+  // Pop the pushed entry to return to the detail page we came from. Navigating to the URL with
+  // replace would instead create a second detail entry next to the original, so detail's Back
+  // would need two taps to leave.
+  const back = () => navigate(-1);
 
   if (isLoading) return <div className="screen"><div className="cl-loading">Loading…</div></div>;
   if (!client) return <div className="screen"><div className="empty"><p>Client not found.</p></div></div>;
@@ -50,6 +53,11 @@ function Form({
   back: () => void;
 }) {
   const a = client.assessment;
+  // Assessment fee — the measurement/rating/profile/notes cards stay locked until Paid.
+  // An already-completed assessment (e.g. a redo, or a pre-gate client) counts as paid so
+  // edits aren't re-gated; only fresh leads must mark the fee.
+  const [paid, setPaid] = useState(client.assessmentPaid ?? client.assessmentDone);
+  const [paidOn, setPaidOn] = useState(client.assessmentPaidOn || todayISO());
   const [weight, setWeight] = useState(a?.weight ? String(a.weight) : '');
   const [height, setHeight] = useState(a?.height ? String(a.height) : '');
   const [waist, setWaist] = useState(a?.waist ? String(a.waist) : '');
@@ -74,6 +82,7 @@ function Form({
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!paid) return toast('Mark the assessment fee as Paid first');
     const w = num(weight);
     const h = num(height);
     const wa = num(waist);
@@ -99,7 +108,7 @@ function Form({
     const measures = mergeBaselineMeasures(client.measures, { weight: w, waist: wa });
 
     save.mutate(
-      { assessment, measures },
+      { assessment, measures, paid, paidOn: paid ? paidOn : null },
       {
         onSuccess: () => {
           toast(`Assessment saved for ${client.name.split(' ')[0]}`);
@@ -135,6 +144,47 @@ function Form({
           </div>
         </div>
 
+        <div className="as-card">
+          <div className="as-card-t">Assessment fee</div>
+          <div className="as-fee">
+            <div className="as-fee-opts">
+              <button type="button" className={`as-radio${!paid ? ' on' : ''}`} onClick={() => setPaid(false)}>
+                <span className="as-dot" />
+                Pending
+              </button>
+              <button type="button" className={`as-radio${paid ? ' on' : ''}`} onClick={() => setPaid(true)}>
+                <span className="as-dot" />
+                Paid
+              </button>
+            </div>
+            <div className={`as-fee-date${paid ? '' : ' is-disabled'}`}>
+              <label>Payment date</label>
+              <div className="as-date">
+                <Calendar />
+                <input
+                  type="date"
+                  value={paidOn}
+                  max={todayISO()}
+                  disabled={!paid}
+                  onChange={(e) => setPaidOn(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {!paid && (
+          <div className="as-gate-note">
+            <span className="as-gate-ic">
+              <Lock />
+            </span>
+            <div>
+              Mark the assessment fee as <b>Paid</b> to record measurements, ratings and notes.
+            </div>
+          </div>
+        )}
+
+        <div className={`as-gated${paid ? '' : ' is-locked'}`} aria-hidden={!paid}>
         <div className="as-card">
           <div className="as-card-t">Baseline measurements</div>
           <div className="as-measures">
@@ -224,9 +274,14 @@ function Form({
             onChange={(e) => setNotes(e.target.value)}
           />
         </div>
+        </div>
 
         <div className="as-foot">
-          <button type="submit" className={`as-btn-primary${save.isPending ? ' is-off' : ''}`} disabled={save.isPending}>
+          <button
+            type="submit"
+            className={`as-btn-primary${save.isPending || !paid ? ' is-off' : ''}`}
+            disabled={save.isPending || !paid}
+          >
             {save.isPending ? 'Saving…' : 'Save assessment'}
           </button>
         </div>

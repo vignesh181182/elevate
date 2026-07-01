@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, History, Pencil } from 'lucide-react';
-import { useClient, useClientExercises, useProgramHistory } from '../hooks/useData';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, History, Pencil } from 'lucide-react';
+import { useClient, useClientExercises, useProgramHistory, useClientSessionLog } from '../hooks/useData';
 import ProgramHistory from '../components/ProgramHistory';
+import { fmtShortDate, fmtProgRange } from '../lib/format';
+import { sessionsInRange } from '../domain/session';
 import { ROUNDS } from '../domain/session';
 import { currentProgramWeek, isRepBased, weekLoad } from '../domain/client';
 import {
@@ -13,7 +15,7 @@ import {
   todayWeekday,
   type ProgLabel,
 } from '../domain/program';
-import type { Client, ProgramExercise, ProgramHistory as ProgramHistoryRec } from '../domain/types';
+import type { Client, ProgramExercise, ProgramHistory as ProgramHistoryRec, SessionLog } from '../domain/types';
 
 const fmtW = (w: number) => (Number.isInteger(w) ? `${w}` : w.toFixed(1));
 
@@ -26,6 +28,9 @@ export default function ClientProgram() {
   const { data: client, isLoading } = useClient(id);
   const { data: exercises = [] } = useClientExercises(id);
   const { data: history = [] } = useProgramHistory(id);
+  const { data: log = [] } = useClientSessionLog(id);
+  const [sp] = useSearchParams();
+  const historyNo = sp.get('history');
 
   if (isLoading || !client) {
     return (
@@ -35,18 +40,119 @@ export default function ClientProgram() {
     );
   }
   const list = exercises.filter((e) => !e.future && e.name !== 'Tap to add exercise');
-  return <ReadOnly key={client.id} client={client} list={list} history={history} navigate={navigate} />;
+
+  // ?history=<no> opens a past program's read-only detail (same landing-page shell),
+  // scoped to that archived program and its completed sessions.
+  if (historyNo != null) {
+    const rec = history.find((h) => String(h.no) === historyNo);
+    if (rec) {
+      return (
+        <PastProgram
+          key={rec.no}
+          client={client}
+          rec={rec}
+          sessions={sessionsInRange(log, rec.startDate, rec.endDate)}
+          navigate={navigate}
+        />
+      );
+    }
+  }
+
+  return <ReadOnly key={client.id} client={client} list={list} history={history} log={log} navigate={navigate} />;
+}
+
+// Read-only detail for an archived program — reuses the program landing-page shell
+// (bar + exercise cards), then lists every completed session logged during the program's
+// date range; each session row opens that day's read-only session.
+function PastProgram({
+  client,
+  rec,
+  sessions,
+  navigate,
+}: {
+  client: Client;
+  rec: ProgramHistoryRec;
+  sessions: SessionLog[];
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const total = rec.weeks * rec.perWeek;
+  return (
+    <div className="screen">
+      <div className="bar solid">
+        <button className="iconbtn" onClick={() => navigate(-1)} aria-label="Back">
+          <ChevronLeft />
+        </button>
+        <div className="bar-titles">
+          <div className="bar-title">{rec.name}</div>
+          <div className="bar-sub">
+            {client.name} · Program #{rec.no}
+          </div>
+        </div>
+      </div>
+
+      <div className="ph-card pad-card">
+        <div className="ph-range">{fmtProgRange(rec.startDate, rec.endDate)}</div>
+        <div className="ph-stats">
+          {rec.weeks} weeks · {rec.perWeek}/week · {rec.sessionsCompleted} of {total} sessions completed
+        </div>
+        {rec.notes && <div className="ph-notes">{rec.notes}</div>}
+      </div>
+
+      <div className="ph-detail-sec">Exercises</div>
+      {rec.exercises.length ? (
+        rec.exercises.map((ex, i) => (
+          <div className="ex-card ro-ex" key={`${ex.name}-${i}`}>
+            <div className="ex-top">
+              <div className="ex-top-main">
+                <div>
+                  <div className="ex-name">{ex.name}</div>
+                  <div className="ex-target">{ex.target || '—'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="ph-empty-inline">No exercises recorded for this program.</div>
+      )}
+
+      <div className="ph-detail-sec">Sessions</div>
+      {sessions.length ? (
+        <div className="ph-sess-list pad">
+          {sessions.map((s) => (
+            <button
+              className="ph-sess-row"
+              key={s.date}
+              onClick={() => navigate(`/clients/${client.id}/session?date=${s.date}`)}
+            >
+              <span className="ph-sess-date">{fmtShortDate(s.date)}</span>
+              <span className="ph-sess-meta">
+                {s.roundsCompleted}/{s.totalRounds} rounds{s.early ? ' · ended early' : ''}
+              </span>
+              <ChevronRight size={15} className="ph-sess-chev" />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="ph-empty-inline">No completed sessions were logged for this program.</div>
+      )}
+
+      <div className="sp24" />
+    </div>
+  );
 }
 
 function ReadOnly({
   client,
   list,
   history,
+  log,
   navigate,
 }: {
   client: Client;
   list: ProgramExercise[];
   history: ProgramHistoryRec[];
+  log: SessionLog[];
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const weeks = client.program?.weeks ?? 6;
@@ -54,7 +160,16 @@ function ReadOnly({
   const days = programDays(client);
   const perDay = hasDayProgPlan(list) && days.length > 0;
 
-  const [mode, setMode] = useState<'current' | 'history'>('current');
+  // History mode lives in the URL (?view=history) so opening a past program and pressing
+  // back returns to the history list rather than resetting to the current program.
+  const [sp, setSp] = useSearchParams();
+  const mode = sp.get('view') === 'history' ? 'history' : 'current';
+  const toggleMode = () => {
+    const p = new URLSearchParams(sp);
+    if (mode === 'history') p.delete('view');
+    else p.set('view', 'history');
+    setSp(p);
+  };
   const [gridMode, setGridMode] = useState<'cards' | 'grid'>('cards');
   const [week, setWeek] = useState(curWk);
   const [day, setDay] = useState(() => (days.includes(todayWeekday()) ? todayWeekday() : days[0] ?? ''));
@@ -78,7 +193,7 @@ function ReadOnly({
         </div>
         <button
           className={`iconbtn${mode === 'history' ? ' on' : ''}`}
-          onClick={() => setMode((m) => (m === 'history' ? 'current' : 'history'))}
+          onClick={toggleMode}
           aria-label={mode === 'history' ? 'Back to current program' : 'View program history'}
         >
           <History />
@@ -86,7 +201,7 @@ function ReadOnly({
       </div>
 
       {mode === 'history' ? (
-        <ProgramHistory client={client} exercises={list} history={history} />
+        <ProgramHistory client={client} exercises={list} history={history} log={log} />
       ) : (
         <>
           {list.length > 0 && (
@@ -120,7 +235,7 @@ function ReadOnly({
                 {days.map((d) => (
                   <button key={d} className={`day-tab ${d === day ? 'on' : ''}`} onClick={() => setDay(d)}>
                     {d}
-                    {d === todayWeekday() && <span className="day-today">today</span>}
+                    {week === curWk && d === todayWeekday() && <span className="day-today">today</span>}
                   </button>
                 ))}
               </div>

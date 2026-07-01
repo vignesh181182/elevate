@@ -33,6 +33,7 @@ const Schedule = lazy(() => import('./routes/Schedule'));
 const Reports = lazy(() => import('./routes/Reports'));
 const More = lazy(() => import('./routes/More'));
 const ProfileEdit = lazy(() => import('./routes/ProfileEdit'));
+const ResetPassword = lazy(() => import('./routes/ResetPassword'));
 const Settings = lazy(() => import('./routes/Settings'));
 
 const RouteFallback = () => (
@@ -82,6 +83,7 @@ export default function App() {
             <Route path="/library" element={<Library />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile/edit" element={<ProfileEdit />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
 

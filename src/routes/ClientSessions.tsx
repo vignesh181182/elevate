@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Calendar, TrendingUp } from 'lucide-react';
 import { ClientDrillHead } from '../components/ClientDrill';
-import { useClient, useClientSessionLog, useSession } from '../hooks/useData';
+import { useClient, useClientSessionLog } from '../hooks/useData';
+import { parseDays } from '../domain/client';
 import type { Client, SessionLog } from '../domain/types';
 
 const WD = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const WD_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /** Local YYYY-MM-DD (matches the prototype's dateKey + the seeded log dates). */
 function dateKey(d: Date): string {
@@ -95,15 +98,23 @@ function SessionHistory({ client, log }: { client: Client; log: SessionLog[] }) 
 function CalendarMonth({ client, log }: { client: Client; log: SessionLog[] }) {
   const navigate = useNavigate();
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const monthName = now.toLocaleDateString('en-GB', { month: 'long' });
   const todayK = dateKey(now);
 
-  // This-month count: completed sessions logged in the current calendar month.
+  // The browsed month — starts on the real current month, navigable past & future so a
+  // coach can review any month and open that day's session (completed, live, or planned).
+  const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
+  const monthName = new Date(view.y, view.m, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  const atToday = view.y === now.getFullYear() && view.m === now.getMonth();
+  const shiftMonth = (delta: number) =>
+    setView((v) => {
+      const d = new Date(v.y, v.m + delta, 1);
+      return { y: d.getFullYear(), m: d.getMonth() };
+    });
+
+  // Stats are lifetime / current-month KPIs — independent of the browsed month.
   const thisMonth = log.filter((r) => {
     const d = new Date(r.date + 'T00:00:00');
-    return !isNaN(+d) && d.getFullYear() === year && d.getMonth() === month;
+    return !isNaN(+d) && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
   }).length;
 
   const p = client.program;
@@ -111,21 +122,34 @@ function CalendarMonth({ client, log }: { client: Client; log: SessionLog[] }) {
   const done = p?.done ?? 0;
   const pct = total ? Math.round((done / total) * 100) : 0;
 
-  // Today's live attendance — the only source of a "missed" marker (no fabricated pattern).
-  const { data: today } = useSession(client.id, todayK);
-  const hasAbsent = today?.attendance === 'absent' || today?.attendance === 'cancelled';
+  // Completed-session archive keyed by date — the source of the success/partial colour.
+  const logByDate = new Map(log.map((r) => [r.date, r]));
+  // The client's scheduled training weekdays — future ones are shown as upcoming.
+  const sessionDays = new Set(parseDays(client.days));
+  const startCol = (new Date(view.y, view.m, 1).getDay() + 6) % 7; // Monday-first
+  const dim = new Date(view.y, view.m + 1, 0).getDate();
 
-  const sessDates = new Set(log.map((r) => r.date));
-  const startCol = (new Date(year, month, 1).getDay() + 6) % 7; // Monday-first
-  const dim = new Date(year, month + 1, 0).getDate();
-
-  const cells: { key: string; n?: number; st: string }[] = [];
+  // Per-day status → colour: a completed log is 'done' (green) when fully finished or
+  // 'early' (red) when it ended early / short of its rounds; a scheduled weekday still
+  // ahead is 'upcoming' (amber); everything else is an inert non-session day.
+  const cells: { key: string; n?: number; dk?: string; st: string }[] = [];
   for (let i = 0; i < startCol; i++) cells.push({ key: `e${i}`, st: 'empty' });
   for (let d = 1; d <= dim; d++) {
-    const dk = dateKey(new Date(year, month, d));
-    const st = sessDates.has(dk) ? 'present' : dk === todayK && hasAbsent ? 'absent' : '';
-    cells.push({ key: dk, n: d, st });
+    const dObj = new Date(view.y, view.m, d);
+    const dk = dateKey(dObj);
+    const isToday = dk === todayK;
+    const rec = logByDate.get(dk);
+    let status = 'off';
+    if (rec) status = !rec.early && rec.roundsCompleted >= rec.totalRounds ? 'done' : 'early';
+    else if (dk >= todayK && sessionDays.has(WD_ABBR[dObj.getDay()])) status = 'upcoming';
+    const st = [status, isToday ? 'today' : ''].filter(Boolean).join(' ');
+    // Days with a state are openable; inert non-session days carry no dk.
+    cells.push({ key: dk, n: d, dk: status === 'off' ? undefined : dk, st });
   }
+
+  // A session day opens its session: today → live; other days → read-only (archive or plan).
+  const openDate = (dk: string) =>
+    navigate(dk === todayK ? `/clients/${client.id}/session` : `/clients/${client.id}/session?date=${dk}`);
 
   return (
     <div className="fadein">
@@ -154,8 +178,24 @@ function CalendarMonth({ client, log }: { client: Client; log: SessionLog[] }) {
       </div>
 
       <div className="block">
-        <div className="ov-h">
-          <div className="ov-h-t">{monthName} sessions</div>
+        <div className="cal-nav">
+          <button className="sw-arrow" onClick={() => shiftMonth(-1)} aria-label="Previous month">
+            ‹
+          </button>
+          <div className="sw-label">
+            <b>{monthName}</b>
+          </div>
+          {!atToday && (
+            <button
+              className="fchip today-jump"
+              onClick={() => setView({ y: now.getFullYear(), m: now.getMonth() })}
+            >
+              Today
+            </button>
+          )}
+          <button className="sw-arrow" onClick={() => shiftMonth(1)} aria-label="Next month">
+            ›
+          </button>
         </div>
         <div className="att-cal">
           {WD.map((d, i) => (
@@ -163,23 +203,31 @@ function CalendarMonth({ client, log }: { client: Client; log: SessionLog[] }) {
               {d}
             </div>
           ))}
-          {cells.map((c) => (
-            <div className={`cal-d ${c.st}`} key={c.key}>
-              {c.n ?? ''}
-            </div>
-          ))}
+          {cells.map((c) =>
+            c.dk ? (
+              <button className={`cal-d ${c.st}`} key={c.key} onClick={() => openDate(c.dk!)}>
+                {c.n}
+              </button>
+            ) : (
+              <div className={`cal-d ${c.st}`} key={c.key}>
+                {c.n}
+              </div>
+            ),
+          )}
         </div>
         <div className="att-legend">
           <span>
-            <i className="att-dot present" />
-            Session completed
+            <i className="att-dot done" />
+            Completed
           </span>
-          {hasAbsent && (
-            <span>
-              <i className="att-dot absent" />
-              Missed
-            </span>
-          )}
+          <span>
+            <i className="att-dot early" />
+            Ended early
+          </span>
+          <span>
+            <i className="att-dot upcoming" />
+            Upcoming
+          </span>
         </div>
       </div>
 

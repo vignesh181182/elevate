@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Clock, Calendar } from 'lucide-react';
+import { Clock, Calendar, Lock } from 'lucide-react';
 import { useClient, useCoaches, useSetSchedule } from '../hooks/useData';
 import { useToast } from '../components/Toast';
 import { parseDays } from '../domain/client';
@@ -10,6 +10,7 @@ import type { Client, Coach } from '../domain/types';
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const LENGTHS = [4, 5, 6];
 const DURATIONS = [45, 60, 75, 90];
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export default function ClientSchedule() {
   const { id } = useParams();
@@ -19,7 +20,10 @@ export default function ClientSchedule() {
   const { data: coaches = [] } = useCoaches();
   const save = useSetSchedule(id);
 
-  const back = () => navigate(`/clients/${id}`);
+  // Pop the pushed entry to return to the detail page already in history. Navigating to the URL
+  // with replace would instead create a second detail entry next to the original, so detail's
+  // Back would need two taps to leave.
+  const back = () => navigate(-1);
 
   if (isLoading) return <div className="screen"><div className="cl-loading">Loading…</div></div>;
   if (!client) return <div className="screen"><div className="empty"><p>Client not found.</p></div></div>;
@@ -46,6 +50,11 @@ function Form({
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const editing = client.scheduleDone;
+  // Program fee — the schedule + coach/program cards stay locked until Paid. An
+  // already-scheduled client (edit, or a pre-gate client) counts as paid so edits aren't
+  // re-gated; only fresh activations must mark the fee.
+  const [progPaid, setProgPaid] = useState(client.program?.paid ?? client.scheduleDone);
+  const [progPaidOn, setProgPaidOn] = useState(client.program?.paidOn || todayISO());
   const [coachId, setCoachId] = useState(client.coachId ?? '');
   const [days, setDays] = useState<string[]>(editing ? parseDays(client.days) : ['Mon', 'Wed', 'Fri']);
   const [time, setTime] = useState(to24h(client.time)); // '' for a fresh lead
@@ -58,6 +67,7 @@ function Form({
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!progPaid) return toast('Mark the program fee as Paid first');
     if (!coachId) return toast('Assign a coach');
     if (!days.length) return toast('Pick training days');
     if (!time) return toast('Pick a session time');
@@ -70,13 +80,16 @@ function Form({
         weeks,
         sessionDuration: duration,
         programStartDate: startDate,
+        progPaid,
+        progPaidOn: progPaid ? progPaidOn : null,
       },
       {
         onSuccess: () => {
           toast(editing ? 'Schedule updated' : `${client.name.split(' ')[0]} activated`);
-          // First activation flows into the welcome step; edits just return.
+          // First activation flows into the welcome step; edits just return. Replace so the
+          // welcome step takes this form's place in history (Back from welcome → detail).
           if (editing) back();
-          else navigate(`/clients/${client.id}/welcome`);
+          else navigate(`/clients/${client.id}/welcome`, { replace: true });
         },
         onError: () => toast('Could not save schedule'),
       },
@@ -96,6 +109,55 @@ function Form({
       </div>
 
       <form onSubmit={onSubmit} className="pad">
+        <div className="as-card">
+          <div className="as-card-t">Program fee</div>
+          <div className="as-fee">
+            <div className="as-fee-opts">
+              <button
+                type="button"
+                className={`as-radio${!progPaid ? ' on' : ''}`}
+                onClick={() => setProgPaid(false)}
+              >
+                <span className="as-dot" />
+                Pending
+              </button>
+              <button
+                type="button"
+                className={`as-radio${progPaid ? ' on' : ''}`}
+                onClick={() => setProgPaid(true)}
+              >
+                <span className="as-dot" />
+                Paid
+              </button>
+            </div>
+            <div className={`as-fee-date${progPaid ? '' : ' is-disabled'}`}>
+              <label>Payment date</label>
+              <div className="as-date">
+                <Calendar />
+                <input
+                  type="date"
+                  value={progPaidOn}
+                  max={todayISO()}
+                  disabled={!progPaid}
+                  onChange={(e) => setProgPaidOn(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {!progPaid && (
+          <div className="as-gate-note">
+            <span className="as-gate-ic">
+              <Lock />
+            </span>
+            <div>
+              Mark the program fee as <b>Paid</b> to set training days, time, coach and program.
+            </div>
+          </div>
+        )}
+
+        <div className={`as-gated${progPaid ? '' : ' is-locked'}`} aria-hidden={!progPaid}>
         <div className="as-card">
           <div className="as-card-t">Training schedule</div>
 
@@ -176,12 +238,17 @@ function Form({
             </div>
           </div>
         </div>
+        </div>
 
         <div className="bottom-cta sticky-cta cta-row">
           <button type="button" className="bigbtn ghost" onClick={back} disabled={save.isPending}>
             Cancel
           </button>
-          <button type="submit" className={`bigbtn${save.isPending ? ' dim' : ''}`} disabled={save.isPending}>
+          <button
+            type="submit"
+            className={`bigbtn${save.isPending || !progPaid ? ' dim' : ''}`}
+            disabled={save.isPending || !progPaid}
+          >
             {save.isPending ? 'Saving…' : editing ? 'Save changes' : 'Activate client'}
           </button>
         </div>

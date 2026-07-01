@@ -10,7 +10,6 @@ import {
   ClipboardCheck,
   CalendarCheck,
   CalendarClock,
-  PlayCircle,
   Wallet,
   TrendingUp,
   Image as ImageIcon,
@@ -179,9 +178,6 @@ export default function ClientDetail() {
   }
 
   // ---- Set-up client: the single-scroll hub (cp-prof + cards + drill rows) ----
-  const wk = currentProgramWeek(c);
-  const weeks = c.program?.weeks ?? 6;
-
   return (
     <div className="screen">
       <div className="fadein cprofile">
@@ -189,24 +185,11 @@ export default function ClientDetail() {
         {top}
         {prof}
 
-        {/* Payment + session balance — head coach only (juniors never read billing) */}
-        {isMain && <HubBilling client={c} onOpen={go} />}
+        {/* Merged training summary: sessions balance (main only) + current program */}
+        <HubTrainingSummary client={c} isMain={isMain} onOpen={go} />
 
-        {/* Program row is always visible; the billing rows live in HubBilling above */}
-        <div className="cp-card cp-group">
-          <div className="cp-row tap" onClick={() => go('program')}>
-            <span className="cp-row-ic tint-purple">
-              <ClipboardList size={21} />
-            </span>
-            <div className="cp-row-m">
-              <div className="cp-row-t">Current active program</div>
-              <div className="cp-row-s">
-                {programDisplayName(c.program)} · Week {wk} of {weeks}
-              </div>
-            </div>
-            <ChevronRight className="cp-chev" />
-          </div>
-        </div>
+        {/* Payment status — head coach only (juniors never read billing) */}
+        {isMain && <HubPayment client={c} onOpen={go} />}
 
         {/* Basic / assessment / schedule drill rows */}
         <div className="cp-card cp-group">
@@ -260,8 +243,8 @@ export default function ClientDetail() {
   );
 }
 
-/** Payment-status card + session-balance rows — rendered only for the head coach. */
-function HubBilling({ client, onOpen }: { client: Client; onOpen: (sub: string) => void }) {
+/** Payment-status card — rendered only for the head coach (juniors never read billing). */
+function HubPayment({ client, onOpen }: { client: Client; onOpen: (sub: string) => void }) {
   const { data: billing } = useBilling(client.id);
   const { data: payments = [] } = usePayments(client.id);
 
@@ -275,67 +258,111 @@ function HubBilling({ client, onOpen }: { client: Client; onOpen: (sub: string) 
   const [payLabel, payCls] = payInfo[status] ?? ['—', 'cp-m'];
   const lastSess = billing?.lastSessionDate ? fmtShortDate(billing.lastSessionDate) : '—';
 
+  return (
+    <div className="cp-card cp-pay" onClick={() => onOpen('payment')}>
+      <span className="cp-pay-ic">
+        <Wallet />
+      </span>
+      <div className="cp-pay-tx">
+        <div className="cp-pay-t">Payment status</div>
+        <div className="cp-pay-s">
+          <b className={payCls}>{payLabel}</b> · Last session {lastSess}
+        </div>
+      </div>
+      <ChevronRight className="cp-chev" />
+    </div>
+  );
+}
+
+/**
+ * Merged "Training summary" card: the session balance (used / purchased + remaining,
+ * head coach only) over the current program (name + week). The sessions row opens the
+ * Sessions drill; the program row opens Program — matching the existing navigation.
+ */
+function HubTrainingSummary({
+  client,
+  isMain,
+  onOpen,
+}: {
+  client: Client;
+  isMain: boolean;
+  onOpen: (sub: string) => void;
+}) {
+  const wk = currentProgramWeek(client);
+  const weeks = client.program?.weeks ?? 6;
+  return (
+    <div className="cp-card cp-summary">
+      <div className="cs-head">
+        <div className="cs-title">Training summary</div>
+        <div className="cs-sub">Your sessions &amp; programs at a glance</div>
+      </div>
+
+      {isMain && (
+        <>
+          <SessionsUsedItem client={client} onOpen={onOpen} />
+          <div className="cs-div" />
+        </>
+      )}
+
+      <div className="cs-item" role="button" tabIndex={0} onClick={() => onOpen('program')}>
+        <div className="cs-row">
+          <span className="cs-ic tint-purple">
+            <ClipboardCheck />
+          </span>
+          <div className="cs-cols">
+            <div className="cs-col">
+              <div className="cs-lbl">Current program</div>
+              <div className="cs-val">
+                <b>{programDisplayName(client.program)}</b>
+              </div>
+            </div>
+            <div className="cs-col">
+              <div className="cs-lbl">Week</div>
+              <div className="cs-val">
+                <b>{wk}</b> <span>/ {weeks}</span>
+              </div>
+            </div>
+          </div>
+          <ChevronRight className="cs-chev" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Sessions-used / remaining row inside the training summary — head-coach only (billing). */
+function SessionsUsedItem({ client, onOpen }: { client: Client; onOpen: (sub: string) => void }) {
+  const { data: billing } = useBilling(client.id);
+  const { data: payments = [] } = usePayments(client.id);
   const tot = totalPurchased(payments, billing?.packageSize ?? 0);
   const rem = billing?.sessionsRemaining ?? 0;
   const used = Math.max(0, tot - rem);
   const pct = tot ? Math.round((used / tot) * 100) : 0;
   const barStyle = { '--pct': `${pct}%` } as CSSProperties;
-
   return (
-    <>
-      <div className="cp-card cp-pay" onClick={() => onOpen('payment')}>
-        <span className="cp-pay-ic">
-          <Wallet />
+    <div className="cs-item" role="button" tabIndex={0} onClick={() => onOpen('sessions')}>
+      <div className="cs-row">
+        <span className="cs-ic tint-red">
+          <CalendarCheck />
         </span>
-        <div className="cp-pay-tx">
-          <div className="cp-pay-t">Payment status</div>
-          <div className="cp-pay-s">
-            <b className={payCls}>{payLabel}</b> · Last session {lastSess}
+        <div className="cs-cols">
+          <div className="cs-col">
+            <div className="cs-lbl">Sessions used</div>
+            <div className="cs-val">
+              <b>{used}</b> <span>/ {tot}</span>
+            </div>
+          </div>
+          <div className="cs-col">
+            <div className="cs-lbl">Remaining</div>
+            <div className="cs-val muted">{rem}</div>
           </div>
         </div>
-        <button
-          className="cp-outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen('payment');
-          }}
-        >
-          View details
-        </button>
+        <ChevronRight className="cs-chev" />
       </div>
-
-      <div className="cp-card cp-group">
-        <div className="cp-row">
-          <span className="cp-row-ic tint-red">
-            <CalendarCheck size={21} />
-          </span>
-          <div className="cp-row-m">
-            <div className="cp-row-t">Sessions used</div>
-            <div className="cp-row-s">
-              {used} of {tot} purchased
-            </div>
-          </div>
-          <div className="cp-prog">
-            <div className="cp-bar">
-              <i style={barStyle} />
-            </div>
-            <span className="cp-pct">{pct}%</span>
-          </div>
-        </div>
-        <div className="cp-row tap" onClick={() => onOpen('sessions')}>
-          <span className="cp-row-ic tint-green">
-            <PlayCircle size={21} />
-          </span>
-          <div className="cp-row-m">
-            <div className="cp-row-t">Active sessions</div>
-            <div className="cp-row-s">
-              {rem} session{rem !== 1 ? 's' : ''} remaining
-            </div>
-          </div>
-          <ChevronRight className="cp-chev" />
-        </div>
+      <div className="cs-bar">
+        <i style={barStyle} />
       </div>
-    </>
+    </div>
   );
 }
 
